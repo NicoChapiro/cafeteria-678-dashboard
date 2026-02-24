@@ -33,3 +33,7 @@ npm run dev
 ## TODO
 
 - TODO: confirmar versiones finales de dependencias según política del equipo.
+
+## Notas de entorno
+
+- TODO: definir acceso a un registro npm permitido (proxy o mirror interno) para poder instalar dependencias en entornos restringidos.
