@@ -22,25 +22,36 @@ npm install
 cp .env.example .env
 ```
 
-3. Ejecutar migración inicial:
-
-```bash
-npx prisma migrate dev --name init
-```
-
-4. Ejecutar seed de sucursales:
-
-```bash
-npx prisma db seed
-```
-
-5. Levantar servidor de desarrollo:
+3. Levantar servidor de desarrollo:
 
 ```bash
 npm run dev
 ```
 
-6. Abrir `http://localhost:3000`.
+4. Abrir `http://localhost:3000`.
+
+## Prisma (solo en entorno con Prisma engine disponible)
+
+> Importante: en este entorno de ejecución hay bloqueo 403 para descargar Prisma engines desde `binaries.prisma.sh`.
+> Ejecuta estos comandos en local o CI donde Prisma engine esté disponible.
+
+1. Generar cliente Prisma:
+
+```bash
+npm run prisma:generate
+```
+
+2. Ejecutar migraciones:
+
+```bash
+npm run db:migrate
+```
+
+3. Ejecutar seed de sucursales:
+
+```bash
+npm run db:seed
+```
 
 ## Scripts
 
@@ -48,10 +59,6 @@ npm run dev
 - `npm run build`: build de producción.
 - `npm run start`: correr build de producción.
 - `npm run lint`: lint con reglas de Next.js.
-- `npm run prisma:migrate`: alias para `prisma migrate dev`.
-- `npm run prisma:seed`: alias para `prisma db seed`.
-
-## TODO
-
-- TODO: confirmar versiones finales de dependencias según política del equipo.
-- TODO: confirmar mirror/proxy que permita descargar engines de Prisma desde `binaries.prisma.sh` en entornos restringidos.
+- `npm run prisma:generate`: genera Prisma Client.
+- `npm run db:migrate`: ejecuta migraciones Prisma.
+- `npm run db:seed`: ejecuta seed Prisma.
