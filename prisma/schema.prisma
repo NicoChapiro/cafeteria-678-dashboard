@@ -12,10 +12,6 @@ model Branch {
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  itemCostVersions     ItemCostVersion[]
-  productPriceVersions ProductPriceVersion[]
-  productCostVersions  ProductCostVersion[]
 }
 
 model Product {
@@ -23,9 +19,6 @@ model Product {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  priceVersions ProductPriceVersion[]
-  costVersions  ProductCostVersion[]
 }
 
 model Item {
@@ -33,55 +26,6 @@ model Item {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  costVersions ItemCostVersion[]
-}
-
-model ItemCostVersion {
-  id                String   @id @default(cuid())
-  itemId            String
-  branchId          String
-  packQtyInBase     Decimal
-  packCostGrossClp  Int
-  yieldRateOverride Decimal?
-  validFrom         DateTime
-  validTo           DateTime?
-  createdAt         DateTime @default(now())
-
-  item   Item   @relation(fields: [itemId], references: [id])
-  branch Branch @relation(fields: [branchId], references: [id])
-
-  @@index([itemId, branchId, validFrom])
-}
-
-model ProductPriceVersion {
-  id            String   @id @default(cuid())
-  productId     String
-  branchId      String
-  priceGrossClp Int
-  validFrom     DateTime
-  validTo       DateTime?
-  createdAt     DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id])
-  branch  Branch  @relation(fields: [branchId], references: [id])
-
-  @@index([productId, branchId, validFrom])
-}
-
-model ProductCostVersion {
-  id           String   @id @default(cuid())
-  productId    String
-  branchId     String
-  costGrossClp Int
-  validFrom    DateTime
-  validTo      DateTime?
-  createdAt    DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id])
-  branch  Branch  @relation(fields: [branchId], references: [id])
-
-  @@index([productId, branchId, validFrom])
 }
 
 model AuditLog {
@@ -93,3 +37,9 @@ model AuditLog {
   userId     String?
   createdAt  DateTime @default(now())
 }
+
+// FUTURO (versionado por vigencia):
+// - ItemCostVersion(itemId, branchId, packQtyInBase, packCostGrossClp, yieldRateOverride?, validFrom, validTo?)
+// - ProductPriceVersion(productId, branchId, priceGrossClp, validFrom, validTo?)
+// - ProductCostVersion(productId, branchId, costGrossClp, validFrom, validTo?)
+// TODO: reintroducir estos modelos cuando se habilite/defina la siguiente fase de versionado y migraciones.
