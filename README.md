@@ -1,11 +1,12 @@
 # Cafetería 678 Dashboard
 
-Bootstrap del MVP A para Cafetería 678 (Santiago/Temuco) con Next.js + TypeScript.
+Bootstrap del MVP A para Cafetería 678 (Santiago/Temuco) con Next.js + TypeScript + Prisma.
 
 ## Requisitos
 
 - Node.js 20+
 - npm 10+
+- PostgreSQL 16+
 
 ## Correr local
 
@@ -15,13 +16,31 @@ Bootstrap del MVP A para Cafetería 678 (Santiago/Temuco) con Next.js + TypeScri
 npm install
 ```
 
-2. Levantar servidor de desarrollo:
+2. Configurar variables de entorno:
+
+```bash
+cp .env.example .env
+```
+
+3. Ejecutar migración inicial:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+4. Ejecutar seed de sucursales:
+
+```bash
+npx prisma db seed
+```
+
+5. Levantar servidor de desarrollo:
 
 ```bash
 npm run dev
 ```
 
-3. Abrir `http://localhost:3000`.
+6. Abrir `http://localhost:3000`.
 
 ## Scripts
 
@@ -29,11 +48,10 @@ npm run dev
 - `npm run build`: build de producción.
 - `npm run start`: correr build de producción.
 - `npm run lint`: lint con reglas de Next.js.
+- `npm run prisma:migrate`: alias para `prisma migrate dev`.
+- `npm run prisma:seed`: alias para `prisma db seed`.
 
 ## TODO
 
 - TODO: confirmar versiones finales de dependencias según política del equipo.
-
-## Notas de entorno
-
-- TODO: definir acceso a un registro npm permitido (proxy o mirror interno) para poder instalar dependencias en entornos restringidos.
+- TODO: confirmar mirror/proxy que permita descargar engines de Prisma desde `binaries.prisma.sh` en entornos restringidos.
