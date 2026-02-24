@@ -30,26 +30,14 @@ npm run dev
 
 4. Abrir `http://localhost:3000`.
 
-## Prisma (solo en entorno con Prisma engine disponible)
+## Prisma (ejecutar fuera de este entorno bloqueado)
 
-> Importante: en este entorno de ejecución hay bloqueo 403 para descargar Prisma engines desde `binaries.prisma.sh`.
-> Ejecuta estos comandos en local o CI donde Prisma engine esté disponible.
-
-1. Generar cliente Prisma:
+Este entorno bloquea la descarga de Prisma engine (`403` a `binaries.prisma.sh`).
+Corre estos comandos en una máquina local o CI con acceso al engine:
 
 ```bash
 npm run prisma:generate
-```
-
-2. Ejecutar migraciones:
-
-```bash
 npm run db:migrate
-```
-
-3. Ejecutar seed de sucursales:
-
-```bash
 npm run db:seed
 ```
 
