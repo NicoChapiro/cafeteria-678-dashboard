@@ -50,3 +50,11 @@ npm run db:seed
 - `npm run prisma:generate`: genera Prisma Client.
 - `npm run db:migrate`: ejecuta migraciones Prisma.
 - `npm run db:seed`: ejecuta seed Prisma.
+
+## LocalStorage (Paso 4A, sin DB)
+
+El store local vive en `src/storage/local/store.ts` y persiste en browser bajo la clave:
+
+- `cafe678:data:v1`
+
+Incluye operaciones para `Item` y `ItemCostVersion` por sucursal, usando el helper de versionado (`applyNewVersion`) para cerrar vigencias al insertar una nueva versión. También expone `exportData()` / `importData(json)` para respaldo y carga de datos en formato JSON.

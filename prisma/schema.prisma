@@ -13,9 +13,19 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  itemCosts     ItemCostVersion[]
-  productPrices ProductPriceVersion[]
-  productCosts  ProductCostVersion[]
+  itemCostVersions     ItemCostVersion[]
+  productPriceVersions ProductPriceVersion[]
+  productCostVersions  ProductCostVersion[]
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  priceVersions ProductPriceVersion[]
+  costVersions  ProductCostVersion[]
 }
 
 model Item {
@@ -27,21 +37,11 @@ model Item {
   costVersions ItemCostVersion[]
 }
 
-model Product {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  priceVersions ProductPriceVersion[]
-  costVersions  ProductCostVersion[]
-}
-
 model ItemCostVersion {
   id                String   @id @default(cuid())
   itemId            String
   branchId          String
-  packQtyInBase     Decimal
+  packQtyInBase     Decimal  @db.Decimal(12, 3)
   packCostGrossClp  Int
   yieldRateOverride Decimal?
   validFrom         DateTime
@@ -52,6 +52,7 @@ model ItemCostVersion {
   branch Branch @relation(fields: [branchId], references: [id])
 
   @@index([itemId, branchId, validFrom])
+  @@unique([itemId, branchId, validFrom])
 }
 
 model ProductPriceVersion {
@@ -67,6 +68,7 @@ model ProductPriceVersion {
   branch  Branch  @relation(fields: [branchId], references: [id])
 
   @@index([productId, branchId, validFrom])
+  @@unique([productId, branchId, validFrom])
 }
 
 model ProductCostVersion {
@@ -82,6 +84,7 @@ model ProductCostVersion {
   branch  Branch  @relation(fields: [branchId], references: [id])
 
   @@index([productId, branchId, validFrom])
+  @@unique([productId, branchId, validFrom])
 }
 
 model AuditLog {
@@ -89,7 +92,7 @@ model AuditLog {
   entityType String
   entityId   String
   action     String
-  diffJson   String
+  diffJson   Json
   userId     String?
   createdAt  DateTime @default(now())
 }
