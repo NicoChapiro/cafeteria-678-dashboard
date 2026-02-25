@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  itemCostVersions     ItemCostVersion[]
+  productPriceVersions ProductPriceVersion[]
+  productCostVersions  ProductCostVersion[]
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  priceVersions ProductPriceVersion[]
+  costVersions  ProductCostVersion[]
+}
+
+model Item {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  costVersions ItemCostVersion[]
+}
+
+model ItemCostVersion {
+  id                String   @id @default(cuid())
+  itemId            String
+  branchId          String
+  packQtyInBase     Decimal  @db.Decimal(12, 3)
+  packCostGrossClp  Int
+  yieldRateOverride Decimal?
+  validFrom         DateTime
+  validTo           DateTime?
+  createdAt         DateTime @default(now())
+
+  item   Item   @relation(fields: [itemId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([itemId, branchId, validFrom])
+  @@unique([itemId, branchId, validFrom])
+}
+
+model ProductPriceVersion {
+  id            String   @id @default(cuid())
+  productId     String
+  branchId      String
+  priceGrossClp Int
+  validFrom     DateTime
+  validTo       DateTime?
+  createdAt     DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@index([productId, branchId, validFrom])
+  @@unique([productId, branchId, validFrom])
+}
+
+model ProductCostVersion {
+  id           String   @id @default(cuid())
+  productId    String
+  branchId     String
+  costGrossClp Int
+  validFrom    DateTime
+  validTo      DateTime?
+  createdAt    DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@index([productId, branchId, validFrom])
+  @@unique([productId, branchId, validFrom])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String
+  diffJson   Json
+  userId     String?
+  createdAt  DateTime @default(now())
+}
