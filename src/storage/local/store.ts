@@ -115,7 +115,7 @@ function emptyData(): LocalData {
     itemCostVersions: [],
     products: [],
     productPriceVersions: [],
-    productCostVersions: [],
+    productCostVersions: [],  
     recipes: [],
     recipeLines: [],
     auditLogs: [],
