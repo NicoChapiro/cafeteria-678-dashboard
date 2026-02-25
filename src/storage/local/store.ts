@@ -12,6 +12,7 @@ import type {
   ProductPriceVersion,
   Recipe,
   RecipeLine,
+  SalesDaily,
   YieldUnit,
 } from '../../domain/types';
 
@@ -63,6 +64,8 @@ type SerializedAuditLog = Omit<AuditLog, 'createdAt'> & {
   createdAt: string;
 };
 
+type SerializedSalesDaily = SalesDaily;
+
 type LocalData = {
   items: Item[];
   itemCostVersions: ItemCostVersion[];
@@ -72,6 +75,7 @@ type LocalData = {
   recipes: Recipe[];
   recipeLines: RecipeLine[];
   auditLogs: AuditLog[];
+  salesDaily: SalesDaily[];
 };
 
 type SerializedLocalData = {
@@ -83,6 +87,7 @@ type SerializedLocalData = {
   recipes: SerializedRecipe[];
   recipeLines: SerializedRecipeLine[];
   auditLogs: SerializedAuditLog[];
+  salesDaily: SerializedSalesDaily[];
 };
 
 const STORAGE_KEY = 'cafe678:data:v1';
@@ -114,7 +119,8 @@ function emptyData(): LocalData {
     recipes: [],
     recipeLines: [],
     auditLogs: [],
-  };
+    salesDaily: [],
+  };    
 }
 
 function isBranch(value: unknown): value is Branch {
@@ -211,6 +217,7 @@ function serializeData(data: LocalData): SerializedLocalData {
       ...log,
       createdAt: log.createdAt.toISOString(),
     })),
+    salesDaily: data.salesDaily ?? [],
   };
 }
 
@@ -254,6 +261,7 @@ function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData
       ...log,
       createdAt: toDate(log.createdAt),
     })),
+    salesDaily: (data.salesDaily ?? []) as SalesDaily[],
   };
 }
 
@@ -280,11 +288,15 @@ function isSerializedData(value: unknown): value is Partial<SerializedLocalData>
   const hasOptionalAuditLogs =
     candidate.auditLogs === undefined || Array.isArray(candidate.auditLogs);
 
+  const hasOptionalSalesDaily =
+    candidate.salesDaily === undefined || Array.isArray(candidate.salesDaily);
+
   return (
     hasRequiredLegacyArrays &&
     hasOptionalProductArrays &&
     hasOptionalRecipeArrays &&
-    hasOptionalAuditLogs
+    hasOptionalAuditLogs &&
+    hasOptionalSalesDaily
   );
 }
 
@@ -313,6 +325,19 @@ function buildId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID()}`;
 }
 
+function assertIsoDate(value: string): void {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error('date debe tener formato YYYY-MM-DD');
+  }
+}
+
+function roundQty(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value);
+}
 
 
 function logAudit(params: {
@@ -862,6 +887,118 @@ export function deleteRecipeLine(id: string): void {
   });
 }
 
+type SalesDailyEntryInput = Omit<SalesDaily, 'id' | 'date' | 'branch'> &
+  Partial<Pick<SalesDaily, 'id'>>;
+
+export function listSalesDaily(params: { date: string; branch: Branch }): SalesDaily[] {
+  assertIsoDate(params.date);
+  assertBranch(params.branch);
+
+  return readData().salesDaily.filter(
+    (entry) => entry.date === params.date && entry.branch === params.branch,
+  );
+}
+
+export function setSalesDaily(
+  date: string,
+  branch: Branch,
+  entries: SalesDailyEntryInput[],
+): SalesDaily[] {
+  assertIsoDate(date);
+  assertBranch(branch);
+
+  const data = readData();
+  const existing = data.salesDaily.filter((entry) => entry.date === date && entry.branch === branch);
+
+  const normalized: SalesDaily[] = entries.map((entry) => {
+    const qty = roundQty(Number(entry.qty));
+    const grossSalesClp = roundMoney(Number(entry.grossSalesClp));
+
+    if (!Number.isFinite(qty) || qty < 0) {
+      throw new Error('qty debe ser >= 0');
+    }
+
+    if (!Number.isFinite(grossSalesClp) || grossSalesClp < 0) {
+      throw new Error('grossSalesClp debe ser >= 0');
+    }
+
+    return {
+      id: entry.id ?? buildId('sales'),
+      date,
+      branch,
+      productId: entry.productId,
+      qty,
+      grossSalesClp,
+    };
+  });
+
+  const previousByProduct = new Map(existing.map((entry) => [entry.productId, entry]));
+  const changedCount = normalized.filter((entry) => {
+    const prev = previousByProduct.get(entry.productId);
+    return !prev || prev.qty !== entry.qty || prev.grossSalesClp !== entry.grossSalesClp;
+  }).length;
+
+  const keepOthers = data.salesDaily.filter((entry) => !(entry.date === date && entry.branch === branch));
+  writeData({
+    ...data,
+    salesDaily: [...keepOthers, ...normalized],
+  });
+
+  logAudit({
+    entityType: 'sales_daily',
+    entityId: `${branch}:${date}`,
+    action: 'sales_upsert',
+    diffJson: { date, branch, changedCount },
+  });
+
+  return normalized;
+}
+
+export function upsertSalesDaily(
+  date: string,
+  branch: Branch,
+  entries: SalesDailyEntryInput[],
+): SalesDaily[] {
+  return setSalesDaily(date, branch, entries);
+}
+
+export function getSalesForProduct(
+  date: string,
+  branch: Branch,
+  productId: string,
+): SalesDaily | undefined {
+  return listSalesDaily({ date, branch }).find((entry) => entry.productId === productId);
+}
+
+export function duplicateSalesFromPreviousDay(date: string, branch: Branch): SalesDaily[] {
+  assertIsoDate(date);
+  assertBranch(branch);
+
+  const currentDate = new Date(`${date}T00:00:00.000Z`);
+  currentDate.setUTCDate(currentDate.getUTCDate() - 1);
+  const previousDate = currentDate.toISOString().slice(0, 10);
+
+  const previousEntries = listSalesDaily({ date: previousDate, branch });
+  const duplicated = setSalesDaily(
+    date,
+    branch,
+    previousEntries.map((entry) => ({
+      productId: entry.productId,
+      qty: entry.qty,
+      grossSalesClp: entry.grossSalesClp,
+    })),
+  );
+
+  logAudit({
+    entityType: 'sales_daily',
+    entityId: `${branch}:${date}`,
+    action: 'sales_duplicate_previous',
+    diffJson: { date, branch, fromDate: previousDate, copiedCount: previousEntries.length },
+  });
+
+  return duplicated;
+}
+
 export function exportData(): void {
   const data = readData();
   const payload = JSON.stringify(serializeData(data), null, 2);
@@ -885,6 +1022,7 @@ export function exportData(): void {
       recipes: data.recipes.length,
       recipeLines: data.recipeLines.length,
       auditLogs: data.auditLogs.length,
+      salesDaily: data.salesDaily.length,
     },
   });
 }
@@ -936,6 +1074,7 @@ export function importData(json: string): void {
       recipes: dataSanitized.recipes.length,
       recipeLines: dataSanitized.recipeLines.length,
       auditLogs: dataSanitized.auditLogs.length,
+      salesDaily: dataSanitized.salesDaily.length,
     },
   });
 }

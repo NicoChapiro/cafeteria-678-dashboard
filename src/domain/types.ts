@@ -114,6 +114,16 @@ export type SubRecipeLine = {
 export type RecipeLine = ItemRecipeLine | SubRecipeLine;
 
 
+
+export type SalesDaily = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  branch: Branch;
+  productId: string;
+  qty: number;
+  grossSalesClp: number;
+};
+
 export type AuditLog = {
   id: string;
   entityType: string;
