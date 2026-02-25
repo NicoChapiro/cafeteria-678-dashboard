@@ -120,7 +120,7 @@ function emptyData(): LocalData {
     recipeLines: [],
     auditLogs: [],
     salesDaily: [],
-  };
+  };    
 }
 
 function isBranch(value: unknown): value is Branch {
