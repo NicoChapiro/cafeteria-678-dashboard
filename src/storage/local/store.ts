@@ -115,12 +115,12 @@ function emptyData(): LocalData {
     itemCostVersions: [],
     products: [],
     productPriceVersions: [],
-    productCostVersions: [],
+    productCostVersions: [],  
     recipes: [],
     recipeLines: [],
     auditLogs: [],
     salesDaily: [],
-  };    
+  };
 }
 
 function isBranch(value: unknown): value is Branch {
@@ -887,6 +887,24 @@ export function deleteRecipeLine(id: string): void {
   });
 }
 
+export type SantiagoSalesImportRow = {
+  date: string;
+  productName: string;
+  qty: number;
+  grossSalesClp: number;
+  category?: string;
+  subCategory?: string;
+};
+
+export type SantiagoSalesImportSummary = {
+  rowsRead: number;
+  rowsValid: number;
+  dateMin: string | null;
+  dateMax: string | null;
+  totalGross: number;
+  createdProductsCount: number;
+};
+
 type SalesDailyEntryInput = Omit<SalesDaily, 'id' | 'date' | 'branch'> &
   Partial<Pick<SalesDaily, 'id'>>;
 
@@ -968,6 +986,158 @@ export function getSalesForProduct(
   productId: string,
 ): SalesDaily | undefined {
   return listSalesDaily({ date, branch }).find((entry) => entry.productId === productId);
+}
+
+export function importSalesSantiago(
+  rows: SantiagoSalesImportRow[],
+  options?: { createMissingProducts?: boolean; rowsRead?: number },
+): SantiagoSalesImportSummary {
+  const createMissingProducts = options?.createMissingProducts ?? true;
+  const rowsRead = options?.rowsRead ?? rows.length;
+  const data = readData();
+  const now = new Date();
+
+  const productsByName = new Map(
+    data.products.map((product) => [product.name.trim().toLocaleLowerCase('es-CL'), product]),
+  );
+
+  const aggregatedByDateProduct = new Map<
+    string,
+    {
+      date: string;
+      productName: string;
+      qty: number;
+      grossSalesClp: number;
+      category?: string;
+    }
+  >();
+
+  let totalGross = 0;
+  let rowsValid = 0;
+  let dateMin: string | null = null;
+  let dateMax: string | null = null;
+  const nextProducts = [...data.products];
+  let createdProductsCount = 0;
+
+  for (const row of rows) {
+    assertIsoDate(row.date);
+
+    const productName = row.productName.trim();
+    const qty = roundQty(Number(row.qty));
+    const grossSalesClp = roundMoney(Number(row.grossSalesClp));
+
+    if (!productName) {
+      continue;
+    }
+
+    if (!Number.isFinite(qty) || qty < 0 || !Number.isFinite(grossSalesClp) || grossSalesClp < 0) {
+      continue;
+    }
+
+    const key = `${row.date}|${productName.toLocaleLowerCase('es-CL')}`;
+    const existing = aggregatedByDateProduct.get(key);
+
+    if (existing) {
+      existing.qty = roundQty(existing.qty + qty);
+      existing.grossSalesClp = roundMoney(existing.grossSalesClp + grossSalesClp);
+    } else {
+      aggregatedByDateProduct.set(key, {
+        date: row.date,
+        productName,
+        qty,
+        grossSalesClp,
+        category: row.category?.trim() || row.subCategory?.trim() || undefined,
+      });
+    }
+
+    rowsValid += 1;
+    totalGross += grossSalesClp;
+    if (dateMin === null || row.date.localeCompare(dateMin) < 0) {
+      dateMin = row.date;
+    }
+
+    if (dateMax === null || row.date.localeCompare(dateMax) > 0) {
+      dateMax = row.date;
+    }
+  }
+
+  const importedEntries: SalesDaily[] = [];
+
+  for (const item of aggregatedByDateProduct.values()) {
+    const productKey = item.productName.toLocaleLowerCase('es-CL');
+    let product = productsByName.get(productKey);
+
+    if (!product && createMissingProducts) {
+      product = {
+        id: buildId('product'),
+        name: item.productName,
+        category: item.category,
+        recipeId: null,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      productsByName.set(productKey, product);
+      nextProducts.push(product);
+      createdProductsCount += 1;
+    }
+
+    if (!product) {
+      continue;
+    }
+
+    importedEntries.push({
+      id: buildId('sales'),
+      date: item.date,
+      branch: 'Santiago',
+      productId: product.id,
+      qty: item.qty,
+      grossSalesClp: item.grossSalesClp,
+    });
+  }
+
+  const importedKeys = new Set(
+    importedEntries.map((entry) => `${entry.date}|${entry.productId}`),
+  );
+
+  const keepSales = data.salesDaily.filter(
+    (entry) =>
+      !(
+        entry.branch === 'Santiago' &&
+        importedKeys.has(`${entry.date}|${entry.productId}`)
+      ),
+  );
+
+  writeData({
+    ...data,
+    products: nextProducts,
+    salesDaily: [...keepSales, ...importedEntries],
+  });
+
+  logAudit({
+    entityType: 'sales_daily',
+    entityId: 'Santiago:import',
+    action: 'sales_import_santiago',
+    diffJson: {
+      rowsRead,
+      rowsValid,
+      dateMin,
+      dateMax,
+      totalGross,
+      createdProductsCount,
+    },
+    actor: 'local',
+  });
+
+  return {
+    rowsRead,
+    rowsValid,
+    dateMin,
+    dateMax,
+    totalGross,
+    createdProductsCount,
+  };
 }
 
 export function duplicateSalesFromPreviousDay(date: string, branch: Branch): SalesDaily[] {
