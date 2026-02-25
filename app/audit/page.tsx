@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { AuditLog } from '@/src/domain/types';
-import { clearAuditLogs, listAuditLogs } from '@/src/storage/local/store';
+import {
+  clearAuditLogs,
+  exportData,
+  importData,
+  listAuditLogs,
+} from '@/src/storage/local/store';
 
 function formatDate(value: Date): string {
   return value.toISOString();
@@ -14,6 +19,10 @@ export default function AuditPage() {
   const [entityTypeFilter, setEntityTypeFilter] = useState<string>('all');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [dataMessage, setDataMessage] = useState<
+    { type: 'success' | 'error'; text: string } | null
+  >(null);
 
   useEffect(() => {
     setLogs(listAuditLogs());
@@ -51,9 +60,93 @@ export default function AuditPage() {
     refresh();
   }
 
+  function handleExport(): void {
+    exportData();
+    setDataMessage({ type: 'success', text: 'Exportación completada.' });
+    refresh();
+  }
+
+  function handleImport(): void {
+    if (!importFile) {
+      setDataMessage({ type: 'error', text: 'Selecciona un archivo JSON antes de importar.' });
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const text = typeof reader.result === 'string' ? reader.result : '';
+        importData(text);
+        setDataMessage({ type: 'success', text: 'Importación completada.' });
+        setImportFile(null);
+        setSelectedLogId(null);
+        refresh();
+      } catch (error) {
+        setDataMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Error al importar el archivo.',
+        });
+      }
+    };
+
+    reader.onerror = () => {
+      setDataMessage({ type: 'error', text: 'No se pudo leer el archivo seleccionado.' });
+    };
+
+    reader.readAsText(importFile, 'utf-8');
+  }
+
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
       <h1>Audit logs</h1>
+
+      <section
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 16,
+          display: 'grid',
+          gap: 8,
+        }}
+      >
+        <h2 style={{ margin: 0 }}>Datos</h2>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+          <button type="button" onClick={handleExport}>
+            Exportar JSON
+          </button>
+
+          <label>
+            Archivo JSON
+            <br />
+            <input
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => {
+                setImportFile(event.target.files?.[0] ?? null);
+                setDataMessage(null);
+              }}
+            />
+          </label>
+
+          <button type="button" onClick={handleImport}>
+            Importar JSON
+          </button>
+        </div>
+
+        {dataMessage ? (
+          <p
+            style={{
+              margin: 0,
+              color: dataMessage.type === 'error' ? '#b00020' : '#0f5132',
+            }}
+          >
+            {dataMessage.text}
+          </p>
+        ) : null}
+      </section>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'end', marginBottom: 16 }}>
         <label>

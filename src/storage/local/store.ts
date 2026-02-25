@@ -236,7 +236,7 @@ function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData
       ...version,
       validFrom: toDate(version.validFrom),
       validTo: version.validTo ? toDate(version.validTo) : null,
-      createdAt: toDate(version.createdAt), 
+      createdAt: toDate(version.createdAt),
     })),
     productCostVersions: (data.productCostVersions ?? []).map((version) => ({
       ...version,
@@ -381,7 +381,7 @@ export function upsertItem(
   const data = readData();
   const now = new Date();
   const current = data.items.find((entry) => entry.id === item.id);
-  
+
   const nextItem: Item = {
     ...item,
     createdAt: current?.createdAt ?? item.createdAt ?? now,
@@ -494,7 +494,7 @@ export function addItemCostVersion(
 
   const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
   writeData({ ...data, itemCostVersions: nextVersions });
-    
+
   logAudit({
     entityType: 'item_cost_version',
     entityId: insertedVersion.id,
