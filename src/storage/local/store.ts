@@ -1,4 +1,4 @@
-import { applyNewVersion } from '@/src/services/versioning';
+import { applyNewVersion } from '../../services/versioning';
 import type {
   Branch,
   Item,
@@ -12,7 +12,7 @@ import type {
   Recipe,
   RecipeLine,
   YieldUnit,
-} from '@/src/domain/types';
+} from '../../domain/types';
 
 type SerializedItem = Omit<Item, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
@@ -640,8 +640,19 @@ export function upsertRecipe(
 
 export function deleteRecipe(id: string): void {
   const data = readData();
+  const now = new Date();
+
   writeData({
     ...data,
+    products: data.products.map((product) =>
+      (product.recipeId ?? null) === id
+        ? {
+            ...product,
+            recipeId: null,
+            updatedAt: now,
+          }
+        : product,
+    ),
     recipes: data.recipes.filter((recipe) => recipe.id !== id),
     recipeLines: data.recipeLines.filter(
       (line) => line.recipeId !== id && !(line.lineType === 'recipe' && line.subRecipeId === id),
@@ -703,5 +714,23 @@ export function importData(json: string): void {
   }
 
   const data = deserializeData(parsed);
-  writeData(data);
+  const now = new Date();
+  const recipeIds = new Set(data.recipes.map((recipe) => recipe.id));
+
+  const dataSanitized = {
+    ...data,
+    products: data.products.map((product) => {
+      if (product.recipeId && !recipeIds.has(product.recipeId)) {
+        return {
+          ...product,
+          recipeId: null,
+          updatedAt: now,
+        };
+      }
+
+      return product;
+    }),
+  };
+
+  writeData(dataSanitized);
 }
