@@ -112,3 +112,15 @@ export type SubRecipeLine = {
 };
 
 export type RecipeLine = ItemRecipeLine | SubRecipeLine;
+
+
+export type AuditLog = {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  diffJson: any;
+  actor: string;
+  createdAt: Date;
+};

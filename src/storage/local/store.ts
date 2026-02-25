@@ -1,5 +1,6 @@
 import { applyNewVersion } from '../../services/versioning';
 import type {
+  AuditLog,
   Branch,
   Item,
   ItemCostVersion,
@@ -58,6 +59,10 @@ type SerializedRecipe = Omit<Recipe, 'createdAt' | 'updatedAt'> & {
 
 type SerializedRecipeLine = RecipeLine;
 
+type SerializedAuditLog = Omit<AuditLog, 'createdAt'> & {
+  createdAt: string;
+};
+
 type LocalData = {
   items: Item[];
   itemCostVersions: ItemCostVersion[];
@@ -66,6 +71,7 @@ type LocalData = {
   productCostVersions: ProductCostVersion[];
   recipes: Recipe[];
   recipeLines: RecipeLine[];
+  auditLogs: AuditLog[];
 };
 
 type SerializedLocalData = {
@@ -76,6 +82,7 @@ type SerializedLocalData = {
   productCostVersions: SerializedProductCostVersion[];
   recipes: SerializedRecipe[];
   recipeLines: SerializedRecipeLine[];
+  auditLogs: SerializedAuditLog[];
 };
 
 const STORAGE_KEY = 'cafe678:data:v1';
@@ -106,6 +113,7 @@ function emptyData(): LocalData {
     productCostVersions: [],
     recipes: [],
     recipeLines: [],
+    auditLogs: [],
   };
 }
 
@@ -199,6 +207,10 @@ function serializeData(data: LocalData): SerializedLocalData {
       updatedAt: recipe.updatedAt.toISOString(),
     })),
     recipeLines: data.recipeLines ?? [],
+    auditLogs: (data.auditLogs ?? []).map((log) => ({
+      ...log,
+      createdAt: log.createdAt.toISOString(),
+    })),
   };
 }
 
@@ -224,7 +236,7 @@ function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData
       ...version,
       validFrom: toDate(version.validFrom),
       validTo: version.validTo ? toDate(version.validTo) : null,
-      createdAt: toDate(version.createdAt),
+      createdAt: toDate(version.createdAt), 
     })),
     productCostVersions: (data.productCostVersions ?? []).map((version) => ({
       ...version,
@@ -238,6 +250,10 @@ function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData
       updatedAt: toDate(recipe.updatedAt),
     })),
     recipeLines: (data.recipeLines ?? []).filter(isRecipeLine),
+    auditLogs: (data.auditLogs ?? []).map((log) => ({
+      ...log,
+      createdAt: toDate(log.createdAt),
+    })),
   };
 }
 
@@ -261,7 +277,15 @@ function isSerializedData(value: unknown): value is Partial<SerializedLocalData>
     (candidate.recipes === undefined || Array.isArray(candidate.recipes)) &&
     (candidate.recipeLines === undefined || Array.isArray(candidate.recipeLines));
 
-  return hasRequiredLegacyArrays && hasOptionalProductArrays && hasOptionalRecipeArrays;
+  const hasOptionalAuditLogs =
+    candidate.auditLogs === undefined || Array.isArray(candidate.auditLogs);
+
+  return (
+    hasRequiredLegacyArrays &&
+    hasOptionalProductArrays &&
+    hasOptionalRecipeArrays &&
+    hasOptionalAuditLogs
+  );
 }
 
 function readData(): LocalData {
@@ -289,6 +313,58 @@ function buildId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID()}`;
 }
 
+
+
+function logAudit(params: {
+  entityType: string;
+  entityId: string;
+  action: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  diffJson: any;
+  actor?: string;
+}): void {
+  const data = readData();
+  const entry: AuditLog = {
+    id: buildId('audit'),
+    entityType: params.entityType,
+    entityId: params.entityId,
+    action: params.action,
+    diffJson: params.diffJson,
+    actor: params.actor ?? 'local',
+    createdAt: new Date(),
+  };
+
+  writeData({
+    ...data,
+    auditLogs: [...data.auditLogs, entry],
+  });
+}
+
+export function listAuditLogs(): AuditLog[] {
+  return [...readData().auditLogs].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+}
+
+export function clearAuditLogs(actor = 'local'): void {
+  const data = readData();
+  const clearedCount = data.auditLogs.length;
+  const entry: AuditLog = {
+    id: buildId('audit'),
+    entityType: 'audit',
+    entityId: 'all',
+    action: 'clear_audit',
+    diffJson: { clearedCount },
+    actor,
+    createdAt: new Date(),
+  };
+
+  writeData({
+    ...data,
+    auditLogs: [entry],
+  });
+}
+
 export function listItems(): Item[] {
   const data = readData();
   return [...data.items].sort((a, b) => a.name.localeCompare(b.name, 'es-CL'));
@@ -305,7 +381,7 @@ export function upsertItem(
   const data = readData();
   const now = new Date();
   const current = data.items.find((entry) => entry.id === item.id);
-
+  
   const nextItem: Item = {
     ...item,
     createdAt: current?.createdAt ?? item.createdAt ?? now,
@@ -317,15 +393,32 @@ export function upsertItem(
     : [...data.items, nextItem];
 
   writeData({ ...data, items: nextItems });
+
+  logAudit({
+    entityType: 'item',
+    entityId: nextItem.id,
+    action: current ? 'update' : 'create',
+    diffJson: { before: current ?? null, after: nextItem },
+  });
+
   return nextItem;
 }
 
 export function deleteItem(id: string): void {
   const data = readData();
+  const removed = data.items.find((item) => item.id === id) ?? null;
+
   writeData({
     ...data,
     items: data.items.filter((item) => item.id !== id),
     itemCostVersions: data.itemCostVersions.filter((version) => version.itemId !== id),
+  });
+
+  logAudit({
+    entityType: 'item',
+    entityId: id,
+    action: 'delete',
+    diffJson: { removed },
   });
 }
 
@@ -401,6 +494,13 @@ export function addItemCostVersion(
 
   const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
   writeData({ ...data, itemCostVersions: nextVersions });
+    
+  logAudit({
+    entityType: 'item_cost_version',
+    entityId: insertedVersion.id,
+    action: 'add_version',
+    diffJson: { itemId, branch, version: insertedVersion },
+  });
 
   return [...updatedExisting, insertedVersion].sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
@@ -435,11 +535,21 @@ export function upsertProduct(
     : [...data.products, nextProduct];
 
   writeData({ ...data, products: nextProducts });
+
+  logAudit({
+    entityType: 'product',
+    entityId: nextProduct.id,
+    action: current ? 'update' : 'create',
+    diffJson: { before: current ?? null, after: nextProduct },
+  });
+
   return nextProduct;
 }
 
 export function deleteProduct(id: string): void {
   const data = readData();
+  const removed = data.products.find((product) => product.id === id) ?? null;
+
   writeData({
     ...data,
     products: data.products.filter((product) => product.id !== id),
@@ -449,6 +559,13 @@ export function deleteProduct(id: string): void {
     productCostVersions: data.productCostVersions.filter(
       (version) => version.productId !== id,
     ),
+  });
+
+  logAudit({
+    entityType: 'product',
+    entityId: id,
+    action: 'delete',
+    diffJson: { removed },
   });
 }
 
@@ -521,6 +638,13 @@ export function addProductPriceVersion(
 
   const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
   writeData({ ...data, productPriceVersions: nextVersions });
+
+  logAudit({
+    entityType: 'product_price_version',
+    entityId: insertedVersion.id,
+    action: 'add_version',
+    diffJson: { productId, branch, version: insertedVersion },
+  });
 
   return [...updatedExisting, insertedVersion].sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
@@ -597,6 +721,13 @@ export function addProductCostVersion(
   const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
   writeData({ ...data, productCostVersions: nextVersions });
 
+  logAudit({
+    entityType: 'product_cost_version',
+    entityId: insertedVersion.id,
+    action: 'add_version',
+    diffJson: { productId, branch, version: insertedVersion },
+  });
+
   return [...updatedExisting, insertedVersion].sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
   );
@@ -635,12 +766,25 @@ export function upsertRecipe(
     : [...data.recipes, nextRecipe];
 
   writeData({ ...data, recipes: nextRecipes });
+
+  logAudit({
+    entityType: 'recipe',
+    entityId: nextRecipe.id,
+    action: current ? 'update' : 'create',
+    diffJson: { before: current ?? null, after: nextRecipe },
+  });
+
   return nextRecipe;
 }
 
 export function deleteRecipe(id: string): void {
   const data = readData();
   const now = new Date();
+
+  const removed = data.recipes.find((recipe) => recipe.id === id) ?? null;
+  const affectedProducts = data.products
+    .filter((product) => (product.recipeId ?? null) === id)
+    .map((product) => product.id);
 
   writeData({
     ...data,
@@ -657,6 +801,13 @@ export function deleteRecipe(id: string): void {
     recipeLines: data.recipeLines.filter(
       (line) => line.recipeId !== id && !(line.lineType === 'recipe' && line.subRecipeId === id),
     ),
+  });
+
+  logAudit({
+    entityType: 'recipe',
+    entityId: id,
+    action: 'delete',
+    diffJson: { removed, affectedProducts },
   });
 }
 
@@ -676,20 +827,38 @@ export function upsertRecipeLine(line: RecipeLine): RecipeLine {
   }
 
   const data = readData();
+  const before = data.recipeLines.find((entry) => entry.id === line.id) ?? null;
   const exists = data.recipeLines.some((entry) => entry.id === line.id);
   const nextRecipeLines = exists
     ? data.recipeLines.map((entry) => (entry.id === line.id ? line : entry))
     : [...data.recipeLines, line];
 
   writeData({ ...data, recipeLines: nextRecipeLines });
+
+  logAudit({
+    entityType: 'recipe_line',
+    entityId: line.id,
+    action: exists ? 'update' : 'create',
+    diffJson: { before, after: line },
+  });
+
   return line;
 }
 
 export function deleteRecipeLine(id: string): void {
   const data = readData();
+  const removed = data.recipeLines.find((line) => line.id === id) ?? null;
+
   writeData({
     ...data,
     recipeLines: data.recipeLines.filter((line) => line.id !== id),
+  });
+
+  logAudit({
+    entityType: 'recipe_line',
+    entityId: id,
+    action: 'delete',
+    diffJson: { removed },
   });
 }
 
@@ -705,6 +874,19 @@ export function exportData(): void {
   anchor.click();
 
   URL.revokeObjectURL(url);
+
+  logAudit({
+    entityType: 'dataset',
+    entityId: 'local',
+    action: 'export',
+    diffJson: {
+      items: data.items.length,
+      products: data.products.length,
+      recipes: data.recipes.length,
+      recipeLines: data.recipeLines.length,
+      auditLogs: data.auditLogs.length,
+    },
+  });
 }
 
 export function importData(json: string): void {
@@ -713,11 +895,17 @@ export function importData(json: string): void {
     throw new Error('Invalid import payload: items and itemCostVersions are required');
   }
 
+  const existing = readData();
   const data = deserializeData(parsed);
   const now = new Date();
   const recipeIds = new Set(data.recipes.map((recipe) => recipe.id));
 
-  const dataSanitized = {
+  const hasAuditLogsInImport =
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    Object.prototype.hasOwnProperty.call(parsed, 'auditLogs');
+
+  const dataSanitized: LocalData = {
     ...data,
     products: data.products.map((product) => {
       if (product.recipeId && !recipeIds.has(product.recipeId)) {
@@ -730,7 +918,24 @@ export function importData(json: string): void {
 
       return product;
     }),
+    auditLogs: hasAuditLogsInImport ? data.auditLogs : existing.auditLogs,
   };
 
   writeData(dataSanitized);
+
+  logAudit({
+    entityType: 'dataset',
+    entityId: 'local',
+    action: 'import',
+    diffJson: {
+      items: dataSanitized.items.length,
+      itemCostVersions: dataSanitized.itemCostVersions.length,
+      products: dataSanitized.products.length,
+      productPriceVersions: dataSanitized.productPriceVersions.length,
+      productCostVersions: dataSanitized.productCostVersions.length,
+      recipes: dataSanitized.recipes.length,
+      recipeLines: dataSanitized.recipeLines.length,
+      auditLogs: dataSanitized.auditLogs.length,
+    },
+  });
 }
