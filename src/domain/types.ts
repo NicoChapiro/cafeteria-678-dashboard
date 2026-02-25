@@ -31,3 +31,44 @@ export type NewItemCostVersion = {
   validFrom: Date;
   validTo?: Date | null;
 };
+
+export type Product = {
+  id: string;
+  name: string;
+  category?: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ProductPriceVersion = {
+  id: string;
+  productId: string;
+  branch: Branch;
+  priceGrossClp: number;
+  validFrom: Date;
+  validTo: Date | null;
+  createdAt: Date;
+};
+
+export type ProductCostVersion = {
+  id: string;
+  productId: string;
+  branch: Branch;
+  costGrossClp: number;
+  validFrom: Date;
+  validTo: Date | null;
+  createdAt: Date;
+};
+
+export type NewProductPriceVersion = {
+  priceGrossClp: number;
+  validFrom: Date;
+  validTo?: Date | null;
+};
+
+export type NewProductCostVersion = {
+  costGrossClp: number;
+  validFrom: Date;
+  validTo?: Date | null;
+};

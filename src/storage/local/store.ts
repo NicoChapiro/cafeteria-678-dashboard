@@ -1,5 +1,15 @@
 import { applyNewVersion } from '@/src/services/versioning';
-import type { Branch, Item, ItemCostVersion, NewItemCostVersion } from '@/src/domain/types';
+import type {
+  Branch,
+  Item,
+  ItemCostVersion,
+  NewItemCostVersion,
+  NewProductCostVersion,
+  NewProductPriceVersion,
+  Product,
+  ProductCostVersion,
+  ProductPriceVersion,
+} from '@/src/domain/types';
 
 type SerializedItem = Omit<Item, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
@@ -15,14 +25,43 @@ type SerializedItemCostVersion = Omit<
   createdAt: string;
 };
 
+type SerializedProduct = Omit<Product, 'createdAt' | 'updatedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+};
+
+type SerializedProductPriceVersion = Omit<
+  ProductPriceVersion,
+  'validFrom' | 'validTo' | 'createdAt'
+> & {
+  validFrom: string;
+  validTo: string | null;
+  createdAt: string;
+};
+
+type SerializedProductCostVersion = Omit<
+  ProductCostVersion,
+  'validFrom' | 'validTo' | 'createdAt'
+> & {
+  validFrom: string;
+  validTo: string | null;
+  createdAt: string;
+};
+
 type LocalData = {
   items: Item[];
   itemCostVersions: ItemCostVersion[];
+  products: Product[];
+  productPriceVersions: ProductPriceVersion[];
+  productCostVersions: ProductCostVersion[];
 };
 
 type SerializedLocalData = {
   items: SerializedItem[];
   itemCostVersions: SerializedItemCostVersion[];
+  products: SerializedProduct[];
+  productPriceVersions: SerializedProductPriceVersion[];
+  productCostVersions: SerializedProductCostVersion[];
 };
 
 const STORAGE_KEY = 'cafe678:data:v1';
@@ -44,6 +83,32 @@ function toDate(value: string): Date {
   return date;
 }
 
+function emptyData(): LocalData {
+  return {
+    items: [],
+    itemCostVersions: [],
+    products: [],
+    productPriceVersions: [],
+    productCostVersions: [],
+  };
+}
+
+function isBranch(value: unknown): value is Branch {
+  return value === 'Santiago' || value === 'Temuco';
+}
+
+function assertValidFrom(value: Date): void {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    throw new Error('validFrom es obligatorio');
+  }
+}
+
+function assertBranch(branch: Branch): void {
+  if (!isBranch(branch)) {
+    throw new Error('branch es obligatorio');
+  }
+}
+
 function serializeData(data: LocalData): SerializedLocalData {
   return {
     items: data.items.map((item) => ({
@@ -51,7 +116,24 @@ function serializeData(data: LocalData): SerializedLocalData {
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
     })),
-    itemCostVersions: data.itemCostVersions.map((version) => ({
+    itemCostVersions: (data.itemCostVersions ?? []).map((version) => ({
+      ...version,
+      validFrom: version.validFrom.toISOString(),
+      validTo: version.validTo ? version.validTo.toISOString() : null,
+      createdAt: version.createdAt.toISOString(),
+    })),
+    products: (data.products ?? []).map((product) => ({
+      ...product,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+    })),
+    productPriceVersions: (data.productPriceVersions ?? []).map((version) => ({
+      ...version,
+      validFrom: version.validFrom.toISOString(),
+      validTo: version.validTo ? version.validTo.toISOString() : null,
+      createdAt: version.createdAt.toISOString(),
+    })),
+    productCostVersions: (data.productCostVersions ?? []).map((version) => ({
       ...version,
       validFrom: version.validFrom.toISOString(),
       validTo: version.validTo ? version.validTo.toISOString() : null,
@@ -60,14 +142,31 @@ function serializeData(data: LocalData): SerializedLocalData {
   };
 }
 
-function deserializeData(data: SerializedLocalData): LocalData {
+function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData>): LocalData {
   return {
-    items: data.items.map((item) => ({
+    items: (data.items ?? []).map((item) => ({
       ...item,
       createdAt: toDate(item.createdAt),
       updatedAt: toDate(item.updatedAt),
     })),
-    itemCostVersions: data.itemCostVersions.map((version) => ({
+    itemCostVersions: (data.itemCostVersions ?? []).map((version) => ({
+      ...version,
+      validFrom: toDate(version.validFrom),
+      validTo: version.validTo ? toDate(version.validTo) : null,
+      createdAt: toDate(version.createdAt),
+    })),
+    products: (data.products ?? []).map((product) => ({
+      ...product,
+      createdAt: toDate(product.createdAt),
+      updatedAt: toDate(product.updatedAt),
+    })),
+    productPriceVersions: (data.productPriceVersions ?? []).map((version) => ({
+      ...version,
+      validFrom: toDate(version.validFrom),
+      validTo: version.validTo ? toDate(version.validTo) : null,
+      createdAt: toDate(version.createdAt),
+    })),
+    productCostVersions: (data.productCostVersions ?? []).map((version) => ({
       ...version,
       validFrom: toDate(version.validFrom),
       validTo: version.validTo ? toDate(version.validTo) : null,
@@ -76,13 +175,23 @@ function deserializeData(data: SerializedLocalData): LocalData {
   };
 }
 
-function isSerializedData(value: unknown): value is SerializedLocalData {
+function isSerializedData(value: unknown): value is Partial<SerializedLocalData> {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
 
   const candidate = value as Partial<SerializedLocalData>;
-  return Array.isArray(candidate.items) && Array.isArray(candidate.itemCostVersions);
+  const hasRequiredLegacyArrays =
+    Array.isArray(candidate.items) && Array.isArray(candidate.itemCostVersions);
+
+  const hasOptionalProductArrays =
+    (candidate.products === undefined || Array.isArray(candidate.products)) &&
+    (candidate.productPriceVersions === undefined ||
+      Array.isArray(candidate.productPriceVersions)) &&
+    (candidate.productCostVersions === undefined ||
+      Array.isArray(candidate.productCostVersions));
+
+  return hasRequiredLegacyArrays && hasOptionalProductArrays;
 }
 
 function readData(): LocalData {
@@ -90,7 +199,7 @@ function readData(): LocalData {
   const raw = storage.getItem(STORAGE_KEY);
 
   if (!raw) {
-    return { items: [], itemCostVersions: [] };
+    return emptyData();
   }
 
   const parsed: unknown = JSON.parse(raw);
@@ -144,12 +253,14 @@ export function upsertItem(
 export function deleteItem(id: string): void {
   const data = readData();
   writeData({
+    ...data,
     items: data.items.filter((item) => item.id !== id),
     itemCostVersions: data.itemCostVersions.filter((version) => version.itemId !== id),
   });
 }
 
 export function listItemCosts(itemId: string, branch: Branch): ItemCostVersion[] {
+  assertBranch(branch);
   return readData()
     .itemCostVersions
     .filter((version) => version.itemId === itemId && version.branch === branch)
@@ -161,6 +272,17 @@ export function addItemCostVersion(
   branch: Branch,
   newVersion: NewItemCostVersion,
 ): ItemCostVersion[] {
+  assertBranch(branch);
+  assertValidFrom(newVersion.validFrom);
+
+  if (newVersion.packQtyInBase <= 0) {
+    throw new Error('packQtyInBase debe ser > 0');
+  }
+
+  if (newVersion.packCostGrossClp < 0) {
+    throw new Error('packCostGrossClp debe ser >= 0');
+  }
+
   const data = readData();
   const existingForKey = data.itemCostVersions
     .filter((version) => version.itemId === itemId && version.branch === branch)
@@ -209,6 +331,201 @@ export function addItemCostVersion(
 
   const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
   writeData({ ...data, itemCostVersions: nextVersions });
+
+  return [...updatedExisting, insertedVersion].sort(
+    (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
+  );
+}
+
+export function listProducts(): Product[] {
+  const data = readData();
+  return [...data.products].sort((a, b) => a.name.localeCompare(b.name, 'es-CL'));
+}
+
+export function getProduct(id: string): Product | undefined {
+  return readData().products.find((product) => product.id === id);
+}
+
+export function upsertProduct(
+  product: Omit<Product, 'createdAt' | 'updatedAt'> &
+    Partial<Pick<Product, 'createdAt' | 'updatedAt'>>,
+): Product {
+  const data = readData();
+  const now = new Date();
+  const current = data.products.find((entry) => entry.id === product.id);
+
+  const nextProduct: Product = {
+    ...product,
+    createdAt: current?.createdAt ?? product.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  const nextProducts = current
+    ? data.products.map((entry) => (entry.id === nextProduct.id ? nextProduct : entry))
+    : [...data.products, nextProduct];
+
+  writeData({ ...data, products: nextProducts });
+  return nextProduct;
+}
+
+export function deleteProduct(id: string): void {
+  const data = readData();
+  writeData({
+    ...data,
+    products: data.products.filter((product) => product.id !== id),
+    productPriceVersions: data.productPriceVersions.filter(
+      (version) => version.productId !== id,
+    ),
+    productCostVersions: data.productCostVersions.filter(
+      (version) => version.productId !== id,
+    ),
+  });
+}
+
+export function listProductPrices(
+  productId: string,
+  branch: Branch,
+): ProductPriceVersion[] {
+  assertBranch(branch);
+  return readData()
+    .productPriceVersions
+    .filter((version) => version.productId === productId && version.branch === branch)
+    .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
+}
+
+export function addProductPriceVersion(
+  productId: string,
+  branch: Branch,
+  newVersion: NewProductPriceVersion,
+): ProductPriceVersion[] {
+  assertBranch(branch);
+  assertValidFrom(newVersion.validFrom);
+
+  if (newVersion.priceGrossClp < 0) {
+    throw new Error('priceGrossClp debe ser >= 0');
+  }
+
+  const data = readData();
+  const existingForKey = data.productPriceVersions
+    .filter((version) => version.productId === productId && version.branch === branch)
+    .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
+
+  const timeline = applyNewVersion(
+    existingForKey.map((version) => ({
+      validFrom: version.validFrom,
+      validTo: version.validTo,
+    })),
+    {
+      validFrom: newVersion.validFrom,
+      validTo: newVersion.validTo ?? null,
+    },
+  );
+
+  const updatedExisting = existingForKey.map((version) => {
+    const match = timeline.find(
+      (timelineVersion) =>
+        timelineVersion.validFrom.getTime() === version.validFrom.getTime(),
+    );
+
+    return match ? { ...version, validTo: match.validTo } : version;
+  });
+
+  const insertedTimeline = timeline.at(-1);
+  if (!insertedTimeline) {
+    throw new Error('Failed to insert new product price version');
+  }
+
+  const insertedVersion: ProductPriceVersion = {
+    id: buildId('product_price'),
+    productId,
+    branch,
+    priceGrossClp: newVersion.priceGrossClp,
+    validFrom: insertedTimeline.validFrom,
+    validTo: insertedTimeline.validTo,
+    createdAt: new Date(),
+  };
+
+  const untouched = data.productPriceVersions.filter(
+    (version) => !(version.productId === productId && version.branch === branch),
+  );
+
+  const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
+  writeData({ ...data, productPriceVersions: nextVersions });
+
+  return [...updatedExisting, insertedVersion].sort(
+    (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
+  );
+}
+
+export function listProductCosts(
+  productId: string,
+  branch: Branch,
+): ProductCostVersion[] {
+  assertBranch(branch);
+  return readData()
+    .productCostVersions
+    .filter((version) => version.productId === productId && version.branch === branch)
+    .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
+}
+
+export function addProductCostVersion(
+  productId: string,
+  branch: Branch,
+  newVersion: NewProductCostVersion,
+): ProductCostVersion[] {
+  assertBranch(branch);
+  assertValidFrom(newVersion.validFrom);
+
+  if (newVersion.costGrossClp < 0) {
+    throw new Error('costGrossClp debe ser >= 0');
+  }
+
+  const data = readData();
+  const existingForKey = data.productCostVersions
+    .filter((version) => version.productId === productId && version.branch === branch)
+    .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
+
+  const timeline = applyNewVersion(
+    existingForKey.map((version) => ({
+      validFrom: version.validFrom,
+      validTo: version.validTo,
+    })),
+    {
+      validFrom: newVersion.validFrom,
+      validTo: newVersion.validTo ?? null,
+    },
+  );
+
+  const updatedExisting = existingForKey.map((version) => {
+    const match = timeline.find(
+      (timelineVersion) =>
+        timelineVersion.validFrom.getTime() === version.validFrom.getTime(),
+    );
+
+    return match ? { ...version, validTo: match.validTo } : version;
+  });
+
+  const insertedTimeline = timeline.at(-1);
+  if (!insertedTimeline) {
+    throw new Error('Failed to insert new product cost version');
+  }
+
+  const insertedVersion: ProductCostVersion = {
+    id: buildId('product_cost'),
+    productId,
+    branch,
+    costGrossClp: newVersion.costGrossClp,
+    validFrom: insertedTimeline.validFrom,
+    validTo: insertedTimeline.validTo,
+    createdAt: new Date(),
+  };
+
+  const untouched = data.productCostVersions.filter(
+    (version) => !(version.productId === productId && version.branch === branch),
+  );
+
+  const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
+  writeData({ ...data, productCostVersions: nextVersions });
 
   return [...updatedExisting, insertedVersion].sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
