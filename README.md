@@ -41,6 +41,17 @@ npm run db:migrate
 npm run db:seed
 ```
 
+
+## Rutas principales
+
+- `/`: panel raíz con navegación a módulos del MVP.
+- `/items`: catálogo de insumos.
+- `/products`: catálogo de productos vendibles.
+- `/recipes`: recetas y costeo base.
+- `/sales/temuco`: carga manual de ventas Temuco.
+- `/sales/santiago/import`: importador XLSX para Santiago.
+- `/audit`: vista de auditoría de márgenes/costos.
+
 ## Scripts
 
 - `npm run dev`: entorno de desarrollo.
