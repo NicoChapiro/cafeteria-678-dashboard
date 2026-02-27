@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
@@ -25,6 +26,7 @@ type ProductAggregate = {
   ventasLista: number;
   costoTeorico: number;
   alertas: Set<string>;
+  motivosCosto: Set<string>;
 };
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
@@ -126,6 +128,7 @@ export default function DashboardPage() {
           sinCosto: [],
           sinPrecio: [],
         },
+        coverageWithCost: 0,
       };
     }
 
@@ -170,6 +173,7 @@ export default function DashboardPage() {
           ventasLista: 0,
           costoTeorico: 0,
           alertas: new Set<string>(),
+          motivosCosto: new Set<string>(),
         };
 
       aggregate.qty += sale.qty;
@@ -189,6 +193,7 @@ export default function DashboardPage() {
         const manualCost = findEffectiveManualCost(manualCostVersions, asOfDate);
         if (manualCost === null) {
           aggregate.alertas.add('sin costo vigente');
+          aggregate.motivosCosto.add('Sin receta y sin costo manual vigente');
         } else {
           aggregate.costoTeorico += sale.qty * manualCost;
         }
@@ -215,6 +220,7 @@ export default function DashboardPage() {
           aggregate.costoTeorico += sale.qty * recipeCost.costPerYieldUnitClp;
         } catch {
           aggregate.alertas.add('sin costo vigente');
+          aggregate.motivosCosto.add('Receta con items sin costo vigente o incompleta');
         }
       }
 
@@ -258,6 +264,12 @@ export default function DashboardPage() {
       sinPrecio: rows.filter((row) => row.alertas.has('sin precio vigente')),
     };
 
+    const totalQty = rows.reduce((acc, row) => acc + row.qty, 0);
+    const qtyWithCost = rows
+      .filter((row) => !row.alertas.has('sin costo vigente'))
+      .reduce((acc, row) => acc + row.qty, 0);
+    const coverageWithCost = totalQty > 0 ? qtyWithCost / totalQty : 0;
+
     return {
       rows,
       summary: {
@@ -267,8 +279,14 @@ export default function DashboardPage() {
         deltaLista,
       },
       alerts,
+      coverageWithCost,
     };
   }, [salesRows]);
+
+  const topProductosSinCosto = [...dashboard.alerts.sinCosto]
+    .sort((a, b) => b.ventasReales - a.ventasReales)
+    .slice(0, 10);
+  const hayVentas = dashboard.summary.ventasReales > 0;
 
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
@@ -350,6 +368,46 @@ export default function DashboardPage() {
             ))}
           {dashboard.rows.every((row) => row.alertas.size === 0) ? <li>Sin alertas</li> : null}
         </ul>
+      </section>
+
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+        <h2 style={{ marginTop: 0 }}>Alertas accionables: Top productos sin costo</h2>
+        {dashboard.coverageWithCost === 0 && hayVentas ? (
+          <div style={{ background: '#fff4e5', border: '1px solid #ffd399', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+            No hay cobertura de costo para ventas en el rango seleccionado. Revisa y completa costos en{' '}
+            <Link href="/products">Productos</Link>, <Link href="/recipes">Recetas</Link> y{' '}
+            <Link href="/items">Insumos</Link>.
+          </div>
+        ) : null}
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Producto</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Ventas reales</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Motivo</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topProductosSinCosto.map((row) => (
+              <tr key={`alerta-${row.productId}`}>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{[...row.motivosCosto].join(', ') || 'Sin costo vigente'}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                  <Link href={`/products/${row.productId}`}>Abrir producto</Link>
+                </td>
+              </tr>
+            ))}
+            {topProductosSinCosto.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: 8 }}>
+                  No hay productos con alertas de costo en el rango seleccionado.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </section>
 
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
