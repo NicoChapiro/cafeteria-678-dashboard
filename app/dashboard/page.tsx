@@ -388,15 +388,31 @@ export default function DashboardPage() {
 
   const isConsolidated = selectedBranch === 'Consolidado';
 
+  const noticeMissingCost = dashboard.summary.ventasReales > 0 && dashboard.summary.costoTeorico === 0;
+
+  const cardStyle = {
+    border: '1px solid #dbe3ea',
+    borderRadius: 12,
+    padding: 12,
+    background: '#fff',
+    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
+  } as const;
+  const tableStyle = { width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 10, overflow: 'hidden' } as const;
+  const headerCellStyle = { textAlign: 'left', padding: 8, borderBottom: '1px solid #cfd8e3', background: '#f3f4f6', fontWeight: 600 } as const;
+  const rowCellStyle = { padding: 8, borderBottom: '1px solid #e5e7eb' } as const;
+  const controlStyle = { border: '1px solid #cbd5e1', borderRadius: 8, padding: '6px 8px', background: '#fff' } as const;
+  const buttonStyle = { border: '1px solid #cbd5e1', borderRadius: 10, padding: '8px 12px', background: '#fff', cursor: 'pointer', fontWeight: 600 } as const;
+
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-      <h1>Dashboard rentabilidad teórica</h1>
+    <main style={{ padding: 24, fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif", background: '#f7fafc', minHeight: '100vh', color: '#0f172a' }}>
+      <h1 style={{ marginTop: 0, marginBottom: 18, fontSize: 30 }}>Dashboard rentabilidad teórica</h1>
 
       <section style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>
           Sucursal
           <br />
           <select
+            style={controlStyle}
             value={selectedBranch}
             onChange={(event) => setSelectedBranch(event.target.value as DashboardBranch)}
           >
@@ -409,19 +425,32 @@ export default function DashboardPage() {
         <label>
           Desde
           <br />
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          <input style={controlStyle} type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
         </label>
 
         <label>
           Hasta
           <br />
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          <input style={controlStyle} type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
         </label>
 
-        <button type="button" onClick={refresh}>
+        <button style={buttonStyle} type="button" onClick={refresh}>
           Refrescar
         </button>
       </section>
+
+      {noticeMissingCost ? (
+        <section
+          style={{
+            ...cardStyle,
+            marginBottom: 16,
+            borderColor: '#f59e0b',
+            background: '#fffbeb',
+          }}
+        >
+          <strong>Atención:</strong> hay ventas registradas pero el costo total está en 0. Revisa recetas o costos vigentes para mejorar el cálculo de margen.
+        </section>
+      ) : null}
 
       {isConsolidated ? (
         <>
@@ -439,7 +468,7 @@ export default function DashboardPage() {
               { label: 'Margen total', value: formatCurrency(dashboard.summary.margenTeorico) },
               { label: 'Margen %', value: `${dashboard.summary.margenPct.toFixed(2)}%` },
             ].map((item) => (
-              <article key={item.label} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16 }}>
+              <article key={item.label} style={{ ...cardStyle, padding: 16 }}>
                 <p style={{ margin: 0, color: '#555' }}>{item.label}</p>
                 <p style={{ margin: '6px 0 0 0', fontSize: 28, fontWeight: 700 }}>{item.value}</p>
               </article>
@@ -457,7 +486,7 @@ export default function DashboardPage() {
             {BRANCHES.map((branch) => {
               const branchSummary = dashboard.byBranch[branch];
               return (
-                <article key={branch} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 14 }}>
+                <article key={branch} style={{ ...cardStyle, padding: 14 }}>
                   <h2 style={{ marginTop: 0, marginBottom: 8 }}>{branch}</h2>
                   <p style={{ margin: '4px 0' }}>
                     <strong>Ventas:</strong> {formatCurrency(branchSummary.ventasReales)}
@@ -480,24 +509,24 @@ export default function DashboardPage() {
             })}
           </section>
 
-          <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+          <section style={{ ...cardStyle, marginBottom: 16 }}>
             <h2 style={{ marginTop: 0 }}>Ventas diarias consolidadas</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Fecha</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Santiago</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Temuco</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Total</th>
+                  <th style={headerCellStyle}>Fecha</th>
+                  <th style={headerCellStyle}>Santiago</th>
+                  <th style={headerCellStyle}>Temuco</th>
+                  <th style={headerCellStyle}>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {dashboard.dailyConsolidated.map((row) => (
                   <tr key={row.date}>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.santiago)}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.temuco)}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.total)}</td>
+                    <td style={rowCellStyle}>{row.date}</td>
+                    <td style={rowCellStyle}>{formatCurrency(row.santiago)}</td>
+                    <td style={rowCellStyle}>{formatCurrency(row.temuco)}</td>
+                    <td style={rowCellStyle}>{formatCurrency(row.total)}</td>
                   </tr>
                 ))}
                 {dashboard.dailyConsolidated.length === 0 ? (
@@ -519,7 +548,7 @@ export default function DashboardPage() {
               marginBottom: 16,
             }}
           >
-            <article style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
+            <article style={cardStyle}>
               <h2 style={{ marginTop: 0 }}>Top 10 por ventas</h2>
               <ol style={{ margin: 0, paddingLeft: 20 }}>
                 {dashboard.topVentas.map((row) => (
@@ -531,7 +560,7 @@ export default function DashboardPage() {
               </ol>
             </article>
 
-            <article style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
+            <article style={cardStyle}>
               <h2 style={{ marginTop: 0 }}>Top 10 por margen</h2>
               <ol style={{ margin: 0, paddingLeft: 20 }}>
                 {dashboard.topMargen.map((row) => (
@@ -544,22 +573,22 @@ export default function DashboardPage() {
             </article>
           </section>
 
-          <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+          <section style={{ ...cardStyle, marginBottom: 16 }}>
             <h2 style={{ marginTop: 0 }}>Alertas accionables: Top 10 productos sin costo</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Producto</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Ventas (CLP)</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Qty</th>
+                  <th style={headerCellStyle}>Producto</th>
+                  <th style={headerCellStyle}>Ventas (CLP)</th>
+                  <th style={headerCellStyle}>Qty</th>
                 </tr>
               </thead>
               <tbody>
                 {dashboard.topSinCosto.map((row) => (
                   <tr key={`sin-costo-${row.productId}`}>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.ventasReales)}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
+                    <td style={rowCellStyle}>{row.productName}</td>
+                    <td style={rowCellStyle}>{formatCurrency(row.ventasReales)}</td>
+                    <td style={rowCellStyle}>{row.qty.toLocaleString('es-CL')}</td>
                   </tr>
                 ))}
                 {dashboard.topSinCosto.length === 0 ? (
@@ -575,7 +604,7 @@ export default function DashboardPage() {
         </>
       ) : (
         <>
-          <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+          <section style={{ ...cardStyle, marginBottom: 16 }}>
             <h2 style={{ marginTop: 0 }}>Resumen</h2>
             <p style={{ margin: '4px 0' }}>
               <strong>Ventas reales (CLP): </strong>
@@ -599,7 +628,7 @@ export default function DashboardPage() {
             </p>
           </section>
 
-          <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+          <section style={{ ...cardStyle, marginBottom: 16 }}>
             <h2 style={{ marginTop: 0 }}>Alertas</h2>
             <p style={{ margin: '4px 0' }}>
               <strong>Sin receta:</strong> {dashboard.alerts.sinReceta.length}
@@ -622,32 +651,32 @@ export default function DashboardPage() {
             </ul>
           </section>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>product</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasReales</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasLista</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>deltaLista</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoTeorico</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenTeorico</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margen%</th>
-                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>alertas</th>
+                <th style={headerCellStyle}>product</th>
+                <th style={headerCellStyle}>qty</th>
+                <th style={headerCellStyle}>ventasReales</th>
+                <th style={headerCellStyle}>ventasLista</th>
+                <th style={headerCellStyle}>deltaLista</th>
+                <th style={headerCellStyle}>costoTeorico</th>
+                <th style={headerCellStyle}>margenTeorico</th>
+                <th style={headerCellStyle}>margen%</th>
+                <th style={headerCellStyle}>alertas</th>
               </tr>
             </thead>
             <tbody>
               {dashboard.rows.map((row) => (
                 <tr key={row.productId}>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.ventasReales)}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.ventasLista)}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.deltaLista)}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.costoTeorico)}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{formatCurrency(row.margenTeorico)}</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenPct.toFixed(2)}%</td>
-                  <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                  <td style={rowCellStyle}>{row.productName}</td>
+                  <td style={rowCellStyle}>{row.qty.toLocaleString('es-CL')}</td>
+                  <td style={rowCellStyle}>{formatCurrency(row.ventasReales)}</td>
+                  <td style={rowCellStyle}>{formatCurrency(row.ventasLista)}</td>
+                  <td style={rowCellStyle}>{formatCurrency(row.deltaLista)}</td>
+                  <td style={rowCellStyle}>{formatCurrency(row.costoTeorico)}</td>
+                  <td style={rowCellStyle}>{formatCurrency(row.margenTeorico)}</td>
+                  <td style={rowCellStyle}>{row.margenPct.toFixed(2)}%</td>
+                  <td style={rowCellStyle}>
                     {[...row.alertas].join(', ') || '-'}
                   </td>
                 </tr>
