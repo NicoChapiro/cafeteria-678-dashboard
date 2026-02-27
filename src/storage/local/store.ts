@@ -390,6 +390,24 @@ export function clearAuditLogs(actor = 'local'): void {
   });
 }
 
+export function addAuditEvent(params: {
+  entityType: string;
+  entityId: string;
+  action: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  diffJson: any;
+  actor?: string;
+}): void {
+  logAudit({
+    entityType: params.entityType,
+    entityId: params.entityId,
+    action: params.action,
+    diffJson: params.diffJson,
+    actor: params.actor ?? 'local',
+  });
+
+}
+
 export function listItems(): Item[] {
   const data = readData();
   return [...data.items].sort((a, b) => a.name.localeCompare(b.name, 'es-CL'));
