@@ -45,6 +45,12 @@ const sections = [
     href: '/audit',
     cta: 'Ir a auditoría',
   },
+  {
+    title: 'Dashboard',
+    description: 'Rentabilidad teórica basada en ventas reales por rango y sucursal.',
+    href: '/dashboard',
+    cta: 'Ir a dashboard',
+  },
 ];
 
 export default function HomePage() {
