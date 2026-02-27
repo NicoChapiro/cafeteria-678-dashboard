@@ -28,6 +28,12 @@ const sections = [
     cta: 'Ir a ventas Temuco',
   },
   {
+    title: 'Ventas Santiago',
+    description: 'Vista read-only de ventas importadas por día/producto',
+    href: '/sales/santiago',
+    cta: 'Ir a ventas Santiago',
+  },
+  {
     title: 'Importar Santiago',
     description: 'Carga de planilla XLSX y conciliación de ventas.',
     href: '/sales/santiago/import',
