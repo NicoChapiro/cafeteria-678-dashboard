@@ -22,17 +22,11 @@ export default function NewProductPage() {
         throw new Error('name es obligatorio');
       }
 
-      const wasteRatePct = Number(formData.get('wasteRatePct') ?? '3');
-      if (!Number.isFinite(wasteRatePct) || wasteRatePct < 0 || wasteRatePct > 30) {
-        throw new Error('merma debe estar entre 0 y 30');
-      }
-
       const product = upsertProduct({
         id: crypto.randomUUID(),
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
         active: String(formData.get('active') ?? '') === 'on',
-        wasteRatePct,
         recipeId: null,
       });
 
@@ -60,12 +54,6 @@ export default function NewProductPage() {
           Category
           <br />
           <input name="category" style={{ width: '100%' }} />
-        </label>
-
-        <label>
-          Merma (%)
-          <br />
-          <input name="wasteRatePct" type="number" min="0" max="30" step="0.1" defaultValue="3" style={{ width: '100%' }} />
         </label>
 
         <label>

@@ -360,7 +360,6 @@ export default function ImportBasePage() {
         category: entry.category,
         active: byName?.active ?? true,
         recipeId: byName?.recipeId ?? null,
-        wasteRatePct: byName?.wasteRatePct,
       });
 
       if (existed) result.updated.products += 1;
@@ -443,7 +442,6 @@ export default function ImportBasePage() {
           category: product.category,
           active: product.active,
           recipeId,
-          wasteRatePct: product.wasteRatePct,
         });
 
         const existingLineIds = new Set(listRecipeLines(recipeId).map((line) => line.id));

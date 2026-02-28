@@ -5,18 +5,15 @@ import { useParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import type {
-  Branch,
   Item,
   Recipe,
   RecipeLine,
   RecipeType,
   YieldUnit,
 } from '@/src/domain/types';
-import { costRecipe, getEffectiveItemUnitCostClp } from '@/src/services/costing';
 import {
   deleteRecipeLine,
   getRecipe,
-  listItemCosts,
   listItems,
   listRecipeLines,
   listRecipes,
@@ -33,24 +30,6 @@ const RECIPE_TYPES: RecipeType[] = [
   'intermedia',
 ];
 const YIELD_UNITS: YieldUnit[] = ['portion', 'g', 'ml', 'unit'];
-
-const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
-
-type CostBreakdownRow = {
-  id: string;
-  type: 'item' | 'sub';
-  name: string;
-  qty: number;
-  unit: string;
-  effectiveUnitCostClp: number;
-  lineCostClp: number;
-};
-
-type RecipeCostResult = {
-  totalCostClp: number;
-  costPerYieldUnitClp: number;
-  rows: CostBreakdownRow[];
-};
 
 type ItemInputUnit = 'g' | 'kg' | 'mg' | 'ml' | 'l' | 'unit';
 
@@ -88,15 +67,6 @@ function convertToBaseQty(baseUnit: Item['baseUnit'], inputUnit: ItemInputUnit, 
   throw new Error('baseUnit inválida');
 }
 
-
-function todayInputValue(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function toUtcDay(dateValue: string): Date {
-  return new Date(`${dateValue}T00:00:00.000Z`);
-}
-
 export default function RecipeDetailPage() {
   const params = useParams<{ id: string }>();
   const recipeId = useMemo(() => String(params.id), [params.id]);
@@ -115,11 +85,6 @@ export default function RecipeDetailPage() {
 
   const [subRecipeId, setSubRecipeId] = useState('');
   const [subQty, setSubQty] = useState('');
-
-  const [costingBranch, setCostingBranch] = useState<Branch>('Santiago');
-  const [costingAsOfDate, setCostingAsOfDate] = useState<string>(todayInputValue());
-  const [costingResult, setCostingResult] = useState<RecipeCostResult | null>(null);
-  const [costingError, setCostingError] = useState<string | null>(null);
 
   useEffect(() => {
     const found = getRecipe(recipeId);
@@ -273,90 +238,6 @@ export default function RecipeDetailPage() {
     setLines(listRecipeLines(recipeId));
   }
 
-  function handleCalculateCost() {
-    setCostingError(null);
-
-    try {
-      if (!recipe) {
-        throw new Error('receta no encontrada');
-      }
-
-      const asOfDate = toUtcDay(costingAsOfDate);
-      if (Number.isNaN(asOfDate.getTime())) {
-        throw new Error('Fecha inválida para costeo');
-      }
-
-      const items = listItems();
-      const recipes = listRecipes();
-      const recipeLines = recipes.flatMap((entry) => listRecipeLines(entry.id));
-      const itemCostVersions = items.flatMap((item) => listItemCosts(item.id, costingBranch));
-
-      const context = {
-        items,
-        recipes,
-        recipeLines,
-        itemCostVersions,
-      };
-
-      const recipeLinesCurrent = listRecipeLines(recipe.id);
-      const totals = costRecipe(recipe, recipeLinesCurrent, context, asOfDate, costingBranch);
-
-      const rows: CostBreakdownRow[] = recipeLinesCurrent.map((line) => {
-        if (line.lineType === 'item') {
-          const item = items.find((entry) => entry.id === line.itemId);
-          if (!item) {
-            throw new Error(`Item no encontrado: ${line.itemId}`);
-          }
-
-          const effectiveUnitCostClp = getEffectiveItemUnitCostClp(item, itemCostVersions, asOfDate);
-          return {
-            id: line.id,
-            type: 'item',
-            name: item.name,
-            qty: line.qtyInBase,
-            unit: item.baseUnit,
-            effectiveUnitCostClp,
-            lineCostClp: line.qtyInBase * effectiveUnitCostClp,
-          };
-        }
-
-        const subRecipe = recipes.find((entry) => entry.id === line.subRecipeId);
-        if (!subRecipe) {
-          throw new Error(`Sub-receta no encontrada: ${line.subRecipeId}`);
-        }
-
-        const subLines = recipeLines.filter((entry) => entry.recipeId === subRecipe.id);
-        const subCost = costRecipe(subRecipe, subLines, context, asOfDate, costingBranch);
-
-        return {
-          id: line.id,
-          type: 'sub',
-          name: subRecipe.name,
-          qty: line.qtyInSubYield,
-          unit: subRecipe.yieldUnit,
-          effectiveUnitCostClp: subCost.costPerYieldUnitClp,
-          lineCostClp: line.qtyInSubYield * subCost.costPerYieldUnitClp,
-        };
-      });
-
-      setCostingResult({
-        totalCostClp: totals.totalCostClp,
-        costPerYieldUnitClp: totals.costPerYieldUnitClp,
-        rows,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al calcular costo';
-      if (message.includes('No effective item cost version for item')) {
-        const itemId = message.split('item ')[1] ?? '';
-        const itemName = allItems.find((entry) => entry.id === itemId)?.name ?? itemId;
-        setCostingError(`Falta costo vigente para el item: ${itemName}.`);
-      } else {
-        setCostingError(message);
-      }
-      setCostingResult(null);
-    }
-  }
-
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
       <h1>Receta: {recipe.name}</h1>
@@ -418,75 +299,6 @@ export default function RecipeDetailPage() {
 
           <button type="submit">Guardar cambios</button>
         </form>
-      </section>
-
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
-        <h2>Costeo teórico</h2>
-
-        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-          <label>
-            Sucursal
-            <br />
-            <select value={costingBranch} onChange={(event) => setCostingBranch(event.target.value as Branch)}>
-              {BRANCHES.map((branch) => (
-                <option key={branch} value={branch}>{branch}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Fecha (as-of)
-            <br />
-            <input type="date" value={costingAsOfDate} onChange={(event) => setCostingAsOfDate(event.target.value)} />
-          </label>
-
-          <button type="button" onClick={handleCalculateCost}>Calcular costo</button>
-        </div>
-
-        {costingError ? <p style={{ color: 'crimson' }}>{costingError}</p> : null}
-
-        {costingResult ? (
-          <>
-            <p>
-              <strong>Costo total (CLP): </strong>
-              {Math.round(costingResult.totalCostClp).toLocaleString('es-CL')}
-            </p>
-            <p>
-              <strong>Costo por unidad de yield (CLP): </strong>
-              {Math.round(costingResult.costPerYieldUnitClp).toLocaleString('es-CL')}
-            </p>
-
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Tipo</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Cantidad</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Unidad</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Costo unitario efectivo</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Costo línea</th>
-                </tr>
-              </thead>
-              <tbody>
-                {costingResult.rows.map((row) => (
-                  <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.type}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.name}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.unit}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
-                  </tr>
-                ))}
-                {costingResult.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ padding: 8 }}>Sin líneas para costear.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </>
-        ) : null}
       </section>
 
       <section style={{ border: '1px solid #ddd', padding: 16 }}>

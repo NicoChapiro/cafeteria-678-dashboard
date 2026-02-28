@@ -35,7 +35,7 @@ const sections = [
   },
   {
     title: 'Importar Base',
-    description: 'Carga masiva de BaseConsolidada.xlsx para Items/Productos/Recetas.',
+    description: 'Carga base consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
     cta: 'Ir a importar base',
   },
