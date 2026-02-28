@@ -22,6 +22,7 @@ type DashboardBranch = Branch | 'Consolidado';
 type ProductAggregate = {
   productId: string;
   productName: string;
+  recipeId: string | null;
   qty: number;
   ventasReales: number;
   ventasLista: number;
@@ -169,6 +170,7 @@ export default function DashboardPage() {
         {
           productId: sale.productId,
           productName: product?.name ?? '(Producto no encontrado)',
+          recipeId: product?.recipeId ?? null,
           qty: 0,
           ventasReales: 0,
           ventasLista: 0,
@@ -177,6 +179,7 @@ export default function DashboardPage() {
           motivosCosto: new Set<string>(),
         };
 
+      aggregate.recipeId = product?.recipeId ?? aggregate.recipeId ?? null;
       aggregate.qty += sale.qty;
       aggregate.ventasReales += sale.grossSalesClp;
 
@@ -194,7 +197,11 @@ export default function DashboardPage() {
         const manualCost = findEffectiveManualCost(manualCostVersions, asOfDate);
         if (manualCost === null) {
           aggregate.alertas.add('sin costo vigente');
-          aggregate.motivosCosto.add('Sin receta y sin costo manual vigente');
+          if (manualCostVersions.length > 0) {
+            aggregate.motivosCosto.add('Sin costo manual vigente');
+          } else {
+            aggregate.motivosCosto.add('Sin receta y sin costo manual vigente');
+          }
         } else {
           const costWithWaste = manualCost * (1 + getProductWasteRate(product));
           aggregate.costoTeorico += sale.qty * costWithWaste;
@@ -223,7 +230,7 @@ export default function DashboardPage() {
           aggregate.costoTeorico += sale.qty * costWithWaste;
         } catch {
           aggregate.alertas.add('sin costo vigente');
-          aggregate.motivosCosto.add('Receta con items sin costo vigente o incompleta');
+          aggregate.motivosCosto.add('Tiene receta pero faltan costos de insumos');
         }
       }
 
@@ -235,12 +242,22 @@ export default function DashboardPage() {
       const margenTeorico = Math.round(row.ventasReales - costoTeorico);
       const margenPct = row.ventasReales > 0 ? (margenTeorico / row.ventasReales) * 100 : 0;
       const deltaLista = Math.round(row.ventasLista - row.ventasReales);
+      const costoUnitario = row.qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(costoTeorico / row.qty) : null;
+      const margenUnitario = row.qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(margenTeorico / row.qty) : null;
+      const motivoPrincipal = row.alertas.has('sin costo vigente')
+        ? row.recipeId
+          ? 'Tiene receta pero faltan costos de insumos'
+          : [...row.motivosCosto][0] ?? 'Sin receta y sin costo manual vigente'
+        : null;
       return {
         ...row,
         costoTeorico,
         margenTeorico,
         margenPct,
         deltaLista,
+        costoUnitario,
+        margenUnitario,
+        motivoPrincipal,
       };
     });
 
@@ -296,7 +313,7 @@ export default function DashboardPage() {
 
   const topProductosSinCosto = [...dashboard.alerts.sinCosto]
     .sort((a, b) => b.ventasReales - a.ventasReales)
-    .slice(0, 10);
+    .slice(0, 20);
   const hayVentas = dashboard.summary.ventasReales > 0;
 
   return (
@@ -382,7 +399,7 @@ export default function DashboardPage() {
       </section>
 
       <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Alertas accionables: Top productos sin costo</h2>
+        <h2 style={{ marginTop: 0 }}>Top 20 productos sin costo</h2>
         {dashboard.coverageWithCost === 0 && hayVentas ? (
           <div style={{ background: '#fff4e5', border: '1px solid #ffd399', borderRadius: 8, padding: 10, marginBottom: 12 }}>
             No hay cobertura de costo para ventas en el rango seleccionado. Revisa y completa costos en{' '}
@@ -394,9 +411,10 @@ export default function DashboardPage() {
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Producto</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Ventas reales</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Ventas CLP</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Qty</th>
               <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Motivo</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Acción</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -404,15 +422,24 @@ export default function DashboardPage() {
               <tr key={`alerta-${row.productId}`}>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{[...row.motivosCosto].join(', ') || 'Sin costo vigente'}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                  {row.motivoPrincipal ?? ([...row.motivosCosto].join(', ') || 'Sin costo vigente')}
+                </td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
                   <Link href={`/products/${row.productId}`}>Abrir producto</Link>
+                  {row.recipeId ? (
+                    <>
+                      {' '}|{' '}
+                      <Link href={`/recipes/${row.recipeId}`}>Abrir receta</Link>
+                    </>
+                  ) : null}
                 </td>
               </tr>
             ))}
             {topProductosSinCosto.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: 8 }}>
+                <td colSpan={5} style={{ padding: 8 }}>
                   No hay productos con alertas de costo en el rango seleccionado.
                 </td>
               </tr>
@@ -430,7 +457,9 @@ export default function DashboardPage() {
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasLista</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>deltaLista</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoTeorico</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoUnitario</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenTeorico</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenUnitario</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margen%</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>alertas</th>
           </tr>
@@ -444,7 +473,9 @@ export default function DashboardPage() {
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasLista.toLocaleString('es-CL')}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.deltaLista.toLocaleString('es-CL')}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoTeorico.toLocaleString('es-CL')}</td>
+              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoUnitario !== null ? row.costoUnitario.toLocaleString('es-CL') : '-'}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenTeorico.toLocaleString('es-CL')}</td>
+              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenUnitario !== null ? row.margenUnitario.toLocaleString('es-CL') : '-'}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenPct.toFixed(2)}%</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
                 {[...row.alertas].join(', ') || '-'}
@@ -453,7 +484,7 @@ export default function DashboardPage() {
           ))}
           {dashboard.rows.length === 0 ? (
             <tr>
-              <td colSpan={9} style={{ padding: 8 }}>
+              <td colSpan={11} style={{ padding: 8 }}>
                 No hay ventas para el rango seleccionado.
               </td>
             </tr>
