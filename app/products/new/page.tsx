@@ -22,11 +22,17 @@ export default function NewProductPage() {
         throw new Error('name es obligatorio');
       }
 
+      const wasteRatePct = Number(formData.get('wasteRatePct') ?? '3');
+      if (!Number.isFinite(wasteRatePct) || wasteRatePct < 0 || wasteRatePct > 30) {
+        throw new Error('merma debe estar entre 0 y 30');
+      }
+
       const product = upsertProduct({
         id: crypto.randomUUID(),
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
         active: String(formData.get('active') ?? '') === 'on',
+        wasteRatePct,
         recipeId: null,
       });
 
@@ -37,7 +43,7 @@ export default function NewProductPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 640 }}>
+    <main className="card" style={{ maxWidth: 640 }}>
       <h1>Nuevo Producto</h1>
       <p>
         <Link href="/products">Volver a productos</Link>
@@ -47,13 +53,19 @@ export default function NewProductPage() {
         <label>
           Name *
           <br />
-          <input name="name" required style={{ width: '100%' }} />
+          <input className="input" name="name" required style={{ width: '100%' }} />
         </label>
 
         <label>
           Category
           <br />
-          <input name="category" style={{ width: '100%' }} />
+          <input className="input" name="category" style={{ width: '100%' }} />
+        </label>
+
+        <label>
+          Merma (%)
+          <br />
+          <input name="wasteRatePct" type="number" min="0" max="30" step="0.1" defaultValue="3" style={{ width: '100%' }} />
         </label>
 
         <label>
@@ -62,7 +74,7 @@ export default function NewProductPage() {
 
         {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
 
-        <button type="submit">Guardar</button>
+        <button className="btn" type="submit">Guardar</button>
       </form>
     </main>
   );

@@ -12,6 +12,7 @@ import type {
   Recipe,
 } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
+import { getProductWasteRate } from '@/src/services/product-waste';
 import {
   addProductCostVersion,
   addProductPriceVersion,
@@ -22,6 +23,7 @@ import {
   listProductPrices,
   listRecipeLines,
   listRecipes,
+  updateProductCostVersionValidFrom,
   upsertProduct,
 } from '@/src/storage/local/store';
 
@@ -105,6 +107,10 @@ export default function ProductDetailPage() {
     Santiago: EMPTY_FORM,
     Temuco: EMPTY_FORM,
   });
+  const [costValidFromEdit, setCostValidFromEdit] = useState<Record<Branch, string>>({
+    Santiago: '',
+    Temuco: '',
+  });
 
   const [pricesByBranch, setPricesByBranch] = useState<
     Record<Branch, ProductPriceVersion[]>
@@ -127,9 +133,14 @@ export default function ProductDetailPage() {
       Santiago: listProductPrices(productId, 'Santiago'),
       Temuco: listProductPrices(productId, 'Temuco'),
     });
-    setCostsByBranch({
+    const initialCosts = {
       Santiago: listProductCosts(productId, 'Santiago'),
       Temuco: listProductCosts(productId, 'Temuco'),
+    };
+    setCostsByBranch(initialCosts);
+    setCostValidFromEdit({
+      Santiago: initialCosts.Santiago[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+      Temuco: initialCosts.Temuco[0]?.validFrom.toISOString().slice(0, 10) ?? '',
     });
   }, [productId]);
 
@@ -204,10 +215,11 @@ export default function ProductDetailPage() {
         }
 
         const price = currentPrice?.priceGrossClp ?? null;
-        const margin = price !== null ? price - cost : null;
+        const costWithWaste = cost * (1 + getProductWasteRate(product));
+        const margin = price !== null ? price - costWithWaste : null;
 
         result[branch] = {
-          cost,
+          cost: costWithWaste,
           margin,
           warning: price === null ? 'No hay precio vigente para la fecha seleccionada' : null,
         };
@@ -237,7 +249,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+      <main>
         <h1>Producto no encontrado</h1>
         <p>
           <Link href="/products">Volver a productos</Link>
@@ -264,12 +276,18 @@ export default function ProductDetailPage() {
         throw new Error('producto no encontrado');
       }
 
+      const wasteRatePct = Number(formData.get('wasteRatePct') ?? String(product.wasteRatePct ?? 3));
+      if (!Number.isFinite(wasteRatePct) || wasteRatePct < 0 || wasteRatePct > 30) {
+        throw new Error('merma debe estar entre 0 y 30');
+      }
+
       const updated = upsertProduct({
         id: product.id,
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
         active: String(formData.get('active') ?? '') === 'on',
         recipeId: recipeIdRaw || null,
+        wasteRatePct,
       });
 
       setProduct(updated);
@@ -341,6 +359,10 @@ export default function ProductDetailPage() {
       });
 
       setCostsByBranch((prev) => ({ ...prev, [branch]: updated }));
+      setCostValidFromEdit((prev) => ({
+        ...prev,
+        [branch]: updated[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+      }));
       setCostForms((prev) => ({
         ...prev,
         [branch]: { ...EMPTY_FORM },
@@ -352,8 +374,45 @@ export default function ProductDetailPage() {
     }
   }
 
+  function onChangeFirstCostValidFrom(branch: Branch) {
+    setCostError(null);
+
+    try {
+      const firstVersion = costsByBranch[branch][0];
+      if (!firstVersion) {
+        throw new Error('No hay costos para editar');
+      }
+
+      const dateValue = costValidFromEdit[branch];
+      if (!dateValue) {
+        throw new Error('Debes ingresar una fecha');
+      }
+
+      const validFrom = toUtcDay(dateValue);
+      if (Number.isNaN(validFrom.getTime())) {
+        throw new Error('Fecha inválida');
+      }
+
+      const nextVersion = costsByBranch[branch][1];
+      if (nextVersion && validFrom.getTime() >= nextVersion.validFrom.getTime()) {
+        throw new Error('La nueva fecha debe ser menor al siguiente validFrom');
+      }
+
+      const updated = updateProductCostVersionValidFrom(firstVersion.id, validFrom);
+      setCostsByBranch((prev) => ({ ...prev, [branch]: updated }));
+      setCostValidFromEdit((prev) => ({
+        ...prev,
+        [branch]: updated[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+      }));
+    } catch (submitError) {
+      setCostError(
+        submitError instanceof Error ? `${branch}: ${submitError.message}` : `${branch}: error`,
+      );
+    }
+  }
+
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
+    <main>
       <h1>Producto: {product.name}</h1>
       <p>
         <Link href="/products">Volver a productos</Link>
@@ -392,12 +451,26 @@ export default function ProductDetailPage() {
           </label>
 
           <label>
+            Merma (%)
+            <br />
+            <input
+              name="wasteRatePct"
+              type="number"
+              min="0"
+              max="30"
+              step="0.1"
+              defaultValue={product.wasteRatePct ?? 3}
+              style={{ width: '100%' }}
+            />
+          </label>
+
+          <label>
             <input name="active" type="checkbox" defaultChecked={product.active} /> Active
           </label>
 
           {baseError ? <p style={{ color: 'crimson' }}>{baseError}</p> : null}
 
-          <button type="submit">Guardar cambios</button>
+          <button className="btn" type="submit">Guardar cambios</button>
         </form>
       </section>
 
@@ -467,7 +540,7 @@ export default function ProductDetailPage() {
             </div>
 
             <p>
-              <button type="button" onClick={() => onAddPrice(branch)}>
+              <button className="btnSecondary" type="button" onClick={() => onAddPrice(branch)}>
                 Agregar precio
               </button>
             </p>
@@ -519,10 +592,32 @@ export default function ProductDetailPage() {
             </div>
 
             <p>
-              <button type="button" onClick={() => onAddCost(branch)}>
+              <button className="btnSecondary" type="button" onClick={() => onAddCost(branch)}>
                 Agregar costo
               </button>
             </p>
+
+            <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr auto', alignItems: 'end', maxWidth: 420 }}>
+              <label>
+                Cambiar fecha inicio (primera versión)
+                <br />
+                <input
+                  type="date"
+                  value={costValidFromEdit[branch]}
+                  onChange={(event) =>
+                    setCostValidFromEdit((prev) => ({ ...prev, [branch]: event.target.value }))
+                  }
+                  disabled={costsByBranch[branch].length === 0}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => onChangeFirstCostValidFrom(branch)}
+                disabled={costsByBranch[branch].length === 0}
+              >
+                Cambiar fecha inicio
+              </button>
+            </div>
 
             <h4>Historial</h4>
             <ul>
