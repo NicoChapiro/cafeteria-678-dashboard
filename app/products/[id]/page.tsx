@@ -12,6 +12,7 @@ import type {
   Recipe,
 } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
+import { getProductWasteRate } from '@/src/services/product-waste';
 import {
   addProductCostVersion,
   addProductPriceVersion,
@@ -204,10 +205,11 @@ export default function ProductDetailPage() {
         }
 
         const price = currentPrice?.priceGrossClp ?? null;
-        const margin = price !== null ? price - cost : null;
+        const costWithWaste = cost * (1 + getProductWasteRate(product));
+        const margin = price !== null ? price - costWithWaste : null;
 
         result[branch] = {
-          cost,
+          cost: costWithWaste,
           margin,
           warning: price === null ? 'No hay precio vigente para la fecha seleccionada' : null,
         };
@@ -264,12 +266,18 @@ export default function ProductDetailPage() {
         throw new Error('producto no encontrado');
       }
 
+      const wasteRatePct = Number(formData.get('wasteRatePct') ?? String(product.wasteRatePct ?? 3));
+      if (!Number.isFinite(wasteRatePct) || wasteRatePct < 0 || wasteRatePct > 30) {
+        throw new Error('merma debe estar entre 0 y 30');
+      }
+
       const updated = upsertProduct({
         id: product.id,
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
         active: String(formData.get('active') ?? '') === 'on',
         recipeId: recipeIdRaw || null,
+        wasteRatePct,
       });
 
       setProduct(updated);
@@ -389,6 +397,20 @@ export default function ProductDetailPage() {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label>
+            Merma (%)
+            <br />
+            <input
+              name="wasteRatePct"
+              type="number"
+              min="0"
+              max="30"
+              step="0.1"
+              defaultValue={product.wasteRatePct ?? 3}
+              style={{ width: '100%' }}
+            />
           </label>
 
           <label>

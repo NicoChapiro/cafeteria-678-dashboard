@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
+import { getProductWasteRate } from '@/src/services/product-waste';
 import {
   listItemCosts,
   listItems,
@@ -195,7 +196,8 @@ export default function DashboardPage() {
           aggregate.alertas.add('sin costo vigente');
           aggregate.motivosCosto.add('Sin receta y sin costo manual vigente');
         } else {
-          aggregate.costoTeorico += sale.qty * manualCost;
+          const costWithWaste = manualCost * (1 + getProductWasteRate(product));
+          aggregate.costoTeorico += sale.qty * costWithWaste;
         }
       } else {
         try {
@@ -217,7 +219,8 @@ export default function DashboardPage() {
             sale.branch,
           );
 
-          aggregate.costoTeorico += sale.qty * recipeCost.costPerYieldUnitClp;
+          const costWithWaste = recipeCost.costPerYieldUnitClp * (1 + getProductWasteRate(product));
+          aggregate.costoTeorico += sale.qty * costWithWaste;
         } catch {
           aggregate.alertas.add('sin costo vigente');
           aggregate.motivosCosto.add('Receta con items sin costo vigente o incompleta');
