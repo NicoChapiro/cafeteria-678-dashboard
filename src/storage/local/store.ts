@@ -177,6 +177,10 @@ function assertBranch(branch: Branch): void {
   }
 }
 
+function normalizeToUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
 function serializeData(data: LocalData): SerializedLocalData {
   return {
     items: data.items.map((item) => ({
@@ -388,6 +392,24 @@ export function clearAuditLogs(actor = 'local'): void {
     ...data,
     auditLogs: [entry],
   });
+}
+
+export function addAuditEvent(params: {
+  entityType: string;
+  entityId: string;
+  action: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  diffJson: any;
+  actor?: string;
+}): void {
+  logAudit({
+    entityType: params.entityType,
+    entityId: params.entityId,
+    action: params.action,
+    diffJson: params.diffJson,
+    actor: params.actor ?? 'local',
+  });
+
 }
 
 export function listItems(): Item[] {
@@ -756,6 +778,88 @@ export function addProductCostVersion(
   return [...updatedExisting, insertedVersion].sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
   );
+}
+
+
+export function updateProductCostVersionValidFrom(
+  versionId: string,
+  newValidFrom: Date,
+): ProductCostVersion[] {
+  assertValidFrom(newValidFrom);
+
+  const normalizedNewValidFrom = normalizeToUtcDay(newValidFrom);
+  const data = readData();
+  const target = data.productCostVersions.find((version) => version.id === versionId);
+
+  if (!target) {
+    throw new Error('Versión de costo no encontrada');
+  }
+
+  const versionsForKey = data.productCostVersions
+    .filter(
+      (version) =>
+        version.productId === target.productId && version.branch === target.branch,
+    )
+    .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
+
+  const targetIndex = versionsForKey.findIndex((version) => version.id === versionId);
+  if (targetIndex === -1) {
+    throw new Error('Versión de costo no encontrada para producto/sucursal');
+  }
+
+  const previous = versionsForKey[targetIndex - 1] ?? null;
+  const next = versionsForKey[targetIndex + 1] ?? null;
+
+  if (previous && normalizedNewValidFrom <= normalizeToUtcDay(previous.validFrom)) {
+    throw new Error('validFrom debe ser mayor al validFrom anterior');
+  }
+
+  if (next && normalizedNewValidFrom >= normalizeToUtcDay(next.validFrom)) {
+    throw new Error('validFrom debe ser menor al siguiente validFrom');
+  }
+
+  const updated = versionsForKey.map((version) => {
+    if (version.id === versionId) {
+      return {
+        ...version,
+        validFrom: normalizedNewValidFrom,
+      };
+    }
+
+    if (previous && version.id === previous.id) {
+      const previousValidTo = new Date(normalizedNewValidFrom);
+      previousValidTo.setUTCDate(previousValidTo.getUTCDate() - 1);
+      return {
+        ...version,
+        validTo: previousValidTo,
+      };
+    }
+
+    return version;
+  });
+
+  const untouched = data.productCostVersions.filter(
+    (version) =>
+      !(version.productId === target.productId && version.branch === target.branch),
+  );
+
+  const nextVersions = [...untouched, ...updated];
+  writeData({ ...data, productCostVersions: nextVersions });
+
+  logAudit({
+    entityType: 'product_cost_version',
+    entityId: target.id,
+    action: 'product_cost_validfrom_changed',
+    diffJson: {
+      productId: target.productId,
+      branch: target.branch,
+      versionId: target.id,
+      previousValidFrom: target.validFrom,
+      newValidFrom: normalizedNewValidFrom,
+    },
+  });
+
+  return updated.sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
 }
 
 export function listRecipes(): Recipe[] {
