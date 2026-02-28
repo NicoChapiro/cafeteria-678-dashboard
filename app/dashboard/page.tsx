@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
+import { getProductWasteRate } from '@/src/services/product-waste';
 import {
   listItemCosts,
   listItems,
@@ -20,11 +22,13 @@ type DashboardBranch = Branch | 'Consolidado';
 type ProductAggregate = {
   productId: string;
   productName: string;
+  recipeId: string | null;
   qty: number;
   ventasReales: number;
   ventasLista: number;
   costoTeorico: number;
   alertas: Set<string>;
+  motivosCosto: Set<string>;
 };
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
@@ -126,6 +130,7 @@ export default function DashboardPage() {
           sinCosto: [],
           sinPrecio: [],
         },
+        coverageWithCost: 0,
       };
     }
 
@@ -165,13 +170,16 @@ export default function DashboardPage() {
         {
           productId: sale.productId,
           productName: product?.name ?? '(Producto no encontrado)',
+          recipeId: product?.recipeId ?? null,
           qty: 0,
           ventasReales: 0,
           ventasLista: 0,
           costoTeorico: 0,
           alertas: new Set<string>(),
+          motivosCosto: new Set<string>(),
         };
 
+      aggregate.recipeId = product?.recipeId ?? aggregate.recipeId ?? null;
       aggregate.qty += sale.qty;
       aggregate.ventasReales += sale.grossSalesClp;
 
@@ -189,8 +197,14 @@ export default function DashboardPage() {
         const manualCost = findEffectiveManualCost(manualCostVersions, asOfDate);
         if (manualCost === null) {
           aggregate.alertas.add('sin costo vigente');
+          if (manualCostVersions.length > 0) {
+            aggregate.motivosCosto.add('Sin costo manual vigente');
+          } else {
+            aggregate.motivosCosto.add('Sin receta y sin costo manual vigente');
+          }
         } else {
-          aggregate.costoTeorico += sale.qty * manualCost;
+          const costWithWaste = manualCost * (1 + getProductWasteRate(product));
+          aggregate.costoTeorico += sale.qty * costWithWaste;
         }
       } else {
         try {
@@ -212,9 +226,11 @@ export default function DashboardPage() {
             sale.branch,
           );
 
-          aggregate.costoTeorico += sale.qty * recipeCost.costPerYieldUnitClp;
+          const costWithWaste = recipeCost.costPerYieldUnitClp * (1 + getProductWasteRate(product));
+          aggregate.costoTeorico += sale.qty * costWithWaste;
         } catch {
           aggregate.alertas.add('sin costo vigente');
+          aggregate.motivosCosto.add('Tiene receta pero faltan costos de insumos');
         }
       }
 
@@ -222,20 +238,32 @@ export default function DashboardPage() {
     });
 
     const rows = [...perProduct.values()].map((row) => {
-      const margenTeorico = row.ventasReales - row.costoTeorico;
+      const costoTeorico = Math.round(row.costoTeorico);
+      const margenTeorico = Math.round(row.ventasReales - costoTeorico);
       const margenPct = row.ventasReales > 0 ? (margenTeorico / row.ventasReales) * 100 : 0;
-      const deltaLista = row.ventasLista - row.ventasReales;
+      const deltaLista = Math.round(row.ventasLista - row.ventasReales);
+      const costoUnitario = row.qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(costoTeorico / row.qty) : null;
+      const margenUnitario = row.qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(margenTeorico / row.qty) : null;
+      const motivoPrincipal = row.alertas.has('sin costo vigente')
+        ? row.recipeId
+          ? 'Tiene receta pero faltan costos de insumos'
+          : [...row.motivosCosto][0] ?? 'Sin receta y sin costo manual vigente'
+        : null;
       return {
         ...row,
+        costoTeorico,
         margenTeorico,
         margenPct,
         deltaLista,
+        costoUnitario,
+        margenUnitario,
+        motivoPrincipal,
       };
     });
 
     rows.sort((a, b) => a.productName.localeCompare(b.productName, 'es-CL'));
 
-    const summary = rows.reduce(
+    const summaryRaw = rows.reduce(
       (acc, row) => ({
         ventasReales: acc.ventasReales + row.ventasReales,
         ventasLista: acc.ventasLista + row.ventasLista,
@@ -248,15 +276,27 @@ export default function DashboardPage() {
       },
     );
 
-    const margenTeorico = summary.ventasReales - summary.costoTeorico;
+    const summary = {
+      ventasReales: Math.round(summaryRaw.ventasReales),
+      ventasLista: Math.round(summaryRaw.ventasLista),
+      costoTeorico: Math.round(summaryRaw.costoTeorico),
+    };
+
+    const margenTeorico = Math.round(summary.ventasReales - summary.costoTeorico);
     const margenPct = summary.ventasReales > 0 ? (margenTeorico / summary.ventasReales) * 100 : 0;
-    const deltaLista = summary.ventasLista - summary.ventasReales;
+    const deltaLista = Math.round(summary.ventasLista - summary.ventasReales);
 
     const alerts = {
       sinReceta: rows.filter((row) => row.alertas.has('sin receta')),
       sinCosto: rows.filter((row) => row.alertas.has('sin costo vigente')),
       sinPrecio: rows.filter((row) => row.alertas.has('sin precio vigente')),
     };
+
+    const totalQty = rows.reduce((acc, row) => acc + row.qty, 0);
+    const qtyWithCost = rows
+      .filter((row) => !row.alertas.has('sin costo vigente'))
+      .reduce((acc, row) => acc + row.qty, 0);
+    const coverageWithCost = totalQty > 0 ? qtyWithCost / totalQty : 0;
 
     return {
       rows,
@@ -267,8 +307,14 @@ export default function DashboardPage() {
         deltaLista,
       },
       alerts,
+      coverageWithCost,
     };
   }, [salesRows]);
+
+  const topProductosSinCosto = [...dashboard.alerts.sinCosto]
+    .sort((a, b) => b.ventasReales - a.ventasReales)
+    .slice(0, 20);
+  const hayVentas = dashboard.summary.ventasReales > 0;
 
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
@@ -352,6 +398,56 @@ export default function DashboardPage() {
         </ul>
       </section>
 
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+        <h2 style={{ marginTop: 0 }}>Top 20 productos sin costo</h2>
+        {dashboard.coverageWithCost === 0 && hayVentas ? (
+          <div style={{ background: '#fff4e5', border: '1px solid #ffd399', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+            No hay cobertura de costo para ventas en el rango seleccionado. Revisa y completa costos en{' '}
+            <Link href="/products">Productos</Link>, <Link href="/recipes">Recetas</Link> y{' '}
+            <Link href="/items">Insumos</Link>.
+          </div>
+        ) : null}
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Producto</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Ventas CLP</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Qty</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Motivo</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topProductosSinCosto.map((row) => (
+              <tr key={`alerta-${row.productId}`}>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                  {row.motivoPrincipal ?? ([...row.motivosCosto].join(', ') || 'Sin costo vigente')}
+                </td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                  <Link href={`/products/${row.productId}`}>Abrir producto</Link>
+                  {row.recipeId ? (
+                    <>
+                      {' '}|{' '}
+                      <Link href={`/recipes/${row.recipeId}`}>Abrir receta</Link>
+                    </>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+            {topProductosSinCosto.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: 8 }}>
+                  No hay productos con alertas de costo en el rango seleccionado.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </section>
+
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
@@ -361,7 +457,9 @@ export default function DashboardPage() {
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasLista</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>deltaLista</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoTeorico</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoUnitario</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenTeorico</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenUnitario</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margen%</th>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>alertas</th>
           </tr>
@@ -375,7 +473,9 @@ export default function DashboardPage() {
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasLista.toLocaleString('es-CL')}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.deltaLista.toLocaleString('es-CL')}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoTeorico.toLocaleString('es-CL')}</td>
+              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoUnitario !== null ? row.costoUnitario.toLocaleString('es-CL') : '-'}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenTeorico.toLocaleString('es-CL')}</td>
+              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenUnitario !== null ? row.margenUnitario.toLocaleString('es-CL') : '-'}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenPct.toFixed(2)}%</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
                 {[...row.alertas].join(', ') || '-'}
@@ -384,7 +484,7 @@ export default function DashboardPage() {
           ))}
           {dashboard.rows.length === 0 ? (
             <tr>
-              <td colSpan={9} style={{ padding: 8 }}>
+              <td colSpan={11} style={{ padding: 8 }}>
                 No hay ventas para el rango seleccionado.
               </td>
             </tr>

@@ -34,6 +34,12 @@ const sections = [
     cta: 'Ir a ventas Santiago',
   },
   {
+    title: 'Importar Base',
+    description: 'Carga masiva de BaseConsolidada.xlsx para Items/Productos/Recetas.',
+    href: '/import/base',
+    cta: 'Ir a importar base',
+  },
+  {
     title: 'Importar Santiago',
     description: 'Carga de planilla XLSX y conciliación de ventas.',
     href: '/sales/santiago/import',
