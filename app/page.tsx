@@ -34,6 +34,12 @@ const sections = [
     cta: 'Ir a ventas Santiago',
   },
   {
+    title: 'Pendientes (Setup)',
+    description: 'Centro mensual para detectar brechas de costo, precio, receta e insumos.',
+    href: '/setup',
+    cta: 'Ir a setup',
+  },
+  {
     title: 'Importar Base',
     description: 'Carga base consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
