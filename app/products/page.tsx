@@ -18,13 +18,13 @@ export default function ProductsPage() {
   }, []);
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Productos</h1>
       <p>
         <Link href="/products/new">Nuevo Producto</Link>
       </p>
 
-      <table style={{ borderCollapse: 'collapse', minWidth: 700 }}>
+      <div className="tableWrap"><table className="table" style={{ minWidth: 700 }}>
         <thead>
           <tr>
             <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
@@ -64,7 +64,7 @@ export default function ProductsPage() {
             </tr>
           ) : null}
         </tbody>
-      </table>
+      </table></div>
     </main>
   );
 }

@@ -34,6 +34,12 @@ const sections = [
     cta: 'Ir a ventas Santiago',
   },
   {
+    title: 'Pendientes (Setup)',
+    description: 'Centro mensual para detectar brechas de costo, precio, receta e insumos.',
+    href: '/setup',
+    cta: 'Ir a setup',
+  },
+  {
     title: 'Importar Base',
     description: 'Carga base consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
@@ -61,30 +67,23 @@ const sections = [
 
 export default function HomePage() {
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1080, margin: '0 auto' }}>
-      <header style={{ marginBottom: 20 }}>
+    <main>
+      <header className="card">
         <h1 style={{ marginBottom: 8 }}>Cafetería 678 Dashboard</h1>
-        <p style={{ color: '#444', margin: 0 }}>
+        <p className="muted">
           MVP A operativo en LocalStorage. Usa este panel raíz para navegar módulos del sistema.
         </p>
       </header>
 
-      <section
-        aria-label="Módulos del sistema"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <section aria-label="Módulos del sistema" className="grid">
         {sections.map((section) => (
           <article
             key={section.href}
-            style={{ border: '1px solid #ddd', borderRadius: 8, padding: 14, background: '#fff' }}
+            className="card"
           >
-            <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: 18 }}>{section.title}</h2>
-            <p style={{ marginTop: 0, marginBottom: 12, color: '#444' }}>{section.description}</p>
-            <Link href={section.href}>{section.cta}</Link>
+            <h2 className="cardTitle">{section.title}</h2>
+            <p className="muted" style={{ marginBottom: 12 }}>{section.description}</p>
+            <Link className="btnSecondary" href={section.href}>{section.cta}</Link>
           </article>
         ))}
       </section>

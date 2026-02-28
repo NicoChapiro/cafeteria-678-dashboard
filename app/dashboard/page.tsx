@@ -317,14 +317,14 @@ export default function DashboardPage() {
   const hayVentas = dashboard.summary.ventasReales > 0;
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Dashboard rentabilidad teórica</h1>
 
-      <section style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
+      <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
         <label>
           Sucursal
           <br />
-          <select
+          <select className="select"
             value={selectedBranch}
             onChange={(event) => setSelectedBranch(event.target.value as DashboardBranch)}
           >
@@ -337,21 +337,21 @@ export default function DashboardPage() {
         <label>
           Desde
           <br />
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
         </label>
 
         <label>
           Hasta
           <br />
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
         </label>
 
-        <button type="button" onClick={refresh}>
+        <button className="btn" type="button" onClick={refresh}>
           Refrescar
         </button>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+      <section className="card">
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
         <p style={{ margin: '4px 0' }}>
           <strong>Ventas reales (CLP): </strong>
@@ -375,7 +375,7 @@ export default function DashboardPage() {
         </p>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+      <section className="card">
         <h2 style={{ marginTop: 0 }}>Alertas</h2>
         <p style={{ margin: '4px 0' }}>
           <strong>Sin receta:</strong> {dashboard.alerts.sinReceta.length}
@@ -398,57 +398,7 @@ export default function DashboardPage() {
         </ul>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Top 20 productos sin costo</h2>
-        {dashboard.coverageWithCost === 0 && hayVentas ? (
-          <div style={{ background: '#fff4e5', border: '1px solid #ffd399', borderRadius: 8, padding: 10, marginBottom: 12 }}>
-            No hay cobertura de costo para ventas en el rango seleccionado. Revisa y completa costos en{' '}
-            <Link href="/products">Productos</Link>, <Link href="/recipes">Recetas</Link> y{' '}
-            <Link href="/items">Insumos</Link>.
-          </div>
-        ) : null}
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Producto</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Ventas CLP</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Qty</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Motivo</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topProductosSinCosto.map((row) => (
-              <tr key={`alerta-${row.productId}`}>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                  {row.motivoPrincipal ?? ([...row.motivosCosto].join(', ') || 'Sin costo vigente')}
-                </td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                  <Link href={`/products/${row.productId}`}>Abrir producto</Link>
-                  {row.recipeId ? (
-                    <>
-                      {' '}|{' '}
-                      <Link href={`/recipes/${row.recipeId}`}>Abrir receta</Link>
-                    </>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-            {topProductosSinCosto.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ padding: 8 }}>
-                  No hay productos con alertas de costo en el rango seleccionado.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="tableWrap"><table className="table">
         <thead>
           <tr>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>product</th>
@@ -490,7 +440,7 @@ export default function DashboardPage() {
             </tr>
           ) : null}
         </tbody>
-      </table>
+      </table></div>
     </main>
   );
 }

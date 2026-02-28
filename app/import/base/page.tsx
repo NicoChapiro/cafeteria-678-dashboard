@@ -532,14 +532,14 @@ export default function ImportBasePage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Importar Base Consolidada v3</h1>
 
-      <section style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
+      <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
         <label>
           Archivo .xlsx
           <br />
-          <input
+          <input className="input"
             type="file"
             accept=".xlsx"
             onChange={(event) => {
@@ -554,14 +554,14 @@ export default function ImportBasePage() {
         <label>
           Vigencia desde
           <br />
-          <input type="date" value={validFrom} onChange={(event) => setValidFrom(event.target.value)} />
+          <input className="input" type="date" value={validFrom} onChange={(event) => setValidFrom(event.target.value)} />
         </label>
 
-        <button type="button" onClick={handlePreview}>Previsualizar</button>
-        <button type="button" onClick={handleImport} disabled={!preview}>Importar</button>
+        <button className="btn" type="button" onClick={handlePreview}>Previsualizar</button>
+        <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>Importar</button>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+      <section className="card">
         <h2 style={{ marginTop: 0 }}>Opciones de actualización</h2>
         <label style={{ display: 'block', marginBottom: 6 }}>
           <input type="checkbox" checked={updatePrices} onChange={(event) => setUpdatePrices(event.target.checked)} /> Actualizar precios
