@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import * as XLSX from 'xlsx';
 
 import {
   addAuditEvent,
   addItemCostVersion,
+  addProductCostVersion,
   addProductPriceVersion,
   listItemCosts,
   listItems,
+  listProductCosts,
   listProductPrices,
   listProducts,
   listRecipeLines,
@@ -20,10 +22,9 @@ import {
 } from '@/src/storage/local/store';
 
 type ParsedItem = {
-  excelId: string;
-  itemId: string;
-  category?: string;
+  sourceId: string;
   name: string;
+  category?: string;
   baseUnit: 'g' | 'ml' | 'unit';
   packQtyInBase: number;
   packCostGrossClp: number;
@@ -31,11 +32,11 @@ type ParsedItem = {
 };
 
 type ParsedProduct = {
-  excelId: string;
-  productId: string;
-  category?: string;
+  sourceId: string;
   name: string;
-  priceGrossClp: number;
+  category?: string;
+  priceGrossClp: number | null;
+  manualCostGrossClp: number | null;
 };
 
 type ParsedRecipeRow = {
@@ -59,16 +60,7 @@ type ImportSummary = {
   created: { items: number; products: number; recipes: number; recipeLines: number };
   updated: { items: number; products: number; recipes: number; recipeLines: number };
   skippedVersions: number;
-  autoMilkLines: number;
   errors: number;
-};
-
-type ResolvedProduct = {
-  id: string;
-  name: string;
-  category?: string;
-  priceGrossClp: number;
-  recipeId?: string | null;
 };
 
 const BRANCHES = ['Santiago', 'Temuco'] as const;
@@ -93,14 +85,6 @@ function normalizeEntityName(value: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/ /g, '');
-}
-
-function normalizeCompact(value: string): string {
-  return value
-    .toLocaleLowerCase('es-CL')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '');
 }
 
 function toNumber(value: unknown): number | null {
@@ -149,11 +133,11 @@ function parseWorkbook(buffer: ArrayBuffer): PreviewState {
   const workbook = XLSX.read(buffer, { type: 'array' });
   const errors: string[] = [];
 
-  const itemsSheet = workbook.Sheets['Ingredientes e Insumos'];
-  const productsSheet = workbook.Sheets['Productos'];
-  const recipesSheet = workbook.Sheets['Recetas'];
+  const itemsSheet = workbook.Sheets.Ingredientes;
+  const productsSheet = workbook.Sheets.Productos;
+  const recipesSheet = workbook.Sheets.Recetas;
 
-  if (!itemsSheet) errors.push('Falta hoja "Ingredientes e Insumos".');
+  if (!itemsSheet) errors.push('Falta hoja "Ingredientes".');
   if (!productsSheet) errors.push('Falta hoja "Productos".');
   if (!recipesSheet) errors.push('Falta hoja "Recetas".');
 
@@ -170,29 +154,28 @@ function parseWorkbook(buffer: ArrayBuffer): PreviewState {
     const byHeader = new Map<string, unknown>();
     Object.entries(raw).forEach(([k, v]) => byHeader.set(normalizeHeader(k), v));
 
-    const excelId = normalizeText(byHeader.get('id'));
+    const sourceId = normalizeText(byHeader.get('id') ?? String(row));
     const name = normalizeText(byHeader.get('nombre'));
     const category = normalizeText(byHeader.get('categoria')) || undefined;
     const cost = toNumber(byHeader.get('costo'));
     const qty = toNumber(byHeader.get('cantidad')) ?? 1;
+    const merma = toNumber(byHeader.get('merma en %') ?? byHeader.get('merma')) ?? 0;
     const unitInfo = resolveBaseUnit(byHeader.get('unidad'));
-    const merma = toNumber(byHeader.get('merma en %'));
 
-    if (!excelId || !name || cost === null || qty === null || !unitInfo || merma === null) {
-      errors.push(`Ingredientes e Insumos fila ${row} inválida.`);
+    if (!name || cost === null || qty === null || !unitInfo) {
+      errors.push(`Ingredientes fila ${row} inválida.`);
       return;
     }
 
     if (cost < 0 || qty <= 0 || merma < 0 || merma >= 1) {
-      errors.push(`Ingredientes e Insumos fila ${row} fuera de rango.`);
+      errors.push(`Ingredientes fila ${row} fuera de rango.`);
       return;
     }
 
     parsedItems.push({
-      excelId,
-      itemId: `item_${excelId}`,
-      category,
+      sourceId,
       name,
+      category,
       baseUnit: unitInfo.baseUnit,
       packQtyInBase: qty * unitInfo.multiplier,
       packCostGrossClp: Math.round(cost),
@@ -205,22 +188,28 @@ function parseWorkbook(buffer: ArrayBuffer): PreviewState {
     const byHeader = new Map<string, unknown>();
     Object.entries(raw).forEach(([k, v]) => byHeader.set(normalizeHeader(k), v));
 
-    const excelId = normalizeText(byHeader.get('id'));
+    const sourceId = normalizeText(byHeader.get('id') ?? String(row));
     const name = normalizeText(byHeader.get('nombre'));
     const category = normalizeText(byHeader.get('categoria')) || undefined;
     const price = toNumber(byHeader.get('precio'));
+    const manualCost = toNumber(byHeader.get('costo'));
 
-    if (!excelId || !name || price === null || price < 0) {
+    if (!name) {
       errors.push(`Productos fila ${row} inválida.`);
       return;
     }
 
+    if ((price !== null && price < 0) || (manualCost !== null && manualCost < 0)) {
+      errors.push(`Productos fila ${row} fuera de rango.`);
+      return;
+    }
+
     parsedProducts.push({
-      excelId,
-      productId: `product_${excelId}`,
-      category,
+      sourceId,
       name,
-      priceGrossClp: Math.round(price),
+      category,
+      priceGrossClp: price === null ? null : Math.round(price),
+      manualCostGrossClp: manualCost === null ? null : Math.round(manualCost),
     });
   });
 
@@ -262,40 +251,16 @@ function deterministicRecipeLineId(recipeId: string, itemId: string): string {
   return `line_${slugify(`${recipeId}-${itemId}`)}`;
 }
 
-function detectCupSize(itemNames: string[]): 6 | 8 | 12 | 16 | null {
-  const compactNames = itemNames.map((name) => normalizeCompact(name));
-
-  if (compactNames.some((name) => name.includes('16oz'))) return 16;
-  if (compactNames.some((name) => name.includes('12oz'))) return 12;
-  if (compactNames.some((name) => name.includes('8oz'))) return 8;
-  if (compactNames.some((name) => name.includes('6oz'))) return 6;
-
-  return null;
-}
-
 export default function ImportBasePage() {
   const [file, setFile] = useState<File | null>(null);
   const [validFrom, setValidFrom] = useState('2026-01-01');
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [autoCompleteMilk, setAutoCompleteMilk] = useState(true);
-  const [milkItemName, setMilkItemName] = useState('Leche Entera S/L');
-  const [milkMl6oz, setMilkMl6oz] = useState(120);
-  const [milkMl8oz, setMilkMl8oz] = useState(180);
-  const [milkMl12oz, setMilkMl12oz] = useState(250);
-  const [milkMl16oz, setMilkMl16oz] = useState(220);
+  const [updatePrices, setUpdatePrices] = useState(true);
+  const [updateIngredientCosts, setUpdateIngredientCosts] = useState(true);
+  const [updateRecipes, setUpdateRecipes] = useState(true);
+  const [updateProductManualCosts, setUpdateProductManualCosts] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const milkOptions = useMemo(() => {
-    const names = new Set<string>();
-
-    if (typeof window !== 'undefined') {
-      listItems().forEach((item) => names.add(item.name));
-    }
-
-    preview?.parsed.items.forEach((item) => names.add(item.name));
-    return [...names].sort((a, b) => a.localeCompare(b, 'es-CL'));
-  }, [preview]);
 
   async function handlePreview(): Promise<void> {
     if (!file) {
@@ -325,44 +290,33 @@ export default function ImportBasePage() {
       return;
     }
 
-    const milkBySize = {
-      6: Number(milkMl6oz),
-      8: Number(milkMl8oz),
-      12: Number(milkMl12oz),
-      16: Number(milkMl16oz),
-    };
+    const existingItems = listItems();
+    const existingProducts = listProducts();
+    const existingRecipes = listRecipes();
 
-    if (
-      Object.values(milkBySize).some((value) => !Number.isFinite(value) || value <= 0)
-    ) {
-      setMessage({ type: 'error', text: 'Los ml por vaso deben ser números positivos.' });
-      return;
-    }
-
-    const itemsById = new Map(listItems().map((item) => [item.id, item]));
-    const products = listProducts();
-    const productsById = new Map(products.map((product) => [product.id, product]));
-    const recipesById = new Map(listRecipes().map((recipe) => [recipe.id, recipe]));
-
-    const existingProductsByNormalizedName = new Map(
-      products.map((product) => [normalizeEntityName(product.name), product]),
+    const itemsByNormalizedName = new Map(
+      existingItems.map((item) => [normalizeEntityName(item.name), item]),
     );
-
-    const itemsByName = new Map(preview.parsed.items.map((item) => [normalizeEntityName(item.name), item]));
-    const itemsByExcelId = new Map(preview.parsed.items.map((item) => [item.excelId, item]));
+    const productsByNormalizedName = new Map(
+      existingProducts.map((product) => [normalizeEntityName(product.name), product]),
+    );
 
     const result: ImportSummary = {
       created: { items: 0, products: 0, recipes: 0, recipeLines: 0 },
       updated: { items: 0, products: 0, recipes: 0, recipeLines: 0 },
       skippedVersions: 0,
-      autoMilkLines: 0,
       errors: preview.errors.length,
     };
 
+    const resolvedItems = new Map<string, { id: string; name: string }>();
+
     preview.parsed.items.forEach((entry) => {
-      const existed = itemsById.has(entry.itemId);
+      const byName = itemsByNormalizedName.get(normalizeEntityName(entry.name));
+      const itemId = byName?.id ?? `item_${slugify(entry.sourceId || entry.name)}`;
+      const existed = Boolean(byName);
+
       upsertItem({
-        id: entry.itemId,
+        id: itemId,
         name: entry.name,
         category: entry.category,
         baseUnit: entry.baseUnit,
@@ -372,210 +326,216 @@ export default function ImportBasePage() {
       if (existed) result.updated.items += 1;
       else result.created.items += 1;
 
-      BRANCHES.forEach((branch) => {
-        const versions = listItemCosts(entry.itemId, branch);
-        const existsDate = hasVersionOnDate(validFrom, versions.map((version) => version.validFrom));
-        if (existsDate) {
-          result.skippedVersions += 1;
-          return;
-        }
+      if (updateIngredientCosts) {
+        BRANCHES.forEach((branch) => {
+          const versions = listItemCosts(itemId, branch);
+          const existsDate = hasVersionOnDate(validFrom, versions.map((version) => version.validFrom));
+          if (existsDate) {
+            result.skippedVersions += 1;
+            return;
+          }
 
-        addItemCostVersion(entry.itemId, branch, {
-          packQtyInBase: entry.packQtyInBase,
-          packCostGrossClp: entry.packCostGrossClp,
-          validFrom: validFromDate,
+          addItemCostVersion(itemId, branch, {
+            packQtyInBase: entry.packQtyInBase,
+            packCostGrossClp: entry.packCostGrossClp,
+            validFrom: validFromDate,
+          });
         });
-      });
+      }
 
-      itemsById.set(entry.itemId, {
-        id: entry.itemId,
-        name: entry.name,
-        category: entry.category,
-        baseUnit: entry.baseUnit,
-        yieldRateDefault: entry.yieldRateDefault,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      resolvedItems.set(normalizeEntityName(entry.name), { id: itemId, name: entry.name });
+      resolvedItems.set(normalizeEntityName(entry.sourceId), { id: itemId, name: entry.name });
     });
 
-    const resolvedProductsByExcelId = new Map<string, ResolvedProduct>();
-    const resolvedProductsByNormalizedName = new Map<string, ResolvedProduct>();
+    const resolvedProducts = new Map<string, { id: string; name: string; recipeId: string | null | undefined }>();
 
     preview.parsed.products.forEach((entry) => {
-      const normalizedName = normalizeEntityName(entry.name);
-      const existingByName = existingProductsByNormalizedName.get(normalizedName);
-      const targetId = existingByName?.id ?? entry.productId;
-      const current = productsById.get(targetId);
+      const byName = productsByNormalizedName.get(normalizeEntityName(entry.name));
+      const productId = byName?.id ?? `product_${slugify(entry.sourceId || entry.name)}`;
+      const existed = Boolean(byName);
 
       upsertProduct({
-        id: targetId,
+        id: productId,
         name: entry.name,
         category: entry.category,
-        active: true,
-        recipeId: current?.recipeId ?? existingByName?.recipeId ?? null,
+        active: byName?.active ?? true,
+        recipeId: byName?.recipeId ?? null,
+        wasteRatePct: byName?.wasteRatePct,
       });
 
-      if (current || existingByName) result.updated.products += 1;
+      if (existed) result.updated.products += 1;
       else result.created.products += 1;
 
-      BRANCHES.forEach((branch) => {
-        const versions = listProductPrices(targetId, branch);
-        const existsDate = hasVersionOnDate(validFrom, versions.map((version) => version.validFrom));
-        if (existsDate) {
-          result.skippedVersions += 1;
+      const priceGrossClp = entry.priceGrossClp;
+      if (updatePrices && priceGrossClp !== null) {
+        BRANCHES.forEach((branch) => {
+          const versions = listProductPrices(productId, branch);
+          const existsDate = hasVersionOnDate(validFrom, versions.map((version) => version.validFrom));
+          if (existsDate) {
+            result.skippedVersions += 1;
+            return;
+          }
+
+          addProductPriceVersion(productId, branch, {
+            priceGrossClp,
+            validFrom: validFromDate,
+          });
+        });
+      }
+
+      resolvedProducts.set(normalizeEntityName(entry.name), {
+        id: productId,
+        name: entry.name,
+        recipeId: byName?.recipeId,
+      });
+      resolvedProducts.set(normalizeEntityName(entry.sourceId), {
+        id: productId,
+        name: entry.name,
+        recipeId: byName?.recipeId,
+      });
+    });
+
+    const recipeProductIds = new Set<string>();
+
+    if (updateRecipes) {
+      const recipeRowsByProductId = new Map<string, ParsedRecipeRow[]>();
+
+      preview.parsed.recipes.forEach((row) => {
+        const product = resolvedProducts.get(normalizeEntityName(row.productRef));
+        const item = resolvedItems.get(normalizeEntityName(row.ingredientRef));
+
+        if (!product || !item) {
+          result.errors += 1;
           return;
         }
 
-        addProductPriceVersion(targetId, branch, {
-          priceGrossClp: entry.priceGrossClp,
-          validFrom: validFromDate,
-        });
+        const bucket = recipeRowsByProductId.get(product.id) ?? [];
+        bucket.push({ ...row, productRef: product.id, ingredientRef: item.id });
+        recipeRowsByProductId.set(product.id, bucket);
       });
 
-      const resolved: ResolvedProduct = {
-        id: targetId,
-        name: entry.name,
-        category: entry.category,
-        priceGrossClp: entry.priceGrossClp,
-        recipeId: current?.recipeId ?? existingByName?.recipeId ?? null,
-      };
-
-      resolvedProductsByExcelId.set(entry.excelId, resolved);
-      resolvedProductsByNormalizedName.set(normalizedName, resolved);
-      productsById.set(targetId, {
-        id: targetId,
-        name: entry.name,
-        category: entry.category,
-        active: true,
-        recipeId: resolved.recipeId ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    });
-
-    const recipesByProductId = new Map<string, ParsedRecipeRow[]>();
-
-    preview.parsed.recipes.forEach((row) => {
-      const product =
-        resolvedProductsByExcelId.get(row.productRef) ??
-        resolvedProductsByNormalizedName.get(normalizeEntityName(row.productRef));
-
-      const item = itemsByExcelId.get(row.ingredientRef) ?? itemsByName.get(normalizeEntityName(row.ingredientRef));
-
-      if (!product || !item) {
-        result.errors += 1;
-        return;
-      }
-
-      const bucket = recipesByProductId.get(product.id) ?? [];
-      bucket.push({ ...row, productRef: product.id, ingredientRef: item.itemId });
-      recipesByProductId.set(product.id, bucket);
-    });
-
-    const selectedMilkItem =
-      [...itemsById.values()].find((item) => normalizeEntityName(item.name) === normalizeEntityName(milkItemName)) ??
-      preview.parsed.items.find((item) => normalizeEntityName(item.name) === normalizeEntityName(milkItemName));
-
-    recipesByProductId.forEach((rows, productId) => {
-      const product = productsById.get(productId);
-      if (!product) {
-        result.errors += 1;
-        return;
-      }
-
-      const recipeId = `recipe_${slugify(product.name)}`;
-      const existedRecipe = recipesById.has(recipeId);
-      upsertRecipe({
-        id: recipeId,
-        name: product.name,
-        type: 'intermedia',
-        yieldQty: 1,
-        yieldUnit: 'portion',
-        active: true,
-      });
-
-      if (existedRecipe) result.updated.recipes += 1;
-      else result.created.recipes += 1;
-
-      upsertProduct({
-        id: product.id,
-        name: product.name,
-        category: product.category,
-        active: true,
-        recipeId,
-      });
-
-      const existingLineIds = new Set(listRecipeLines(recipeId).map((line) => line.id));
-      const mergedByItemId = new Map<string, number>();
-      const ingredientNames: string[] = [];
-
-      rows.forEach((row) => {
-        mergedByItemId.set(row.ingredientRef, (mergedByItemId.get(row.ingredientRef) ?? 0) + row.qtyInBase);
-        const itemName = itemsById.get(row.ingredientRef)?.name ?? '';
-        ingredientNames.push(itemName);
-      });
-
-      if (autoCompleteMilk) {
-        const compactNames = ingredientNames.map((name) => normalizeCompact(name));
-        const hasBlend = compactNames.some((name) => name.includes('blenddelacasa'));
-        const hasVasoOrHielo = compactNames.some((name) => name.includes('vaso') || name.includes('hielo'));
-        const hasMilk = compactNames.some((name) => name.includes('leche'));
-
-        if (hasBlend && hasVasoOrHielo && !hasMilk) {
-          const cupSize = detectCupSize(ingredientNames);
-          if (cupSize && selectedMilkItem) {
-            const milkQty = milkBySize[cupSize];
-            const milkId = 'itemId' in selectedMilkItem ? selectedMilkItem.itemId : selectedMilkItem.id;
-            mergedByItemId.set(milkId, milkQty);
-            result.autoMilkLines += 1;
-          } else {
-            result.errors += 1;
-          }
+      recipeRowsByProductId.forEach((rows, productId) => {
+        const product = listProducts().find((entry) => entry.id === productId);
+        if (!product) {
+          result.errors += 1;
+          return;
         }
-      }
 
-      mergedByItemId.forEach((qtyInBase, itemId) => {
-        const lineId = deterministicRecipeLineId(recipeId, itemId);
-        const existedLine = existingLineIds.has(lineId);
-        upsertRecipeLine({
-          id: lineId,
-          recipeId,
-          lineType: 'item',
-          itemId,
-          qtyInBase: Math.round(qtyInBase * 1000) / 1000,
+        recipeProductIds.add(product.id);
+        const recipeId = `recipe_${slugify(product.name)}`;
+        const existedRecipe = existingRecipes.some((recipe) => recipe.id === recipeId);
+
+        upsertRecipe({
+          id: recipeId,
+          name: product.name,
+          type: 'intermedia',
+          yieldQty: 1,
+          yieldUnit: 'portion',
+          active: true,
         });
 
-        if (existedLine) result.updated.recipeLines += 1;
-        else result.created.recipeLines += 1;
+        if (existedRecipe) result.updated.recipes += 1;
+        else result.created.recipes += 1;
+
+        upsertProduct({
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          active: product.active,
+          recipeId,
+          wasteRatePct: product.wasteRatePct,
+        });
+
+        const existingLineIds = new Set(listRecipeLines(recipeId).map((line) => line.id));
+        const mergedByItemId = new Map<string, number>();
+        rows.forEach((row) => {
+          mergedByItemId.set(row.ingredientRef, (mergedByItemId.get(row.ingredientRef) ?? 0) + row.qtyInBase);
+        });
+
+        mergedByItemId.forEach((qtyInBase, itemId) => {
+          const lineId = deterministicRecipeLineId(recipeId, itemId);
+          const existedLine = existingLineIds.has(lineId);
+          upsertRecipeLine({
+            id: lineId,
+            recipeId,
+            lineType: 'item',
+            itemId,
+            qtyInBase: Math.round(qtyInBase * 1000) / 1000,
+          });
+
+          if (existedLine) result.updated.recipeLines += 1;
+          else result.created.recipeLines += 1;
+        });
       });
-    });
+    }
+
+    if (updateProductManualCosts) {
+      const productsAfterRecipe = new Map(listProducts().map((product) => [product.id, product]));
+
+      preview.parsed.products.forEach((entry) => {
+        if (entry.manualCostGrossClp === null) {
+          return;
+        }
+
+        const resolved = resolvedProducts.get(normalizeEntityName(entry.name));
+        if (!resolved) {
+          result.errors += 1;
+          return;
+        }
+
+        const product = productsAfterRecipe.get(resolved.id);
+        if (!product) {
+          result.errors += 1;
+          return;
+        }
+
+        const hasRecipeAfterImport = Boolean(product.recipeId) || recipeProductIds.has(product.id);
+        if (hasRecipeAfterImport) {
+          return;
+        }
+
+        BRANCHES.forEach((branch) => {
+          const versions = listProductCosts(product.id, branch);
+          const existsDate = hasVersionOnDate(validFrom, versions.map((version) => version.validFrom));
+          if (existsDate) {
+            result.skippedVersions += 1;
+            return;
+          }
+
+          addProductCostVersion(product.id, branch, {
+            costGrossClp: entry.manualCostGrossClp as number,
+            validFrom: validFromDate,
+          });
+        });
+      });
+    }
 
     addAuditEvent({
       entityType: 'dataset',
       entityId: 'base_consolidada',
-      action: 'base_import_v2',
+      action: 'base_import_v3',
       diffJson: {
         created: result.created,
         updated: result.updated,
         skippedVersions: result.skippedVersions,
-        autoMilkLines: result.autoMilkLines,
         errors: result.errors,
         validFrom,
-        autoCompleteMilk,
-        milkItemName,
+        toggles: {
+          updatePrices,
+          updateIngredientCosts,
+          updateRecipes,
+          updateProductManualCosts,
+        },
       },
     });
 
     setSummary(result);
-    setMessage({
-      type: 'success',
-      text: 'Importación base v2 completada. Las ventas existentes (salesDaily) se preservaron sin cambios.',
-    });
+    setMessage({ type: 'success', text: 'Importación base v3 completada. salesDaily se preservó.' });
   }
 
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-      <h1>Importar Base Consolidada</h1>
+      <h1>Importar Base Consolidada v3</h1>
 
       <section style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>
@@ -604,28 +564,19 @@ export default function ImportBasePage() {
       </section>
 
       <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Auto completar leche en bebidas</h2>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-          <input type="checkbox" checked={autoCompleteMilk} onChange={(event) => setAutoCompleteMilk(event.target.checked)} />
-          Auto completar leche en bebidas
+        <h2 style={{ marginTop: 0 }}>Opciones de actualización</h2>
+        <label style={{ display: 'block', marginBottom: 6 }}>
+          <input type="checkbox" checked={updatePrices} onChange={(event) => setUpdatePrices(event.target.checked)} /> Actualizar precios
         </label>
-
-        <label>
-          Selector de leche
-          <br />
-          <select value={milkItemName} onChange={(event) => setMilkItemName(event.target.value)}>
-            {[milkItemName, ...milkOptions.filter((name) => name !== milkItemName)].map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+        <label style={{ display: 'block', marginBottom: 6 }}>
+          <input type="checkbox" checked={updateIngredientCosts} onChange={(event) => setUpdateIngredientCosts(event.target.checked)} /> Actualizar costos ingredientes
         </label>
-
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-          <label>6oz ml<br /><input type="number" value={milkMl6oz} onChange={(event) => setMilkMl6oz(Number(event.target.value))} /></label>
-          <label>8oz ml<br /><input type="number" value={milkMl8oz} onChange={(event) => setMilkMl8oz(Number(event.target.value))} /></label>
-          <label>12oz ml<br /><input type="number" value={milkMl12oz} onChange={(event) => setMilkMl12oz(Number(event.target.value))} /></label>
-          <label>16oz ml<br /><input type="number" value={milkMl16oz} onChange={(event) => setMilkMl16oz(Number(event.target.value))} /></label>
-        </div>
+        <label style={{ display: 'block', marginBottom: 6 }}>
+          <input type="checkbox" checked={updateRecipes} onChange={(event) => setUpdateRecipes(event.target.checked)} /> Actualizar recetas
+        </label>
+        <label style={{ display: 'block' }}>
+          <input type="checkbox" checked={updateProductManualCosts} onChange={(event) => setUpdateProductManualCosts(event.target.checked)} /> Actualizar costo manual productos
+        </label>
       </section>
 
       {message ? <p style={{ color: message.type === 'error' ? '#b00020' : '#0f5132' }}>{message.text}</p> : null}
@@ -634,7 +585,7 @@ export default function ImportBasePage() {
         <section style={{ marginBottom: 16 }}>
           <h2>Resumen previsualización</h2>
           <ul>
-            <li>Items leídos/válidos: {preview.rowsRead.items} / {preview.rowsValid.items}</li>
+            <li>Ingredientes leídos/válidos: {preview.rowsRead.items} / {preview.rowsValid.items}</li>
             <li>Productos leídos/válidos: {preview.rowsRead.products} / {preview.rowsValid.products}</li>
             <li>Recetas leídas/válidas: {preview.rowsRead.recipes} / {preview.rowsValid.recipes}</li>
             <li>Errores: {preview.errors.length}</li>
@@ -661,7 +612,6 @@ export default function ImportBasePage() {
             <li>Productos creados/actualizados: {summary.created.products} / {summary.updated.products}</li>
             <li>Recetas creadas/actualizadas: {summary.created.recipes} / {summary.updated.recipes}</li>
             <li>Líneas receta creadas/actualizadas: {summary.created.recipeLines} / {summary.updated.recipeLines}</li>
-            <li>Líneas de leche auto completadas: {summary.autoMilkLines}</li>
             <li>Versiones omitidas por misma vigencia: {summary.skippedVersions}</li>
             <li>Errores totales: {summary.errors}</li>
           </ul>
