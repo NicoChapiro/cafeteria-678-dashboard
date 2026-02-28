@@ -40,6 +40,12 @@ const sections = [
     cta: 'Ir a setup',
   },
   {
+    title: 'Importar Base',
+    description: 'Carga base consolidada XLSX para productos, ingredientes y recetas.',
+    href: '/import/base',
+    cta: 'Ir a importar base',
+  },
+  {
     title: 'Importar Santiago',
     description: 'Carga de planilla XLSX y conciliación de ventas.',
     href: '/sales/santiago/import',
