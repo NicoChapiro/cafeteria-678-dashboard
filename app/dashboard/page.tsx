@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
@@ -310,11 +309,6 @@ export default function DashboardPage() {
       coverageWithCost,
     };
   }, [salesRows]);
-
-  const topProductosSinCosto = [...dashboard.alerts.sinCosto]
-    .sort((a, b) => b.ventasReales - a.ventasReales)
-    .slice(0, 20);
-  const hayVentas = dashboard.summary.ventasReales > 0;
 
   return (
     <main>
