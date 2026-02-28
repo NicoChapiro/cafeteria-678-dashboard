@@ -23,6 +23,7 @@ import {
   listProductPrices,
   listRecipeLines,
   listRecipes,
+  updateProductCostVersionValidFrom,
   upsertProduct,
 } from '@/src/storage/local/store';
 
@@ -106,6 +107,10 @@ export default function ProductDetailPage() {
     Santiago: EMPTY_FORM,
     Temuco: EMPTY_FORM,
   });
+  const [costValidFromEdit, setCostValidFromEdit] = useState<Record<Branch, string>>({
+    Santiago: '',
+    Temuco: '',
+  });
 
   const [pricesByBranch, setPricesByBranch] = useState<
     Record<Branch, ProductPriceVersion[]>
@@ -128,9 +133,14 @@ export default function ProductDetailPage() {
       Santiago: listProductPrices(productId, 'Santiago'),
       Temuco: listProductPrices(productId, 'Temuco'),
     });
-    setCostsByBranch({
+    const initialCosts = {
       Santiago: listProductCosts(productId, 'Santiago'),
       Temuco: listProductCosts(productId, 'Temuco'),
+    };
+    setCostsByBranch(initialCosts);
+    setCostValidFromEdit({
+      Santiago: initialCosts.Santiago[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+      Temuco: initialCosts.Temuco[0]?.validFrom.toISOString().slice(0, 10) ?? '',
     });
   }, [productId]);
 
@@ -349,9 +359,50 @@ export default function ProductDetailPage() {
       });
 
       setCostsByBranch((prev) => ({ ...prev, [branch]: updated }));
+      setCostValidFromEdit((prev) => ({
+        ...prev,
+        [branch]: updated[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+      }));
       setCostForms((prev) => ({
         ...prev,
         [branch]: { ...EMPTY_FORM },
+      }));
+    } catch (submitError) {
+      setCostError(
+        submitError instanceof Error ? `${branch}: ${submitError.message}` : `${branch}: error`,
+      );
+    }
+  }
+
+  function onChangeFirstCostValidFrom(branch: Branch) {
+    setCostError(null);
+
+    try {
+      const firstVersion = costsByBranch[branch][0];
+      if (!firstVersion) {
+        throw new Error('No hay costos para editar');
+      }
+
+      const dateValue = costValidFromEdit[branch];
+      if (!dateValue) {
+        throw new Error('Debes ingresar una fecha');
+      }
+
+      const validFrom = toUtcDay(dateValue);
+      if (Number.isNaN(validFrom.getTime())) {
+        throw new Error('Fecha inválida');
+      }
+
+      const nextVersion = costsByBranch[branch][1];
+      if (nextVersion && validFrom.getTime() >= nextVersion.validFrom.getTime()) {
+        throw new Error('La nueva fecha debe ser menor al siguiente validFrom');
+      }
+
+      const updated = updateProductCostVersionValidFrom(firstVersion.id, validFrom);
+      setCostsByBranch((prev) => ({ ...prev, [branch]: updated }));
+      setCostValidFromEdit((prev) => ({
+        ...prev,
+        [branch]: updated[0]?.validFrom.toISOString().slice(0, 10) ?? '',
       }));
     } catch (submitError) {
       setCostError(
@@ -545,6 +596,28 @@ export default function ProductDetailPage() {
                 Agregar costo
               </button>
             </p>
+
+            <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr auto', alignItems: 'end', maxWidth: 420 }}>
+              <label>
+                Cambiar fecha inicio (primera versión)
+                <br />
+                <input
+                  type="date"
+                  value={costValidFromEdit[branch]}
+                  onChange={(event) =>
+                    setCostValidFromEdit((prev) => ({ ...prev, [branch]: event.target.value }))
+                  }
+                  disabled={costsByBranch[branch].length === 0}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => onChangeFirstCostValidFrom(branch)}
+                disabled={costsByBranch[branch].length === 0}
+              >
+                Cambiar fecha inicio
+              </button>
+            </div>
 
             <h4>Historial</h4>
             <ul>
