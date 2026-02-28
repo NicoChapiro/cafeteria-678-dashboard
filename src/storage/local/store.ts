@@ -394,6 +394,7 @@ export function clearAuditLogs(actor = 'local'): void {
   });
 }
 
+
 export function addAuditEvent(params: {
   entityType: string;
   entityId: string;
@@ -409,7 +410,6 @@ export function addAuditEvent(params: {
     diffJson: params.diffJson,
     actor: params.actor ?? 'local',
   });
-
 }
 
 export function listItems(): Item[] {
