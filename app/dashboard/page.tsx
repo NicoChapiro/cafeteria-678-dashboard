@@ -228,11 +228,13 @@ export default function DashboardPage() {
     });
 
     const rows = [...perProduct.values()].map((row) => {
-      const margenTeorico = row.ventasReales - row.costoTeorico;
+      const costoTeorico = Math.round(row.costoTeorico);
+      const margenTeorico = Math.round(row.ventasReales - costoTeorico);
       const margenPct = row.ventasReales > 0 ? (margenTeorico / row.ventasReales) * 100 : 0;
-      const deltaLista = row.ventasLista - row.ventasReales;
+      const deltaLista = Math.round(row.ventasLista - row.ventasReales);
       return {
         ...row,
+        costoTeorico,
         margenTeorico,
         margenPct,
         deltaLista,
@@ -241,7 +243,7 @@ export default function DashboardPage() {
 
     rows.sort((a, b) => a.productName.localeCompare(b.productName, 'es-CL'));
 
-    const summary = rows.reduce(
+    const summaryRaw = rows.reduce(
       (acc, row) => ({
         ventasReales: acc.ventasReales + row.ventasReales,
         ventasLista: acc.ventasLista + row.ventasLista,
@@ -254,9 +256,15 @@ export default function DashboardPage() {
       },
     );
 
-    const margenTeorico = summary.ventasReales - summary.costoTeorico;
+    const summary = {
+      ventasReales: Math.round(summaryRaw.ventasReales),
+      ventasLista: Math.round(summaryRaw.ventasLista),
+      costoTeorico: Math.round(summaryRaw.costoTeorico),
+    };
+
+    const margenTeorico = Math.round(summary.ventasReales - summary.costoTeorico);
     const margenPct = summary.ventasReales > 0 ? (margenTeorico / summary.ventasReales) * 100 : 0;
-    const deltaLista = summary.ventasLista - summary.ventasReales;
+    const deltaLista = Math.round(summary.ventasLista - summary.ventasReales);
 
     const alerts = {
       sinReceta: rows.filter((row) => row.alertas.has('sin receta')),
