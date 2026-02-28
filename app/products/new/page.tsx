@@ -37,7 +37,7 @@ export default function NewProductPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 640 }}>
+    <main className="card" style={{ maxWidth: 640 }}>
       <h1>Nuevo Producto</h1>
       <p>
         <Link href="/products">Volver a productos</Link>
@@ -47,13 +47,13 @@ export default function NewProductPage() {
         <label>
           Name *
           <br />
-          <input name="name" required style={{ width: '100%' }} />
+          <input className="input" name="name" required style={{ width: '100%' }} />
         </label>
 
         <label>
           Category
           <br />
-          <input name="category" style={{ width: '100%' }} />
+          <input className="input" name="category" style={{ width: '100%' }} />
         </label>
 
         <label>
@@ -62,7 +62,7 @@ export default function NewProductPage() {
 
         {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
 
-        <button type="submit">Guardar</button>
+        <button className="btn" type="submit">Guardar</button>
       </form>
     </main>
   );

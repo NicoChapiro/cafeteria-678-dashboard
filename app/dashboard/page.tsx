@@ -271,14 +271,14 @@ export default function DashboardPage() {
   }, [salesRows]);
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Dashboard rentabilidad teórica</h1>
 
-      <section style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
+      <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
         <label>
           Sucursal
           <br />
-          <select
+          <select className="select"
             value={selectedBranch}
             onChange={(event) => setSelectedBranch(event.target.value as DashboardBranch)}
           >
@@ -291,21 +291,21 @@ export default function DashboardPage() {
         <label>
           Desde
           <br />
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
         </label>
 
         <label>
           Hasta
           <br />
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
         </label>
 
-        <button type="button" onClick={refresh}>
+        <button className="btn" type="button" onClick={refresh}>
           Refrescar
         </button>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+      <section className="card">
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
         <p style={{ margin: '4px 0' }}>
           <strong>Ventas reales (CLP): </strong>
@@ -329,7 +329,7 @@ export default function DashboardPage() {
         </p>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+      <section className="card">
         <h2 style={{ marginTop: 0 }}>Alertas</h2>
         <p style={{ margin: '4px 0' }}>
           <strong>Sin receta:</strong> {dashboard.alerts.sinReceta.length}
@@ -352,7 +352,7 @@ export default function DashboardPage() {
         </ul>
       </section>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="tableWrap"><table className="table">
         <thead>
           <tr>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>product</th>
@@ -390,7 +390,7 @@ export default function DashboardPage() {
             </tr>
           ) : null}
         </tbody>
-      </table>
+      </table></div>
     </main>
   );
 }

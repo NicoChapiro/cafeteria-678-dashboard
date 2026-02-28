@@ -237,7 +237,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+      <main>
         <h1>Producto no encontrado</h1>
         <p>
           <Link href="/products">Volver a productos</Link>
@@ -353,7 +353,7 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
+    <main>
       <h1>Producto: {product.name}</h1>
       <p>
         <Link href="/products">Volver a productos</Link>
@@ -397,7 +397,7 @@ export default function ProductDetailPage() {
 
           {baseError ? <p style={{ color: 'crimson' }}>{baseError}</p> : null}
 
-          <button type="submit">Guardar cambios</button>
+          <button className="btn" type="submit">Guardar cambios</button>
         </form>
       </section>
 
@@ -467,7 +467,7 @@ export default function ProductDetailPage() {
             </div>
 
             <p>
-              <button type="button" onClick={() => onAddPrice(branch)}>
+              <button className="btnSecondary" type="button" onClick={() => onAddPrice(branch)}>
                 Agregar precio
               </button>
             </p>
@@ -519,7 +519,7 @@ export default function ProductDetailPage() {
             </div>
 
             <p>
-              <button type="button" onClick={() => onAddCost(branch)}>
+              <button className="btnSecondary" type="button" onClick={() => onAddCost(branch)}>
                 Agregar costo
               </button>
             </p>

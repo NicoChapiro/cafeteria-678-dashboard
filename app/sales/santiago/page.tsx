@@ -97,23 +97,23 @@ export default function SantiagoSalesPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Ventas Santiago (importadas)</h1>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>
           Desde
           <br />
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
         </label>
 
         <label>
           Hasta
           <br />
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
         </label>
 
-        <button type="button" onClick={handleRefresh}>
+        <button className="btn" type="button" onClick={handleRefresh}>
           Refrescar
         </button>
       </div>
@@ -129,7 +129,7 @@ export default function SantiagoSalesPage() {
         </div>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="tableWrap"><table className="table">
         <thead>
           <tr>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>date</th>
@@ -157,7 +157,7 @@ export default function SantiagoSalesPage() {
             </tr>
           ) : null}
         </tbody>
-      </table>
+      </table></div>
     </main>
   );
 }

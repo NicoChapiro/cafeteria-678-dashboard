@@ -237,14 +237,14 @@ export default function SantiagoImportPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Importar Ventas Santiago</h1>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
+      <div className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
         <label>
           Archivo Reporte-Productos
           <br />
-          <input
+          <input className="input"
             type="file"
             accept=".xlsx"
             onChange={(event) => {
@@ -255,7 +255,7 @@ export default function SantiagoImportPage() {
           />
         </label>
 
-        <button type="button" onClick={handlePreview}>
+        <button className="btn" type="button" onClick={handlePreview}>
           Previsualizar
         </button>
 
@@ -268,7 +268,7 @@ export default function SantiagoImportPage() {
           Crear productos faltantes
         </label>
 
-        <button type="button" onClick={handleImport} disabled={!preview}>
+        <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>
           Importar
         </button>
       </div>
@@ -305,7 +305,7 @@ export default function SantiagoImportPage() {
       {previewRows.length > 0 ? (
         <section>
           <h2>Preview (primeras {previewRows.length} filas)</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="tableWrap"><table className="table">
             <thead>
               <tr>
                 <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>date</th>
@@ -324,7 +324,7 @@ export default function SantiagoImportPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </section>
       ) : null}
     </main>
