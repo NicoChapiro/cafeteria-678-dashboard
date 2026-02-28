@@ -175,14 +175,14 @@ export default function SalesTemucoPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+    <main>
       <h1>Ventas Temuco (manual)</h1>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>
           Fecha
           <br />
-          <input
+          <input className="input"
             type="date"
             value={date}
             onChange={(event) => {
@@ -192,13 +192,13 @@ export default function SalesTemucoPage() {
           />
         </label>
 
-        <button type="button" onClick={handleSave}>
+        <button className="btn" type="button" onClick={handleSave}>
           Guardar
         </button>
-        <button type="button" onClick={handleDuplicatePrevious}>
+        <button className="btnSecondary" type="button" onClick={handleDuplicatePrevious}>
           Duplicar día anterior
         </button>
-        <button type="button" onClick={handleClearDay}>
+        <button className="btnSecondary" type="button" onClick={handleClearDay}>
           Limpiar día
         </button>
       </div>
@@ -207,7 +207,7 @@ export default function SalesTemucoPage() {
         <p style={{ color: message.type === 'error' ? '#b00020' : '#0f5132' }}>{message.text}</p>
       ) : null}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="tableWrap"><table className="table">
         <thead>
           <tr>
             <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Product</th>
@@ -260,7 +260,7 @@ export default function SalesTemucoPage() {
             </tr>
           ) : null}
         </tbody>
-      </table>
+      </table></div>
     </main>
   );
 }
