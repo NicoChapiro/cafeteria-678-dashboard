@@ -37,6 +37,7 @@ export type Product = {
   name: string;
   category?: string;
   recipeId?: string | null;
+  wasteRatePct?: number;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
