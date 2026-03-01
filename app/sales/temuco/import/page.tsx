@@ -8,6 +8,8 @@ import {
   type TemucoSalesImportRow,
 } from '@/src/storage/local/store';
 
+type RawRow = Record<string, unknown>;
+
 type PreviewState = {
   rowsRead: number;
   validRows: TemucoSalesImportRow[];
@@ -68,7 +70,8 @@ function toNumber(value: unknown): number {
 }
 
 function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; errors: string[]; rowsRead: number } {
-  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
+  const raw = XLSX.utils.sheet_to_json<RawRow>(sheet, { defval: null });
+  const rawRows = raw as RawRow[];
   if (!raw.length) return { rows: [], errors: ['La hoja seleccionada está vacía.'], rowsRead: 0 };
 
   const first = raw[0] ?? {};
@@ -94,24 +97,17 @@ function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; erro
     headerMap.get('ventas') ??
     headerMap.get('monto');
 
-  const missing: string[] = [];
-  if (!dateKey) missing.push('Fecha');
-  if (!productKey) missing.push('Producto');
-  if (!qtyKey) missing.push('Cantidad');
-  if (!grossKey) missing.push('Venta bruta / Monto');
-
-  if (missing.length) {
-    return {
-      rows: [],
-      rowsRead: raw.length,
-      errors: [`Faltan columnas requeridas: ${missing.join(', ')}`],
-    };
+  // Guard clause: si falta una key obligatoria, abortamos antes de iterar filas.
+  if (!dateKey || !productKey || !qtyKey || !grossKey) {
+    throw new Error(
+      `No pude detectar columnas obligatorias. dateKey=${String(dateKey)} productKey=${String(productKey)} qtyKey=${String(qtyKey)} grossKey=${String(grossKey)}`,
+    );
   }
 
   const out: TemucoSalesImportRow[] = [];
   const errors: string[] = [];
 
-  raw.forEach((row, idx) => {
+  rawRows.forEach((row, idx) => {
     const date = toIsoDate(row[dateKey]);
     const product = String(row[productKey] ?? '').trim();
     const qty = toNumber(row[qtyKey]);
@@ -125,7 +121,7 @@ function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; erro
     out.push({ date, product, qty, gross });
   });
 
-  return { rows: out, errors, rowsRead: raw.length };
+  return { rows: out, errors, rowsRead: rawRows.length };
 }
 
 export default function TemucoSalesImportPage() {
