@@ -130,20 +130,24 @@ function toNumber(value: unknown): number {
 
 function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; errors: string[]; rowsRead: number } {
   const raw = XLSX.utils.sheet_to_json<RawRow>(sheet, { defval: null });
-  const rawRows = raw as RawRow[];
   if (!raw.length) return { rows: [], errors: ['La hoja seleccionada está vacía.'], rowsRead: 0 };
 
-  const headers = Object.keys(rawRows[0] ?? {});
+  const headers = raw.length ? Object.keys(raw[0] as Record<string, unknown>) : [];
   const { dateKey, productKey, qtyKey, grossKey } = detectRequiredColumns(headers);
 
   const out: TemucoSalesImportRow[] = [];
   const errors: string[] = [];
 
-  rawRows.forEach((row, idx) => {
-    const date = toIsoDate(getCell(row, dateKey));
-    const product = String(getCell(row, productKey) ?? '').trim();
-    const qty = toNumber(getCell(row, qtyKey));
-    const gross = toNumber(getCell(row, grossKey));
+  raw.forEach((row, idx) => {
+    const dateRaw = getCell(row, dateKey);
+    const productRaw = getCell(row, productKey);
+    const qtyRaw = getCell(row, qtyKey);
+    const grossRaw = getCell(row, grossKey);
+
+    const date = toIsoDate(dateRaw);
+    const product = String(productRaw ?? '').trim();
+    const qty = toNumber(qtyRaw);
+    const gross = toNumber(grossRaw);
 
     if (!date || !product) {
       errors.push(`Fila ${idx + 2}: fecha o producto inválido.`);
@@ -153,7 +157,7 @@ function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; erro
     out.push({ date, product, qty, gross });
   });
 
-  return { rows: out, errors, rowsRead: rawRows.length };
+  return { rows: out, errors, rowsRead: raw.length };
 }
 
 export default function TemucoSalesImportPage() {
