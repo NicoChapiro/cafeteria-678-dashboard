@@ -184,26 +184,25 @@ function parseWorkbook(fileBuffer: ArrayBuffer): PreviewState {
   });
 
   const detectedHeaders = Array.from(headerSet);
-  let detectedKeys: DetectedKeys;
-
+  let keys: DetectedKeys;
   try {
-    detectedKeys = detectRequiredColumns(detectedHeaders);
-  } catch (error) {
-    errors.push(error instanceof Error ? error.message : 'No pude detectar columnas obligatorias.');
-    errors.push(
-      `Columnas detectadas (normalizadas): ${detectedHeaders.slice(0, 60).join(', ')}`,
-    );
-
+    keys = detectRequiredColumns(detectedHeaders);
+  } catch (err) {
     return {
       rowsRead: rows.length,
       validRows: [],
-      errors,
+      errors: [
+        err instanceof Error ? err.message : String(err),
+        `Columnas detectadas (normalizadas): ${detectedHeaders.slice(0, 60).join(', ')}`,
+      ],
       dateMin: null,
       dateMax: null,
       totalGross: 0,
       totalQty: 0,
     };
   }
+
+  const { dateKey, productKey, qtyKey, grossKey } = keys;
 
   rows.forEach((rawRow, index) => {
     const rowIndex = index + 2;
@@ -213,12 +212,12 @@ function parseWorkbook(fileBuffer: ArrayBuffer): PreviewState {
       byHeader.set(normalizeHeader(key), value);
     });
 
-    const date = toIsoDate(byHeader.get(detectedKeys.dateKey));
-    const product = String(byHeader.get(detectedKeys.productKey) ?? '').trim();
+    const date = toIsoDate(byHeader.get(dateKey));
+    const product = String(byHeader.get(productKey) ?? '').trim();
 
-    const qty = parseQty(byHeader.get(detectedKeys.qtyKey));
+    const qty = parseQty(byHeader.get(qtyKey));
 
-    const gross = parseGross(byHeader.get(detectedKeys.grossKey));
+    const gross = parseGross(byHeader.get(grossKey));
 
     if (!date) {
       errors.push(`fila ${rowIndex} sin fecha válida`);
