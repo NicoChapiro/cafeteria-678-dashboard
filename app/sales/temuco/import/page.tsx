@@ -5,6 +5,67 @@ import { useState, type ChangeEventHandler } from 'react';
 
 import { importSalesTemuco, type TemucoSalesImportRow } from '@/src/storage/local/store';
 
+
+type DetectedKeys = {
+  dateKey: string;
+  productKey: string;
+  qtyKey: string;
+  grossKey: string;
+};
+
+function detectRequiredColumns(headers: string[]): DetectedKeys {
+  const normHeader = (value: unknown) =>
+    String(value ?? '')
+      .trim()
+      .toLocaleLowerCase('es-CL')
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '');
+
+  const byNorm = new Map(headers.map((h) => [normHeader(h), h]));
+
+  const findFirst = (candidates: string[]): string | undefined => {
+    for (const candidate of candidates) {
+      const found = byNorm.get(normHeader(candidate));
+      if (found) return found;
+    }
+    return undefined;
+  };
+
+  const dateKey = findFirst(['Fecha', 'date']);
+  const productKey = findFirst(['Producto', 'product', 'Producto/Item', 'Item']);
+
+  const qtyKey = findFirst([
+    'Cantidad',
+    'Cantidades',
+    'Cantidades vendidas',
+    'Cantidad vendida',
+    'Qty',
+    'Unidades',
+    'Units',
+  ]);
+
+  const grossKey = findFirst([
+    'Monto total',
+    'Monto Total',
+    'Monto',
+    'Total',
+    'Total venta',
+    'Venta bruta',
+    'Ventas brutas',
+    'Importe',
+    'Gross',
+    'Bruto',
+  ]);
+
+  if (!dateKey || !productKey || !qtyKey || !grossKey) {
+    throw new Error(
+      `No pude detectar columnas obligatorias. dateKey=${dateKey} productKey=${productKey} qtyKey=${qtyKey} grossKey=${grossKey}`,
+    );
+  }
+
+  return { dateKey, productKey, qtyKey, grossKey };
+}
+
 type PreviewState = {
   rowsRead: number;
   validRows: TemucoSalesImportRow[];
@@ -122,30 +183,15 @@ function parseWorkbook(fileBuffer: ArrayBuffer): PreviewState {
     Object.keys(r).forEach((k) => headerSet.add(normalizeHeader(k)));
   });
 
-  const hasDate = headerSet.has('fecha') || headerSet.has('date');
-  const hasProduct = headerSet.has('producto') || headerSet.has('product');
-  const hasQty =
-    headerSet.has('cantidades vendidas') ||
-    headerSet.has('cantidad vendida') ||
-    headerSet.has('cantidad') ||
-    headerSet.has('unidades') ||
-    headerSet.has('qty');
-  const hasGross =
-    headerSet.has('monto total') ||
-    headerSet.has('ventas totales') ||
-    headerSet.has('venta bruta') ||
-    headerSet.has('total') ||
-    headerSet.has('monto') ||
-    headerSet.has('importe') ||
-    headerSet.has('gross');
+  const detectedHeaders = Array.from(headerSet);
+  let detectedKeys: DetectedKeys;
 
-  if (!hasDate || !hasProduct || !hasQty || !hasGross) {
+  try {
+    detectedKeys = detectRequiredColumns(detectedHeaders);
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : 'No pude detectar columnas obligatorias.');
     errors.push(
-      'No pude detectar columnas obligatorias. ' +
-        `date=${hasDate} product=${hasProduct} qty=${hasQty} gross=${hasGross}.`,
-    );
-    errors.push(
-      `Columnas detectadas (normalizadas): ${Array.from(headerSet).slice(0, 60).join(', ')}`,
+      `Columnas detectadas (normalizadas): ${detectedHeaders.slice(0, 60).join(', ')}`,
     );
 
     return {
@@ -167,26 +213,12 @@ function parseWorkbook(fileBuffer: ArrayBuffer): PreviewState {
       byHeader.set(normalizeHeader(key), value);
     });
 
-    const date = toIsoDate(byHeader.get('fecha')) ?? toIsoDate(byHeader.get('date'));
-    const product = String(byHeader.get('producto') ?? byHeader.get('product') ?? '').trim();
+    const date = toIsoDate(byHeader.get(detectedKeys.dateKey));
+    const product = String(byHeader.get(detectedKeys.productKey) ?? '').trim();
 
-    const qty = parseQty(
-      byHeader.get('cantidades vendidas') ??
-        byHeader.get('cantidad vendida') ??
-        byHeader.get('cantidad') ??
-        byHeader.get('unidades') ??
-        byHeader.get('qty'),
-    );
+    const qty = parseQty(byHeader.get(detectedKeys.qtyKey));
 
-    const gross = parseGross(
-      byHeader.get('monto total') ??
-        byHeader.get('ventas totales') ??
-        byHeader.get('venta bruta') ??
-        byHeader.get('total') ??
-        byHeader.get('monto') ??
-        byHeader.get('importe') ??
-        byHeader.get('gross'),
-    );
+    const gross = parseGross(byHeader.get(detectedKeys.grossKey));
 
     if (!date) {
       errors.push(`fila ${rowIndex} sin fecha válida`);
