@@ -1,23 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { useState, type ChangeEventHandler } from 'react';
 
-import {
-  importSalesTemuco,
-  type TemucoSalesImportRow,
-} from '@/src/storage/local/store';
-
-type SalesDailyImportRow = TemucoSalesImportRow;
-
-function normalizeHeader(value: unknown): string {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
+import { importSalesTemuco, type TemucoSalesImportRow } from '@/src/storage/local/store';
 
 type PreviewState = {
   rowsRead: number;
@@ -29,405 +15,353 @@ type PreviewState = {
   totalQty: number;
 };
 
+function normalizeHeader(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLocaleLowerCase('es-CL')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function toIsoDate(value: unknown): string | null {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value.toISOString().slice(0, 10);
   }
 
+  // Excel serial date (si viene como número)
   if (typeof value === 'number' && Number.isFinite(value)) {
     const parsed = XLSX.SSF.parse_date_code(value);
     if (parsed) {
       const date = new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d));
-      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
+      return date.toISOString().slice(0, 10);
     }
   }
 
-  const s = String(value ?? '').trim();
-  if (!s) return null;
+  const text = String(value ?? '').trim();
+  if (!text) return null;
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const normalized = text.replace(/\//g, '-');
 
-  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (m) {
-    const dd = m[1].padStart(2, '0');
-    const mm = m[2].padStart(2, '0');
-    const yyyy = m[3].length === 2 ? `20${m[3]}` : m[3];
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return normalized;
+  }
+
+  // dd-mm-yyyy o dd-mm-yy
+  const dmy = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+  if (dmy) {
+    const dd = String(dmy[1]).padStart(2, '0');
+    const mm = String(dmy[2]).padStart(2, '0');
+    let yyyy = dmy[3];
+    if (yyyy.length === 2) yyyy = `20${yyyy}`;
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  const dt = new Date(s);
-  if (!Number.isNaN(dt.getTime())) return dt.toISOString().slice(0, 10);
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return null;
 
-  return null;
+  return parsed.toISOString().slice(0, 10);
 }
 
-function toNumber(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const s = String(value ?? '').trim();
-  if (!s) return 0;
-  const normalized = s.replace(/\./g, '').replace(',', '.');
-  const n = Number(normalized);
-  return Number.isFinite(n) ? n : 0;
+function parseQty(value: unknown): number | null {
+  const text = String(value ?? '').trim().replace(',', '.');
+  if (!text) return 0;
+
+  const parsed = Number(text);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+
+  return Math.round(parsed * 1000) / 1000;
 }
 
-function parseSalesImportSheet(sheet: XLSX.WorkSheet): {
-  rows: SalesDailyImportRow[];
-  errors: string[];
-} {
+function parseGross(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value < 0) return null;
+    return Math.round(value);
+  }
+
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+
+  // "$ 12.345", "12.345", "12345"
+  const cleaned = raw
+    .replace(/[$\s]/g, '')
+    .replace(/\./g, '')
+    .replace(/,/g, '');
+  const parsed = Number(cleaned);
+
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+
+  return Math.round(parsed);
+}
+
+function parseWorkbook(fileBuffer: ArrayBuffer): PreviewState {
+  const workbook = XLSX.read(fileBuffer, { type: 'array' });
+
+  const preferred =
+    workbook.SheetNames.find((name) => name === 'Detalle') ??
+    workbook.SheetNames.find((name) => name.toLocaleLowerCase('es-CL').includes('detalle')) ??
+    workbook.SheetNames[0];
+
+  const sheet = workbook.Sheets[preferred];
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+
   const errors: string[] = [];
+  const validRows: TemucoSalesImportRow[] = [];
 
-  // 1) Hoja -> matriz (primer fila = headers)
-  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-    header: 1,
-    blankrows: false,
-    defval: null,
-    raw: true,
-  }) as unknown[][];
+  let dateMin: string | null = null;
+  let dateMax: string | null = null;
+  let totalGross = 0;
+  let totalQty = 0;
 
-  if (!raw.length) return { rows: [], errors: ['La hoja está vacía.'] };
+  // Chequeo global de columnas (evita crash y da diagnóstico)
+  const headerSet = new Set<string>();
+  rows.slice(0, 25).forEach((r) => {
+    Object.keys(r).forEach((k) => headerSet.add(normalizeHeader(k)));
+  });
 
-  const firstRow = (raw[0] ?? []) as unknown[];
-  const headers = firstRow.map((h) => normalizeHeader(h));
+  const hasDate = headerSet.has('fecha') || headerSet.has('date');
+  const hasProduct = headerSet.has('producto') || headerSet.has('product');
+  const hasQty =
+    headerSet.has('cantidades vendidas') ||
+    headerSet.has('cantidad vendida') ||
+    headerSet.has('cantidad') ||
+    headerSet.has('unidades') ||
+    headerSet.has('qty');
+  const hasGross =
+    headerSet.has('monto total') ||
+    headerSet.has('ventas totales') ||
+    headerSet.has('venta bruta') ||
+    headerSet.has('total') ||
+    headerSet.has('monto') ||
+    headerSet.has('importe') ||
+    headerSet.has('gross');
 
-  // 2) Detectar columnas (robusto: alias + heurística por "contiene")
-  const headerMap = new Map<string, string>(); // normalized -> original header (texto real)
-  firstRow.forEach((h) => headerMap.set(normalizeHeader(h), String(h ?? '').trim()));
-
-  const findByAlias = (aliases: string[]): string | undefined => {
-    for (const a of aliases) {
-      const hit = headerMap.get(a);
-      if (hit) return hit;
-    }
-    return undefined;
-  };
-
-  const findByContains = (pred: (hNorm: string) => boolean): string | undefined => {
-    for (let i = 0; i < headers.length; i += 1) {
-      const hNorm = headers[i] ?? '';
-      if (pred(hNorm)) {
-        return String(firstRow[i] ?? '').trim();
-      }
-    }
-    return undefined;
-  };
-
-  // Fecha
-  const dateKey =
-    findByAlias(['fecha', 'date', 'dia', 'día']) ||
-    findByContains((h) => h.includes('fecha') || h.includes('date'));
-
-  // Producto
-  const productKey =
-    findByAlias(['producto', 'product', 'item', 'articulo', 'artículo', 'nombre producto', 'descripcion', 'descripción']) ||
-    findByContains(
-      (h) =>
-        h.includes('producto') ||
-        h.includes('product') ||
-        h.includes('item') ||
-        h.includes('articulo') ||
-        h.includes('artículo') ||
-        h.includes('descripcion') ||
-        h.includes('descripción'),
-    );
-
-  // Cantidad / unidades
-  const qtyKey =
-    findByAlias(['cantidad', 'qty', 'quantity', 'unidades', 'units', 'cant', 'uds', 'ud']) ||
-    findByContains(
-      (h) =>
-        h.includes('cantidad') ||
-        h.includes('unidades') ||
-        h.includes('units') ||
-        h.includes('qty') ||
-        h.includes('quantity') ||
-        h.includes('cant') ||
-        h.includes('uds') ||
-        h.includes('ud'),
-    );
-
-  // Monto / total venta
-  const grossKey =
-    findByAlias([
-      'total',
-      'monto',
-      'importe',
-      'venta',
-      'ventas',
-      'gross',
-      'bruto',
-      'total venta',
-      'total ventas',
-      'monto total',
-      'importe total',
-      'subtotal',
-      'neto',
-      'neta',
-      'ventas netas',
-    ]) ||
-    findByContains(
-      (h) =>
-        h.includes('total') ||
-        h.includes('monto') ||
-        h.includes('importe') ||
-        h.includes('venta') ||
-        h.includes('ventas') ||
-        h.includes('gross') ||
-        h.includes('bruto') ||
-        h.includes('subtotal') ||
-        h.includes('neto') ||
-        h.includes('neta'),
-    );
-
-  // Guardas: si falta algo, devolvemos error (y evitamos row[undefined])
-  if (!dateKey || !productKey || !qtyKey || !grossKey) {
+  if (!hasDate || !hasProduct || !hasQty || !hasGross) {
     errors.push(
-      `No pude detectar columnas obligatorias. dateKey=${String(dateKey)} productKey=${String(
-        productKey,
-      )} qtyKey=${String(qtyKey)} grossKey=${String(grossKey)}`,
+      'No pude detectar columnas obligatorias. ' +
+        `date=${hasDate} product=${hasProduct} qty=${hasQty} gross=${hasGross}.`,
     );
-    return { rows: [], errors };
+    errors.push(
+      `Columnas detectadas (normalizadas): ${Array.from(headerSet).slice(0, 60).join(', ')}`,
+    );
+
+    return {
+      rowsRead: rows.length,
+      validRows: [],
+      errors,
+      dateMin: null,
+      dateMax: null,
+      totalGross: 0,
+      totalQty: 0,
+    };
   }
 
-  const columnIndexByHeader = new Map<string, number>();
-  firstRow.forEach((header, index) => {
-    columnIndexByHeader.set(String(header ?? '').trim(), index);
-  });
+  rows.forEach((rawRow, index) => {
+    const rowIndex = index + 2;
 
-  const dateIndex = columnIndexByHeader.get(dateKey);
-  const productIndex = columnIndexByHeader.get(productKey);
-  const qtyIndex = columnIndexByHeader.get(qtyKey);
-  const grossIndex = columnIndexByHeader.get(grossKey);
-
-  if (
-    dateIndex === undefined ||
-    productIndex === undefined ||
-    qtyIndex === undefined ||
-    grossIndex === undefined
-  ) {
-    errors.push('No se pudieron resolver índices de columnas detectadas.');
-    return { rows: [], errors };
-  }
-
-  // 3) Parseo filas
-  const out: SalesDailyImportRow[] = [];
-  raw.forEach((row, idx) => {
-    if (idx === 0) return; // skip header
-    if (!Array.isArray(row) || !row.length) return;
-
-    const date = toIsoDate(row[dateIndex]);
-    const product = String(row[productIndex] ?? '').trim();
-    const qty = toNumber(row[qtyIndex]);
-    const gross = toNumber(row[grossIndex]);
-
-    if (!date || !product) return;
-    if (!Number.isFinite(qty) && !Number.isFinite(gross)) return;
-
-    out.push({
-      date,
-      product,
-      qty: Number.isFinite(qty) ? qty : 0,
-      gross: Number.isFinite(gross) ? gross : 0,
+    const byHeader = new Map<string, unknown>();
+    Object.entries(rawRow).forEach(([key, value]) => {
+      byHeader.set(normalizeHeader(key), value);
     });
+
+    const date = toIsoDate(byHeader.get('fecha')) ?? toIsoDate(byHeader.get('date'));
+    const product = String(byHeader.get('producto') ?? byHeader.get('product') ?? '').trim();
+
+    const qty = parseQty(
+      byHeader.get('cantidades vendidas') ??
+        byHeader.get('cantidad vendida') ??
+        byHeader.get('cantidad') ??
+        byHeader.get('unidades') ??
+        byHeader.get('qty'),
+    );
+
+    const gross = parseGross(
+      byHeader.get('monto total') ??
+        byHeader.get('ventas totales') ??
+        byHeader.get('venta bruta') ??
+        byHeader.get('total') ??
+        byHeader.get('monto') ??
+        byHeader.get('importe') ??
+        byHeader.get('gross'),
+    );
+
+    if (!date) {
+      errors.push(`fila ${rowIndex} sin fecha válida`);
+      return;
+    }
+    if (!product) {
+      errors.push(`fila ${rowIndex} sin producto`);
+      return;
+    }
+    if (qty === null) {
+      errors.push(`fila ${rowIndex} cantidad inválida`);
+      return;
+    }
+    if (gross === null) {
+      errors.push(`fila ${rowIndex} monto inválido`);
+      return;
+    }
+
+    validRows.push({ date, product, qty, gross });
+
+    totalGross += gross;
+    totalQty += qty;
+    dateMin = dateMin === null || date < dateMin ? date : dateMin;
+    dateMax = dateMax === null || date > dateMax ? date : dateMax;
   });
 
-  return { rows: out, errors };
+  return {
+    rowsRead: rows.length,
+    validRows,
+    errors,
+    dateMin,
+    dateMax,
+    totalGross,
+    totalQty: Math.round(totalQty * 1000) / 1000,
+  };
 }
 
-export default function TemucoSalesImportPage() {
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [sheetNames, setSheetNames] = useState<string[]>([]);
-  const [selectedSheet, setSelectedSheet] = useState<string>('');
-  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
+export default function TemucoImportPage() {
+  const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [keepSales, setKeepSales] = useState(true);
-  const [importResult, setImportResult] = useState<{
-    imported: number;
-    updated?: number;
-    skipped?: number;
-    errors?: string[];
-  } | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const computed = useMemo(() => {
-    if (!workbook || !selectedSheet) return null;
-    const sheet = workbook.Sheets[selectedSheet];
-    if (!sheet) return null;
-    const parsed = parseSalesImportSheet(sheet);
-    const validRows = parsed.rows;
-    const dates = validRows.map((r) => r.date).sort();
-    const dateMin = dates[0] ?? null;
-    const dateMax = dates[dates.length - 1] ?? null;
-    const totalGross = validRows.reduce((acc, r) => acc + (r.gross ?? 0), 0);
-    const totalQty = validRows.reduce((acc, r) => acc + (r.qty ?? 0), 0);
-    const errors = parsed.errors;
-    return { validRows, dateMin, dateMax, totalGross, totalQty, errors, rowsRead: validRows.length };
-  }, [workbook, selectedSheet]);
+  const canPreview = Boolean(file);
+  const canImport = Boolean(preview?.validRows.length);
 
-  async function onPickFile(file: File): Promise<void> {
-    setImportResult(null);
+  const onPickFile: ChangeEventHandler<HTMLInputElement> = (event) => {
+    setNotice(null);
     setPreview(null);
-    setFileName(file.name);
+    setFile(event.target.files?.[0] ?? null);
+  };
 
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: 'array' });
-    setWorkbook(wb);
-    setSheetNames(wb.SheetNames);
-    setSelectedSheet(wb.SheetNames[0] ?? '');
-  }
+  const onPreview = async (): Promise<void> => {
+    setNotice(null);
 
-  function onPreview(): void {
-    if (!computed) return;
-    setPreview({
-      rowsRead: computed.rowsRead,
-      validRows: computed.validRows,
-      errors: computed.errors,
-      dateMin: computed.dateMin,
-      dateMax: computed.dateMax,
-      totalGross: computed.totalGross,
-      totalQty: computed.totalQty,
-    });
-  }
-
-  async function onImport(): Promise<void> {
-    if (!preview) return;
-    setBusy(true);
-    try {
-      const res = importSalesTemuco(preview.validRows, { keepSales });
-      setImportResult(res);
-    } finally {
-      setBusy(false);
+    if (!file) {
+      setNotice('Selecciona un archivo .xlsx primero.');
+      return;
     }
-  }
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const parsed = parseWorkbook(buffer);
+      setPreview(parsed);
+
+      if (parsed.errors.length) {
+        setNotice(`Previsualización con ${parsed.errors.length} advertencias/errores.`);
+      }
+    } catch (error) {
+      setPreview(null);
+      setNotice(error instanceof Error ? error.message : 'Error desconocido al leer el XLSX.');
+    }
+  };
+
+  const onImport = async (): Promise<void> => {
+    setNotice(null);
+
+    if (!preview?.validRows.length) {
+      setNotice('Primero genera una previsualización válida.');
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      importSalesTemuco(preview.validRows);
+      setNotice(`Importación OK: ${preview.validRows.length} filas.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Error desconocido al importar.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   return (
-    <main>
-      <header className="card">
-        <h1 style={{ marginBottom: 8 }}>Importar Ventas Temuco (XLSX)</h1>
-        <p className="muted">
-          Este import es igual al de Santiago: mismo reporte, misma validación y mismo flujo.
-        </p>
-      </header>
+    <div className="page">
+      <h1 className="h1">Importar Ventas Temuco (XLSX)</h1>
 
-      <section className="card" style={{ display: 'grid', gap: 12 }}>
-        <div style={{ display: 'grid', gap: 6 }}>
-          <label>Archivo XLSX</label>
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onPickFile(f);
-            }}
-          />
-          {fileName ? <div className="muted">{fileName}</div> : null}
-        </div>
-
-        {sheetNames.length ? (
-          <div style={{ display: 'grid', gap: 6 }}>
-            <label>Hoja</label>
-            <select
-              className="select"
-              value={selectedSheet}
-              onChange={(e) => setSelectedSheet(e.target.value)}
-            >
-              {sheetNames.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div>
+            <label className="label" htmlFor="file">
+              Archivo XLSX
+            </label>
+            <input id="file" className="input" type="file" accept=".xlsx" onChange={onPickFile} />
           </div>
-        ) : null}
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            id="keepSales"
-            type="checkbox"
-            checked={keepSales}
-            onChange={(e) => setKeepSales(e.target.checked)}
-          />
-          <span>Mantener ventas existentes fuera del rango importado</span>
-        </label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btnSecondary" disabled={!canPreview} type="button" onClick={onPreview}>
+              Previsualizar
+            </button>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="btnSecondary"
-            disabled={!computed}
-            type="button"
-            onClick={onPreview}
-          >
-            Previsualizar
-          </button>
+            <button className="btn" disabled={!canImport || isImporting} type="button" onClick={onImport}>
+              {isImporting ? 'Importando…' : 'Importar'}
+            </button>
+          </div>
 
-          <button
-            className="btn"
-            disabled={!preview || busy}
-            type="button"
-            onClick={() => void onImport()}
-          >
-            {busy ? 'Importando…' : 'Importar'}
-          </button>
+          {notice ? <div className="muted">{notice}</div> : null}
         </div>
-      </section>
+      </div>
 
       {preview ? (
-        <section className="card" style={{ display: 'grid', gap: 8 }}>
-          <div>
-            <strong>Filas leídas:</strong> {preview.rowsRead}
-          </div>
-          <div>
-            <strong>Filas válidas:</strong> {preview.validRows.length}
-          </div>
-          <div>
-            <strong>Rango fechas:</strong> {preview.dateMin ?? '-'} → {preview.dateMax ?? '-'}
-          </div>
-          <div>
-            <strong>Total Qty:</strong> {preview.totalQty}
-          </div>
-          <div>
-            <strong>Total Gross:</strong> {Math.round(preview.totalGross)}
+        <div className="card">
+          <div className="muted" style={{ marginBottom: 10 }}>
+            <div>Filas leídas: {preview.rowsRead}</div>
+            <div>Filas válidas: {preview.validRows.length}</div>
+            <div>
+              Rango fechas: {preview.dateMin ?? '—'} → {preview.dateMax ?? '—'}
+            </div>
+            <div>Total qty: {preview.totalQty}</div>
+            <div>Total gross: {preview.totalGross.toLocaleString('es-CL')}</div>
           </div>
 
           {preview.errors.length ? (
-            <div style={{ marginTop: 8 }}>
-              <div><strong>Warnings</strong></div>
-              <ul className="muted" style={{ marginTop: 6 }}>
-                {preview.errors.slice(0, 20).map((e, i) => (
-                  <li key={`${e}-${i}`}>{e}</li>
+            <div style={{ marginBottom: 12 }}>
+              <div className="muted" style={{ marginBottom: 6 }}>
+                Errores/advertencias (primeros 20):
+              </div>
+              <ul className="muted" style={{ paddingLeft: 18 }}>
+                {preview.errors.slice(0, 20).map((e) => (
+                  <li key={e}>{e}</li>
                 ))}
               </ul>
-              {preview.errors.length > 20 ? (
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Mostrando 20 de {preview.errors.length}.
-                </div>
-              ) : null}
             </div>
           ) : null}
-        </section>
-      ) : null}
 
-      {importResult ? (
-        <section className="card" style={{ display: 'grid', gap: 8 }}>
-          <div>
-            <strong>Importadas:</strong> {importResult.imported}
+          <div className="tableWrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.validRows.slice(0, 50).map((row, idx) => (
+                  <tr key={`${row.date}-${row.product}-${idx}`}>
+                    <td>{row.date}</td>
+                    <td>{row.product}</td>
+                    <td>{row.qty}</td>
+                    <td>{row.gross.toLocaleString('es-CL')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          {'updated' in importResult ? (
-            <div>
-              <strong>Actualizadas:</strong> {importResult.updated ?? 0}
+
+          {preview.validRows.length > 50 ? (
+            <div className="muted" style={{ marginTop: 8 }}>
+              Mostrando 50 de {preview.validRows.length} filas válidas.
             </div>
           ) : null}
-          {'skipped' in importResult ? (
-            <div>
-              <strong>Omitidas:</strong> {importResult.skipped ?? 0}
-            </div>
-          ) : null}
-          {importResult.errors?.length ? (
-            <div style={{ color: '#b00020' }}>
-              Errores: {importResult.errors.join(' | ')}
-            </div>
-          ) : null}
-        </section>
+        </div>
       ) : null}
-    </main>
+    </div>
   );
 }
