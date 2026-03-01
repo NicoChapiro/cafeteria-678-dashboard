@@ -99,6 +99,14 @@ function parseSalesImportSheet(sheet: XLSX.WorkSheet): {
   if (!grossKey) errors.push('No encontré la columna "Venta Bruta" (o similar) en la hoja "Ventas".');
   if (errors.length) return { rows: [], errors };
 
+  // Si dateKey/productKey/etc vienen de una detección, pueden ser undefined.
+  // Validamos acá para que TS y el runtime estén seguros.
+  if (!dateKey || !productKey || !qtyKey || !grossKey) {
+    throw new Error(
+      `No se detectaron columnas requeridas. Detectado: dateKey=${String(dateKey)}, productKey=${String(productKey)}, qtyKey=${String(qtyKey)}, grossKey=${String(grossKey)}`,
+    );
+  }
+
   const out: SalesDailyImportRow[] = [];
   raw.forEach((row, idx) => {
     const date = safeParseDate(row[dateKey]);
