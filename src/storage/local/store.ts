@@ -1009,6 +1009,20 @@ export type SantiagoSalesImportSummary = {
   createdProductsCount: number;
 };
 
+export type TemucoSalesImportRow = {
+  date: string;
+  product: string;
+  qty: number;
+  gross: number;
+};
+
+export type ImportSalesResult = {
+  imported: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+};
+
 type SalesDailyEntryInput = Omit<SalesDaily, 'id' | 'date' | 'branch'> &
   Partial<Pick<SalesDaily, 'id'>>;
 
@@ -1241,6 +1255,153 @@ export function importSalesSantiago(
     dateMax,
     totalGross,
     createdProductsCount,
+  };
+}
+
+export function importSalesTemuco(
+  rows: TemucoSalesImportRow[],
+  options?: { keepSales?: boolean },
+): ImportSalesResult {
+  const keepSales = options?.keepSales ?? true;
+  const data = readData();
+  const productsByName = new Map(
+    data.products.map((product) => [product.name.trim().toLocaleLowerCase('es-CL'), product]),
+  );
+
+  const aggregatedByDateProduct = new Map<
+    string,
+    {
+      date: string;
+      productId: string;
+      qty: number;
+      grossSalesClp: number;
+    }
+  >();
+
+  const errors: string[] = [];
+
+  rows.forEach((row, index) => {
+    const rowLabel = `fila ${index + 1}`;
+    try {
+      assertIsoDate(row.date);
+    } catch {
+      errors.push(`${rowLabel}: fecha inválida`);
+      return;
+    }
+
+    const productName = String(row.product ?? '').trim();
+    if (!productName) {
+      errors.push(`${rowLabel}: producto vacío`);
+      return;
+    }
+
+    const product = productsByName.get(productName.toLocaleLowerCase('es-CL'));
+    if (!product) {
+      errors.push(`${rowLabel}: producto no encontrado (${productName})`);
+      return;
+    }
+
+    const qty = roundQty(Number(row.qty));
+    const grossSalesClp = roundMoney(Number(row.gross));
+    if (!Number.isFinite(qty) || qty < 0 || !Number.isFinite(grossSalesClp) || grossSalesClp < 0) {
+      errors.push(`${rowLabel}: qty/monto inválido`);
+      return;
+    }
+
+    const key = `${row.date}|${product.id}`;
+    const existing = aggregatedByDateProduct.get(key);
+    if (existing) {
+      existing.qty = roundQty(existing.qty + qty);
+      existing.grossSalesClp = roundMoney(existing.grossSalesClp + grossSalesClp);
+    } else {
+      aggregatedByDateProduct.set(key, {
+        date: row.date,
+        productId: product.id,
+        qty,
+        grossSalesClp,
+      });
+    }
+  });
+
+  if (aggregatedByDateProduct.size === 0) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: rows.length,
+      errors: errors.length ? errors : ['No valid rows to import.'],
+    };
+  }
+
+  const existingByKey = new Map(
+    data.salesDaily
+      .filter((entry) => entry.branch === 'Temuco')
+      .map((entry) => [`${entry.date}|${entry.productId}`, entry]),
+  );
+
+  let imported = 0;
+  let updated = 0;
+
+  const rowsByDay = new Map<string, SalesDailyEntryInput[]>();
+  const importedDates = new Set<string>();
+
+  aggregatedByDateProduct.forEach((entry) => {
+    importedDates.add(entry.date);
+
+    const prev = existingByKey.get(`${entry.date}|${entry.productId}`);
+    if (!prev) {
+      imported += 1;
+    } else if (prev.qty !== entry.qty || prev.grossSalesClp !== entry.grossSalesClp) {
+      updated += 1;
+    }
+
+    const current = rowsByDay.get(entry.date);
+    const payload = {
+      productId: entry.productId,
+      qty: entry.qty,
+      grossSalesClp: entry.grossSalesClp,
+    };
+
+    if (current) {
+      current.push(payload);
+    } else {
+      rowsByDay.set(entry.date, [payload]);
+    }
+  });
+
+  if (!keepSales) {
+    const current = readData();
+    writeData({
+      ...current,
+      salesDaily: current.salesDaily.filter(
+        (entry) => entry.branch !== 'Temuco' || importedDates.has(entry.date),
+      ),
+    });
+  }
+
+  rowsByDay.forEach((entries, date) => {
+    setSalesDaily(date, 'Temuco', entries);
+  });
+
+  logAudit({
+    entityType: 'sales_daily',
+    entityId: 'Temuco:import',
+    action: 'sales_import_temuco',
+    diffJson: {
+      rowsRead: rows.length,
+      rowsValid: aggregatedByDateProduct.size,
+      imported,
+      updated,
+      skipped: rows.length - aggregatedByDateProduct.size,
+      keepSales,
+    },
+    actor: 'local',
+  });
+
+  return {
+    imported,
+    updated,
+    skipped: rows.length - aggregatedByDateProduct.size,
+    errors,
   };
 }
 

@@ -52,6 +52,12 @@ const sections = [
     cta: 'Ir a importador',
   },
   {
+    title: 'Importar Temuco',
+    description: 'Carga de planilla XLSX y conciliación de ventas Temuco.',
+    href: '/sales/temuco/import',
+    cta: 'Ir a importador Temuco',
+  },
+  {
     title: 'Auditoría',
     description: 'Revisión de márgenes y costos por rango de fechas.',
     href: '/audit',

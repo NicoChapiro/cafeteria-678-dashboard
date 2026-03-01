@@ -49,7 +49,9 @@ npm run db:seed
 - `/products`: catálogo de productos vendibles.
 - `/recipes`: recetas y costeo base.
 - `/sales/temuco`: carga manual de ventas Temuco.
+- `/sales/temuco/import`: importador XLSX para Temuco.
 - `/sales/santiago/import`: importador XLSX para Santiago.
+- `/import/base`: importador BaseConsolidada.xlsx (Items/Productos/Recetas).
 - `/audit`: vista de auditoría de márgenes/costos.
 
 ## Scripts
