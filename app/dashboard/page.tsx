@@ -148,7 +148,17 @@ export default function DashboardPage() {
 
     const items = listItems();
     const recipes = listRecipes();
+    const recipeById = new Map(recipes.map((recipe) => [recipe.id, recipe]));
     const recipeLines = recipes.flatMap((recipe) => listRecipeLines(recipe.id));
+    const recipeLinesByRecipeId = recipeLines.reduce((acc, line) => {
+      const current = acc.get(line.recipeId);
+      if (current) {
+        current.push(line);
+      } else {
+        acc.set(line.recipeId, [line]);
+      }
+      return acc;
+    }, new Map<string, typeof recipeLines>());
 
     const itemCostVersionsByBranch = new Map<Branch, ReturnType<typeof listItemCosts>>();
     BRANCHES.forEach((branch) => {
@@ -207,14 +217,14 @@ export default function DashboardPage() {
         }
       } else {
         try {
-          const recipe = recipes.find((entry) => entry.id === product.recipeId);
+          const recipe = recipeById.get(product.recipeId);
           if (!recipe) {
             throw new Error('Receta asociada no encontrada');
           }
 
           const recipeCost = costRecipe(
             recipe,
-            recipeLines.filter((line) => line.recipeId === recipe.id),
+            recipeLinesByRecipeId.get(recipe.id) ?? [],
             {
               items,
               recipes,

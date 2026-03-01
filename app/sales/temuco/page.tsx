@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Product } from '@/src/domain/types';
@@ -201,6 +202,9 @@ export default function SalesTemucoPage() {
         <button className="btnSecondary" type="button" onClick={handleClearDay}>
           Limpiar día
         </button>
+        <Link className="btnSecondary" href="/sales/temuco/import">
+          Importar XLSX
+        </Link>
       </div>
 
       {message ? (
