@@ -20,12 +20,71 @@ type PreviewState = {
   totalQty: number;
 };
 
-function normalizeHeader(value: unknown): string {
+type DetectedKeys = {
+  dateKey: string;
+  productKey: string;
+  qtyKey: string;
+  grossKey: string;
+};
+
+function normHeader(value: unknown): string {
   return String(value ?? '')
     .trim()
-    .toLocaleLowerCase('es-CL')
+    .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[̀-ͯ]/g, '');
+}
+
+function detectRequiredColumns(headers: string[]): DetectedKeys {
+  const byNorm = new Map<string, string>();
+  headers.forEach((header) => byNorm.set(normHeader(header), header));
+
+  const findFirst = (candidates: string[]): string | undefined => {
+    for (const candidate of candidates) {
+      const found = byNorm.get(normHeader(candidate));
+      if (found) return found;
+    }
+
+    const normalizedHeaders = headers.map((header) => ({ raw: header, normalized: normHeader(header) }));
+    for (const candidate of candidates) {
+      const normalizedCandidate = normHeader(candidate);
+      const hit = normalizedHeaders.find((entry) => entry.normalized.includes(normalizedCandidate));
+      if (hit) return hit.raw;
+    }
+
+    return undefined;
+  };
+
+  const dateKey = findFirst(['Fecha', 'Date', 'fecha venta', 'fecha']);
+  const productKey = findFirst(['Producto', 'Product', 'producto', 'item', 'articulo', 'artículo']);
+  const qtyKey = findFirst(['Cantidad', 'Qty', 'Unidades', 'Units', 'cantidad', 'unidades']);
+  const grossKey = findFirst([
+    'Total',
+    'Bruto',
+    'Gross',
+    'Total venta',
+    'Venta bruta',
+    'Importe',
+    'Monto',
+  ]);
+
+  if (!dateKey || !productKey || !qtyKey || !grossKey) {
+    throw new Error(
+      `No pude detectar columnas obligatorias. dateKey=${dateKey} productKey=${productKey} qtyKey=${qtyKey} grossKey=${grossKey}. Headers disponibles: ${headers.join(' | ')}`,
+    );
+  }
+
+  return { dateKey, productKey, qtyKey, grossKey };
+}
+
+function getCell(row: unknown, key: string): unknown {
+  if (row && typeof row === 'object' && !Array.isArray(row)) {
+    return (row as Record<string, unknown>)[key];
+  }
+  if (Array.isArray(row)) {
+    return undefined;
+  }
+  return undefined;
 }
 
 function toIsoDate(value: unknown): string | null {
@@ -74,44 +133,17 @@ function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; erro
   const rawRows = raw as RawRow[];
   if (!raw.length) return { rows: [], errors: ['La hoja seleccionada está vacía.'], rowsRead: 0 };
 
-  const first = raw[0] ?? {};
-  const headerMap = new Map<string, string>();
-  Object.keys(first).forEach((key) => headerMap.set(normalizeHeader(key), key));
-
-  const dateKey = headerMap.get('fecha') ?? headerMap.get('date');
-  const productKey =
-    headerMap.get('producto') ??
-    headerMap.get('product') ??
-    headerMap.get('nombre producto') ??
-    headerMap.get('product name');
-  const qtyKey =
-    headerMap.get('cantidad') ??
-    headerMap.get('qty') ??
-    headerMap.get('cantidad vendida') ??
-    headerMap.get('quantity');
-  const grossKey =
-    headerMap.get('venta bruta') ??
-    headerMap.get('gross') ??
-    headerMap.get('gross sales') ??
-    headerMap.get('ventas brutas') ??
-    headerMap.get('ventas') ??
-    headerMap.get('monto');
-
-  // Guard clause: si falta una key obligatoria, abortamos antes de iterar filas.
-  if (!dateKey || !productKey || !qtyKey || !grossKey) {
-    throw new Error(
-      `No pude detectar columnas obligatorias. dateKey=${String(dateKey)} productKey=${String(productKey)} qtyKey=${String(qtyKey)} grossKey=${String(grossKey)}`,
-    );
-  }
+  const headers = Object.keys(rawRows[0] ?? {});
+  const { dateKey, productKey, qtyKey, grossKey } = detectRequiredColumns(headers);
 
   const out: TemucoSalesImportRow[] = [];
   const errors: string[] = [];
 
   rawRows.forEach((row, idx) => {
-    const date = toIsoDate(row[dateKey]);
-    const product = String(row[productKey] ?? '').trim();
-    const qty = toNumber(row[qtyKey]);
-    const gross = toNumber(row[grossKey]);
+    const date = toIsoDate(getCell(row, dateKey));
+    const product = String(getCell(row, productKey) ?? '').trim();
+    const qty = toNumber(getCell(row, qtyKey));
+    const gross = toNumber(getCell(row, grossKey));
 
     if (!date || !product) {
       errors.push(`Fila ${idx + 2}: fecha o producto inválido.`);
