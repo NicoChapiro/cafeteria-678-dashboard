@@ -46,6 +46,12 @@ const sections = [
     cta: 'Ir a importar base',
   },
   {
+    title: 'Importar Ventas FU.DO',
+    description: 'Pantalla estándar para importar ventas FU.DO seleccionando sucursal.',
+    href: '/sales/import',
+    cta: 'Ir a importador FU.DO',
+  },
+  {
     title: 'Importar Santiago',
     description: 'Carga de planilla XLSX y conciliación de ventas.',
     href: '/sales/santiago/import',
