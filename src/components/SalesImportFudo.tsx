@@ -27,12 +27,18 @@ type Message = {
   text: string;
 };
 
-type Props = {
-  mode: 'select' | 'fixed';
-  fixedBranch?: BranchOption;
-  defaultKeepSales?: boolean;
-  defaultCreateMissingProducts?: boolean;
-};
+type Props =
+  | {
+      mode: 'select';
+      defaultKeepSales?: boolean;
+      defaultCreateMissingProducts?: boolean;
+    }
+  | {
+      mode: 'fixed';
+      fixedBranch: BranchOption;
+      defaultKeepSales?: boolean;
+      defaultCreateMissingProducts?: boolean;
+    };
 
 const BRANCHES: BranchOption[] = ['Santiago', 'Temuco'];
 
@@ -50,23 +56,21 @@ function toPreview(buffer: ArrayBuffer): PreviewState {
   };
 }
 
-export default function SalesImportFudo({
-  mode,
-  fixedBranch,
-  defaultKeepSales = true,
-  defaultCreateMissingProducts = true,
-}: Props) {
-  const [selectedBranch, setSelectedBranch] = useState<BranchOption>(fixedBranch ?? 'Santiago');
+export default function SalesImportFudo(props: Props) {
+  const { mode, defaultKeepSales = true, defaultCreateMissingProducts = true } = props;
+
+  const [selectedBranch, setSelectedBranch] = useState<BranchOption>(
+    mode === 'fixed' ? props.fixedBranch : 'Santiago',
+  );
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [keepSales, setKeepSales] = useState(defaultKeepSales);
   const [createMissingProducts, setCreateMissingProducts] = useState(defaultCreateMissingProducts);
 
-  const branch: BranchOption = mode === 'fixed' ? fixedBranch : selectedBranch;
+  const branch: BranchOption = mode === 'fixed' ? props.fixedBranch : selectedBranch;
   const previewRows = useMemo(() => preview?.validRows.slice(0, 40) ?? [], [preview]);
   const showKeepSales = branch === 'Temuco';
-  const invalidFixedMode = mode === 'fixed' && !fixedBranch;
 
   async function handlePreview(): Promise<void> {
     if (!file) {
@@ -165,16 +169,6 @@ export default function SalesImportFudo({
         text: error instanceof Error ? error.message : 'No se pudo importar el archivo.',
       });
     }
-  }
-
-  if (invalidFixedMode) {
-    return (
-      <section className="card">
-        <p style={{ color: '#b00020', margin: 0 }}>
-          Configuración inválida: mode=&quot;fixed&quot; requiere fixedBranch.
-        </p>
-      </section>
-    );
   }
 
   return (
