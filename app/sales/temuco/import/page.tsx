@@ -7,8 +7,7 @@ import {
   importSalesTemuco,
   type TemucoSalesImportRow,
 } from '@/src/storage/local/store';
-
-type RawRow = Record<string, unknown>;
+import { parseFudoProductsXlsx } from '@/src/services/fudoReport';
 
 type PreviewState = {
   rowsRead: number;
@@ -19,146 +18,6 @@ type PreviewState = {
   totalGross: number;
   totalQty: number;
 };
-
-type DetectedKeys = {
-  dateKey: string;
-  productKey: string;
-  qtyKey: string;
-  grossKey: string;
-};
-
-function normHeader(value: unknown): string {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
-
-function detectRequiredColumns(headers: string[]): DetectedKeys {
-  const byNorm = new Map<string, string>();
-  headers.forEach((header) => byNorm.set(normHeader(header), header));
-
-  const findFirst = (candidates: string[]): string | undefined => {
-    for (const candidate of candidates) {
-      const found = byNorm.get(normHeader(candidate));
-      if (found) return found;
-    }
-
-    const normalizedHeaders = headers.map((header) => ({ raw: header, normalized: normHeader(header) }));
-    for (const candidate of candidates) {
-      const normalizedCandidate = normHeader(candidate);
-      const hit = normalizedHeaders.find((entry) => entry.normalized.includes(normalizedCandidate));
-      if (hit) return hit.raw;
-    }
-
-    return undefined;
-  };
-
-  const dateKey = findFirst(['Fecha', 'Date', 'fecha venta', 'fecha']);
-  const productKey = findFirst(['Producto', 'Product', 'producto', 'item', 'articulo', 'artículo']);
-  const qtyKey = findFirst(['Cantidad', 'Qty', 'Unidades', 'Units', 'cantidad', 'unidades']);
-  const grossKey = findFirst([
-    'Total',
-    'Bruto',
-    'Gross',
-    'Total venta',
-    'Venta bruta',
-    'Importe',
-    'Monto',
-  ]);
-
-  if (!dateKey || !productKey || !qtyKey || !grossKey) {
-    throw new Error(
-      `No pude detectar columnas obligatorias. dateKey=${dateKey} productKey=${productKey} qtyKey=${qtyKey} grossKey=${grossKey}. Headers disponibles: ${headers.join(' | ')}`,
-    );
-  }
-
-  return { dateKey, productKey, qtyKey, grossKey };
-}
-
-function getCell(row: unknown, key: string): unknown {
-  if (row && typeof row === 'object' && !Array.isArray(row)) {
-    return (row as Record<string, unknown>)[key];
-  }
-  if (Array.isArray(row)) {
-    return undefined;
-  }
-  return undefined;
-}
-
-function toIsoDate(value: unknown): string | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    const parsed = XLSX.SSF.parse_date_code(value);
-    if (parsed) {
-      const date = new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d));
-      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
-    }
-  }
-
-  const s = String(value ?? '').trim();
-  if (!s) return null;
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-
-  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (m) {
-    const dd = m[1].padStart(2, '0');
-    const mm = m[2].padStart(2, '0');
-    const yyyy = m[3].length === 2 ? `20${m[3]}` : m[3];
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  const dt = new Date(s);
-  if (!Number.isNaN(dt.getTime())) return dt.toISOString().slice(0, 10);
-
-  return null;
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const s = String(value ?? '').trim();
-  if (!s) return 0;
-  const normalized = s.replace(/\./g, '').replace(',', '.');
-  const n = Number(normalized);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function parseSheet(sheet: XLSX.WorkSheet): { rows: TemucoSalesImportRow[]; errors: string[]; rowsRead: number } {
-  const raw = XLSX.utils.sheet_to_json<RawRow>(sheet, { defval: null });
-  if (!raw.length) return { rows: [], errors: ['La hoja seleccionada está vacía.'], rowsRead: 0 };
-
-  const headers = raw.length ? Object.keys(raw[0] as Record<string, unknown>) : [];
-  const { dateKey, productKey, qtyKey, grossKey } = detectRequiredColumns(headers);
-
-  const out: TemucoSalesImportRow[] = [];
-  const errors: string[] = [];
-
-  raw.forEach((row, idx) => {
-    const dateRaw = getCell(row, dateKey);
-    const productRaw = getCell(row, productKey);
-    const qtyRaw = getCell(row, qtyKey);
-    const grossRaw = getCell(row, grossKey);
-
-    const date = toIsoDate(dateRaw);
-    const product = String(productRaw ?? '').trim();
-    const qty = toNumber(qtyRaw);
-    const gross = toNumber(grossRaw);
-
-    if (!date || !product) {
-      errors.push(`Fila ${idx + 2}: fecha o producto inválido.`);
-      return;
-    }
-
-    out.push({ date, product, qty, gross });
-  });
-
-  return { rows: out, errors, rowsRead: raw.length };
-}
 
 export default function TemucoSalesImportPage() {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -177,17 +36,32 @@ export default function TemucoSalesImportPage() {
 
   const computed = useMemo(() => {
     if (!workbook || !selectedSheet) return null;
-    const sheet = workbook.Sheets[selectedSheet];
-    if (!sheet) return null;
-    const parsed = parseSheet(sheet);
-    const validRows = parsed.rows;
-    const dates = validRows.map((r) => r.date).sort();
-    const dateMin = dates[0] ?? null;
-    const dateMax = dates[dates.length - 1] ?? null;
-    const totalGross = validRows.reduce((acc, r) => acc + (r.gross ?? 0), 0);
-    const totalQty = validRows.reduce((acc, r) => acc + (r.qty ?? 0), 0);
-    const errors = parsed.errors;
-    return { validRows, dateMin, dateMax, totalGross, totalQty, errors, rowsRead: parsed.rowsRead };
+
+    const selectedWorksheet = workbook.Sheets[selectedSheet];
+    if (!selectedWorksheet) return null;
+
+    const selectedWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(selectedWorkbook, selectedWorksheet, 'Detalle');
+
+    const buffer = XLSX.write(selectedWorkbook, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
+    const parsed = parseFudoProductsXlsx(buffer);
+
+    const validRows: TemucoSalesImportRow[] = parsed.rows.map((row) => ({
+      date: row.date,
+      product: row.productName,
+      qty: row.qty,
+      gross: row.grossSalesClp,
+    }));
+
+    return {
+      validRows,
+      dateMin: parsed.dateMin,
+      dateMax: parsed.dateMax,
+      totalGross: parsed.totalGross,
+      totalQty: parsed.totalQty,
+      errors: parsed.errors,
+      rowsRead: parsed.rowsRead,
+    };
   }, [workbook, selectedSheet]);
 
   async function onPickFile(file: File): Promise<void> {
@@ -199,7 +73,11 @@ export default function TemucoSalesImportPage() {
     const wb = XLSX.read(buf, { type: 'array' });
     setWorkbook(wb);
     setSheetNames(wb.SheetNames);
-    setSelectedSheet(wb.SheetNames[0] ?? '');
+    const preferred =
+      wb.SheetNames.find((name) => name === 'Detalle') ??
+      wb.SheetNames.find((name) => name.toLocaleLowerCase('es-CL').includes('detalle')) ??
+      wb.SheetNames[0] ?? '';
+    setSelectedSheet(preferred);
   }
 
   function onPreview(): void {
