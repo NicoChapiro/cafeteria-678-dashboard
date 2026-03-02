@@ -1615,6 +1615,11 @@ export function importData(json: string): void {
     parsed !== null &&
     Object.prototype.hasOwnProperty.call(parsed, 'auditLogs');
 
+  const hasSalesAdjustmentsInImport =
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    Object.prototype.hasOwnProperty.call(parsed, 'salesAdjustments');
+
   const dataSanitized: LocalData = {
     ...data,
     products: data.products.map((product) => {
@@ -1629,7 +1634,7 @@ export function importData(json: string): void {
       return product;
     }),
     auditLogs: hasAuditLogsInImport ? data.auditLogs : existing.auditLogs,
-    salesAdjustments: data.salesAdjustments ?? existing.salesAdjustments,
+    salesAdjustments: hasSalesAdjustmentsInImport ? data.salesAdjustments : existing.salesAdjustments,
   };
 
   writeData(dataSanitized);
