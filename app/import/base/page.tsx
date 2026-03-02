@@ -8,6 +8,7 @@ import {
   addItemCostVersion,
   addProductCostVersion,
   addProductPriceVersion,
+  deleteRecipeLine,
   listItemCosts,
   listItems,
   listProductCosts,
@@ -259,6 +260,7 @@ export default function ImportBasePage() {
   const [updatePrices, setUpdatePrices] = useState(true);
   const [updateIngredientCosts, setUpdateIngredientCosts] = useState(true);
   const [updateRecipes, setUpdateRecipes] = useState(true);
+  const [replaceRecipeLines, setReplaceRecipeLines] = useState(true);
   const [updateProductManualCosts, setUpdateProductManualCosts] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -450,6 +452,18 @@ export default function ImportBasePage() {
           mergedByItemId.set(row.ingredientRef, (mergedByItemId.get(row.ingredientRef) ?? 0) + row.qtyInBase);
         });
 
+        const desiredLineIds = new Set(
+          Array.from(mergedByItemId.keys()).map((itemId) => deterministicRecipeLineId(recipeId, itemId)),
+        );
+
+        if (replaceRecipeLines) {
+          existingLineIds.forEach((existingLineId) => {
+            if (!desiredLineIds.has(existingLineId)) {
+              deleteRecipeLine(existingLineId);
+            }
+          });
+        }
+
         mergedByItemId.forEach((qtyInBase, itemId) => {
           const lineId = deterministicRecipeLineId(recipeId, itemId);
           const existedLine = existingLineIds.has(lineId);
@@ -522,6 +536,7 @@ export default function ImportBasePage() {
           updatePrices,
           updateIngredientCosts,
           updateRecipes,
+          replaceRecipeLines,
           updateProductManualCosts,
         },
       },
@@ -571,6 +586,9 @@ export default function ImportBasePage() {
         </label>
         <label style={{ display: 'block', marginBottom: 6 }}>
           <input type="checkbox" checked={updateRecipes} onChange={(event) => setUpdateRecipes(event.target.checked)} /> Actualizar recetas
+        </label>
+        <label style={{ display: 'block', marginBottom: 6 }}>
+          <input type="checkbox" checked={replaceRecipeLines} onChange={(event) => setReplaceRecipeLines(event.target.checked)} /> Reemplazar líneas de receta (elimina ingredientes no presentes)
         </label>
         <label style={{ display: 'block' }}>
           <input type="checkbox" checked={updateProductManualCosts} onChange={(event) => setUpdateProductManualCosts(event.target.checked)} /> Actualizar costo manual productos
