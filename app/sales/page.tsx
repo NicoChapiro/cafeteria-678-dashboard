@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Branch } from '@/src/domain/types';
-import { listProducts, listSalesDaily } from '@/src/storage/local/store';
+import { listProducts, listSalesEffective } from '@/src/storage/local/store';
 
 type SalesRow = {
   date: string;
@@ -50,7 +51,7 @@ function loadRows(branch: Branch, fromDate: string, toDate: string): SalesRow[] 
 
   return listDatesInRange(fromDate, toDate)
     .flatMap((date) =>
-      listSalesDaily({ date, branch }).map((entry) => ({
+      listSalesEffective({ date, branch }).map((entry) => ({
         date: entry.date,
         productId: entry.productId,
         productName: productNameById.get(entry.productId) ?? '(Producto no encontrado)',
@@ -95,6 +96,7 @@ export default function SalesPage() {
   return (
     <main>
       <h1>Ventas</h1>
+      <p style={{ marginBottom: 16 }}><Link href="/sales/adjustments">Ajustes de ventas</Link></p>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>
