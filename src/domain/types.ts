@@ -125,6 +125,17 @@ export type SalesDaily = {
   grossSalesClp: number;
 };
 
+export type SalesAdjustment = {
+  id: string;
+  date: string;
+  branch: Branch;
+  productId: string;
+  qty: number;
+  grossSalesClp: number;
+  note?: string;
+  createdAt: Date;
+};
+
 export type AuditLog = {
   id: string;
   entityType: string;

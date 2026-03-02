@@ -12,6 +12,7 @@ import type {
   ProductPriceVersion,
   Recipe,
   RecipeLine,
+  SalesAdjustment,
   SalesDaily,
   YieldUnit,
 } from '../../domain/types';
@@ -66,6 +67,10 @@ type SerializedAuditLog = Omit<AuditLog, 'createdAt'> & {
 
 type SerializedSalesDaily = SalesDaily;
 
+type SerializedSalesAdjustment = Omit<SalesAdjustment, 'createdAt'> & {
+  createdAt: string;
+};
+
 type LocalData = {
   items: Item[];
   itemCostVersions: ItemCostVersion[];
@@ -76,6 +81,7 @@ type LocalData = {
   recipeLines: RecipeLine[];
   auditLogs: AuditLog[];
   salesDaily: SalesDaily[];
+  salesAdjustments: SalesAdjustment[];
 };
 
 type SerializedLocalData = {
@@ -88,6 +94,7 @@ type SerializedLocalData = {
   recipeLines: SerializedRecipeLine[];
   auditLogs: SerializedAuditLog[];
   salesDaily: SerializedSalesDaily[];
+  salesAdjustments: SerializedSalesAdjustment[];
 };
 
 const STORAGE_KEY = 'cafe678:data:v1';
@@ -120,6 +127,7 @@ function emptyData(): LocalData {
     recipeLines: [],
     auditLogs: [],
     salesDaily: [],
+    salesAdjustments: [],
   };
 }
 
@@ -222,6 +230,10 @@ function serializeData(data: LocalData): SerializedLocalData {
       createdAt: log.createdAt.toISOString(),
     })),
     salesDaily: data.salesDaily ?? [],
+    salesAdjustments: (data.salesAdjustments ?? []).map((adjustment) => ({
+      ...adjustment,
+      createdAt: adjustment.createdAt.toISOString(),
+    })),
   };
 }
 
@@ -266,6 +278,10 @@ function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData
       createdAt: toDate(log.createdAt),
     })),
     salesDaily: (data.salesDaily ?? []) as SalesDaily[],
+    salesAdjustments: (data.salesAdjustments ?? []).map((adjustment) => ({
+      ...adjustment,
+      createdAt: toDate(adjustment.createdAt),
+    })) as SalesAdjustment[],
   };
 }
 
@@ -295,12 +311,16 @@ function isSerializedData(value: unknown): value is Partial<SerializedLocalData>
   const hasOptionalSalesDaily =
     candidate.salesDaily === undefined || Array.isArray(candidate.salesDaily);
 
+  const hasOptionalSalesAdjustments =
+    candidate.salesAdjustments === undefined || Array.isArray(candidate.salesAdjustments);
+
   return (
     hasRequiredLegacyArrays &&
     hasOptionalProductArrays &&
     hasOptionalRecipeArrays &&
     hasOptionalAuditLogs &&
-    hasOptionalSalesDaily
+    hasOptionalSalesDaily &&
+    hasOptionalSalesAdjustments
   );
 }
 
@@ -1026,6 +1046,15 @@ export type ImportSalesResult = {
 type SalesDailyEntryInput = Omit<SalesDaily, 'id' | 'date' | 'branch'> &
   Partial<Pick<SalesDaily, 'id'>>;
 
+export type SalesAdjustmentInput = {
+  date: string;
+  branch: Branch;
+  productId: string;
+  qty: number;
+  grossSalesClp: number;
+  note?: string;
+};
+
 export function listSalesDaily(params: { date: string; branch: Branch }): SalesDaily[] {
   assertIsoDate(params.date);
   assertBranch(params.branch);
@@ -1104,6 +1133,113 @@ export function getSalesForProduct(
   productId: string,
 ): SalesDaily | undefined {
   return listSalesDaily({ date, branch }).find((entry) => entry.productId === productId);
+}
+
+export function listSalesAdjustments(params: { date: string; branch: Branch }): SalesAdjustment[] {
+  assertIsoDate(params.date);
+  assertBranch(params.branch);
+
+  return readData().salesAdjustments
+    .filter((entry) => entry.date === params.date && entry.branch === params.branch)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+}
+
+export function addSalesAdjustment(input: SalesAdjustmentInput): SalesAdjustment {
+  assertIsoDate(input.date);
+  assertBranch(input.branch);
+
+  const qty = roundQty(Number(input.qty));
+  const grossSalesClp = roundMoney(Number(input.grossSalesClp));
+
+  if (!Number.isFinite(qty) || qty < 0) {
+    throw new Error('qty debe ser >= 0');
+  }
+
+  if (!Number.isFinite(grossSalesClp) || grossSalesClp < 0) {
+    throw new Error('grossSalesClp debe ser >= 0');
+  }
+
+  const adjustment: SalesAdjustment = {
+    id: buildId('sales_adjustment'),
+    date: input.date,
+    branch: input.branch,
+    productId: input.productId,
+    qty,
+    grossSalesClp,
+    note: input.note?.trim() ? input.note.trim() : undefined,
+    createdAt: new Date(),
+  };
+
+  const data = readData();
+  writeData({
+    ...data,
+    salesAdjustments: [...data.salesAdjustments, adjustment],
+  });
+
+  logAudit({
+    entityType: 'sales_adjustment',
+    entityId: adjustment.id,
+    action: 'create',
+    diffJson: adjustment,
+  });
+
+  return adjustment;
+}
+
+export function deleteSalesAdjustment(id: string): void {
+  if (!id) {
+    throw new Error('id es obligatorio');
+  }
+
+  const data = readData();
+  const target = data.salesAdjustments.find((entry) => entry.id === id);
+
+  if (!target) {
+    throw new Error('Ajuste no encontrado');
+  }
+
+  writeData({
+    ...data,
+    salesAdjustments: data.salesAdjustments.filter((entry) => entry.id !== id),
+  });
+
+  logAudit({
+    entityType: 'sales_adjustment',
+    entityId: id,
+    action: 'delete',
+    diffJson: { removed: target },
+  });
+}
+
+export function listSalesEffective(params: { date: string; branch: Branch }): SalesDaily[] {
+  const baseRows = listSalesDaily(params);
+  const adjustments = listSalesAdjustments(params);
+
+  const byProduct = new Map<string, SalesDaily>();
+
+  baseRows.forEach((row) => {
+    byProduct.set(row.productId, { ...row });
+  });
+
+  adjustments.forEach((adjustment) => {
+    const existing = byProduct.get(adjustment.productId);
+    if (existing) {
+      existing.qty = roundQty(existing.qty + adjustment.qty);
+      existing.grossSalesClp = roundMoney(existing.grossSalesClp + adjustment.grossSalesClp);
+      return;
+    }
+
+    byProduct.set(adjustment.productId, {
+      id: `sales_effective:${adjustment.date}:${adjustment.branch}:${adjustment.productId}`,
+      date: adjustment.date,
+      branch: adjustment.branch,
+      productId: adjustment.productId,
+      qty: adjustment.qty,
+      grossSalesClp: adjustment.grossSalesClp,
+    });
+  });
+
+  return [...byProduct.values()];
 }
 
 export function importSalesSantiago(
@@ -1458,6 +1594,7 @@ export function exportData(): void {
       recipeLines: data.recipeLines.length,
       auditLogs: data.auditLogs.length,
       salesDaily: data.salesDaily.length,
+      salesAdjustments: data.salesAdjustments.length,
     },
   });
 }
@@ -1478,6 +1615,11 @@ export function importData(json: string): void {
     parsed !== null &&
     Object.prototype.hasOwnProperty.call(parsed, 'auditLogs');
 
+  const hasSalesAdjustmentsInImport =
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    Object.prototype.hasOwnProperty.call(parsed, 'salesAdjustments');
+
   const dataSanitized: LocalData = {
     ...data,
     products: data.products.map((product) => {
@@ -1492,6 +1634,7 @@ export function importData(json: string): void {
       return product;
     }),
     auditLogs: hasAuditLogsInImport ? data.auditLogs : existing.auditLogs,
+    salesAdjustments: hasSalesAdjustmentsInImport ? data.salesAdjustments : existing.salesAdjustments,
   };
 
   writeData(dataSanitized);
@@ -1510,6 +1653,7 @@ export function importData(json: string): void {
       recipeLines: dataSanitized.recipeLines.length,
       auditLogs: dataSanitized.auditLogs.length,
       salesDaily: dataSanitized.salesDaily.length,
+      salesAdjustments: dataSanitized.salesAdjustments.length,
     },
   });
 }

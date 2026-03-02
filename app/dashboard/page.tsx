@@ -13,7 +13,7 @@ import {
   listProducts,
   listRecipeLines,
   listRecipes,
-  listSalesDaily,
+  listSalesEffective,
 } from '@/src/storage/local/store';
 
 type DashboardBranch = Branch | 'Consolidado';
@@ -101,7 +101,7 @@ export default function DashboardPage() {
     const branches = selectedBranch === 'Consolidado' ? BRANCHES : [selectedBranch];
 
     const rows = dates.flatMap((date) =>
-      branches.flatMap((branch) => listSalesDaily({ date, branch })),
+      branches.flatMap((branch) => listSalesEffective({ date, branch })),
     );
 
     setSalesRows(rows);
