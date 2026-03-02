@@ -2,7 +2,29 @@
 
 import Link from 'next/link';
 
-const sections = [
+type Section = {
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+};
+
+const primarySections: Section[] = [
+  {
+    title: 'Ver ventas',
+    description: 'Pantalla unificada de ventas por sucursal y rango de fechas.',
+    href: '/sales',
+    cta: 'Ir a ventas',
+  },
+  {
+    title: 'Importar ventas FU.DO',
+    description: 'Importación estándar de ventas con selección de sucursal.',
+    href: '/sales/import',
+    cta: 'Ir a importador FU.DO',
+  },
+];
+
+const sections: Section[] = [
   {
     title: 'Items',
     description: 'Catálogo base de insumos con unidad y rendimiento.',
@@ -22,18 +44,6 @@ const sections = [
     cta: 'Ir a recetas',
   },
   {
-    title: 'Ventas Temuco',
-    description: 'Carga y edición manual de ventas por día/producto.',
-    href: '/sales/temuco',
-    cta: 'Ir a ventas Temuco',
-  },
-  {
-    title: 'Ventas Santiago',
-    description: 'Vista read-only de ventas importadas por día/producto',
-    href: '/sales/santiago',
-    cta: 'Ir a ventas Santiago',
-  },
-  {
     title: 'Pendientes (Setup)',
     description: 'Centro mensual para detectar brechas de costo, precio, receta e insumos.',
     href: '/setup',
@@ -44,24 +54,6 @@ const sections = [
     description: 'Carga base consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
     cta: 'Ir a importar base',
-  },
-  {
-    title: 'Importar Ventas FU.DO',
-    description: 'Pantalla estándar para importar ventas FU.DO seleccionando sucursal.',
-    href: '/sales/import',
-    cta: 'Ir a importador FU.DO',
-  },
-  {
-    title: 'Importar Santiago',
-    description: 'Carga de planilla XLSX y conciliación de ventas.',
-    href: '/sales/santiago/import',
-    cta: 'Ir a importador',
-  },
-  {
-    title: 'Importar Temuco',
-    description: 'Carga de planilla XLSX y conciliación de ventas Temuco.',
-    href: '/sales/temuco/import',
-    cta: 'Ir a importador Temuco',
   },
   {
     title: 'Auditoría',
@@ -77,6 +69,46 @@ const sections = [
   },
 ];
 
+const adminFallbackSections: Section[] = [
+  {
+    title: 'Ventas Temuco (manual)',
+    description: 'Carga y edición manual de ventas por día/producto (fallback).',
+    href: '/sales/temuco',
+    cta: 'Ir a ventas Temuco (manual)',
+  },
+  {
+    title: 'Ventas Santiago (legacy)',
+    description: 'Vista read-only histórica de ventas importadas por día/producto.',
+    href: '/sales/santiago',
+    cta: 'Ir a ventas Santiago',
+  },
+  {
+    title: 'Importar Santiago (legacy)',
+    description: 'Carga de planilla XLSX y conciliación de ventas.',
+    href: '/sales/santiago/import',
+    cta: 'Ir a importador',
+  },
+  {
+    title: 'Importar Temuco (legacy)',
+    description: 'Carga de planilla XLSX y conciliación de ventas Temuco.',
+    href: '/sales/temuco/import',
+    cta: 'Ir a importador Temuco',
+  },
+];
+
+function renderSectionCards(items: Section[]) {
+  return items.map((section) => (
+    <article
+      key={section.href}
+      className="card"
+    >
+      <h2 className="cardTitle">{section.title}</h2>
+      <p className="muted" style={{ marginBottom: 12 }}>{section.description}</p>
+      <Link className="btnSecondary" href={section.href}>{section.cta}</Link>
+    </article>
+  ));
+}
+
 export default function HomePage() {
   return (
     <main>
@@ -87,17 +119,19 @@ export default function HomePage() {
         </p>
       </header>
 
-      <section aria-label="Módulos del sistema" className="grid">
-        {sections.map((section) => (
-          <article
-            key={section.href}
-            className="card"
-          >
-            <h2 className="cardTitle">{section.title}</h2>
-            <p className="muted" style={{ marginBottom: 12 }}>{section.description}</p>
-            <Link className="btnSecondary" href={section.href}>{section.cta}</Link>
-          </article>
-        ))}
+      <section aria-label="Flujo principal" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 12 }}>Flujo principal de ventas</h2>
+        <div className="grid">{renderSectionCards(primarySections)}</div>
+      </section>
+
+      <section aria-label="Módulos del sistema" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 12 }}>Módulos del sistema</h2>
+        <div className="grid">{renderSectionCards(sections)}</div>
+      </section>
+
+      <section aria-label="Admin y fallback">
+        <h2 style={{ marginBottom: 12 }}>Admin / Fallback</h2>
+        <div className="grid">{renderSectionCards(adminFallbackSections)}</div>
       </section>
     </main>
   );
