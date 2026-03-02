@@ -100,7 +100,7 @@ export default function SalesPage() {
         <label>
           Sucursal
           <br />
-          <select className="input" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
+          <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
             <option value="Santiago">Santiago</option>
             <option value="Temuco">Temuco</option>
           </select>
@@ -141,7 +141,7 @@ export default function SalesPage() {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={`${row.date}:${row.productId}`}>
+            <tr key={`${row.date}:${branch}:${row.productId}`}>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
               <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>

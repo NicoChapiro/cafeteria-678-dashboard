@@ -57,7 +57,7 @@ const sections: Section[] = [
   },
   {
     title: 'Auditoría',
-    description: 'Revisión de márgenes y costos por rango de fechas.',
+    description: 'Revisión de audit log y utilidades de export/import.',
     href: '/audit',
     cta: 'Ir a auditoría',
   },
