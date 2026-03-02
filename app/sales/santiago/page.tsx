@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 
 import { listProducts, listSalesDaily } from '@/src/storage/local/store';
 
@@ -12,6 +13,17 @@ type SalesRow = {
   grossSalesClp: number;
 };
 
+
+const buttonStyle: CSSProperties = {
+  padding: '8px 12px',
+  background: '#2563eb',
+  color: '#fff',
+  borderRadius: 6,
+  border: 0,
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-block',
+};
 function formatIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -116,6 +128,9 @@ export default function SantiagoSalesPage() {
         <button className="btn" type="button" onClick={handleRefresh}>
           Refrescar
         </button>
+        <Link href="/sales/santiago/import" style={buttonStyle}>
+          Importar XLSX
+        </Link>
       </div>
 
       <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
