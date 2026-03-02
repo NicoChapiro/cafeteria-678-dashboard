@@ -1260,28 +1260,31 @@ export function importSalesSantiago(
 
 export function importSalesTemuco(
   rows: TemucoSalesImportRow[],
-  options?: { keepSales?: boolean },
+  options?: { keepSales?: boolean; createMissingProducts?: boolean },
 ): ImportSalesResult {
   const keepSales = options?.keepSales ?? true;
+  const createMissingProducts = options?.createMissingProducts ?? true;
+
   const data = readData();
+  const now = new Date();
+
   const productsByName = new Map(
     data.products.map((product) => [product.name.trim().toLocaleLowerCase('es-CL'), product]),
   );
+  const nextProducts = [...data.products];
 
   const aggregatedByDateProduct = new Map<
     string,
-    {
-      date: string;
-      productId: string;
-      qty: number;
-      grossSalesClp: number;
-    }
+    { date: string; productId: string; qty: number; grossSalesClp: number }
   >();
 
   const errors: string[] = [];
+  let rowsValid = 0;
+  let createdProductsCount = 0;
 
   rows.forEach((row, index) => {
     const rowLabel = `fila ${index + 1}`;
+
     try {
       assertIsoDate(row.date);
     } catch {
@@ -1295,7 +1298,25 @@ export function importSalesTemuco(
       return;
     }
 
-    const product = productsByName.get(productName.toLocaleLowerCase('es-CL'));
+    const productKey = productName.toLocaleLowerCase('es-CL');
+    let product = productsByName.get(productKey);
+
+    if (!product && createMissingProducts) {
+      product = {
+        id: buildId('product'),
+        name: productName,
+        category: undefined,
+        recipeId: null,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      productsByName.set(productKey, product);
+      nextProducts.push(product);
+      createdProductsCount += 1;
+    }
+
     if (!product) {
       errors.push(`${rowLabel}: producto no encontrado (${productName})`);
       return;
@@ -1303,13 +1324,22 @@ export function importSalesTemuco(
 
     const qty = roundQty(Number(row.qty));
     const grossSalesClp = roundMoney(Number(row.gross));
-    if (!Number.isFinite(qty) || qty < 0 || !Number.isFinite(grossSalesClp) || grossSalesClp < 0) {
+
+    if (
+      !Number.isFinite(qty) ||
+      qty < 0 ||
+      !Number.isFinite(grossSalesClp) ||
+      grossSalesClp < 0
+    ) {
       errors.push(`${rowLabel}: qty/monto inválido`);
       return;
     }
 
+    rowsValid += 1;
+
     const key = `${row.date}|${product.id}`;
     const existing = aggregatedByDateProduct.get(key);
+
     if (existing) {
       existing.qty = roundQty(existing.qty + qty);
       existing.grossSalesClp = roundMoney(existing.grossSalesClp + grossSalesClp);
@@ -1332,54 +1362,47 @@ export function importSalesTemuco(
     };
   }
 
+  const importedDates = new Set<string>();
+  const importedEntries: SalesDaily[] = [];
+
+  aggregatedByDateProduct.forEach((entry) => {
+    importedDates.add(entry.date);
+
+    importedEntries.push({
+      id: buildId('sales'),
+      date: entry.date,
+      branch: 'Temuco',
+      productId: entry.productId,
+      qty: entry.qty,
+      grossSalesClp: entry.grossSalesClp,
+    });
+  });
+
   const existingByKey = new Map(
     data.salesDaily
-      .filter((entry) => entry.branch === 'Temuco')
+      .filter((entry) => entry.branch === 'Temuco' && importedDates.has(entry.date))
       .map((entry) => [`${entry.date}|${entry.productId}`, entry]),
   );
 
   let imported = 0;
   let updated = 0;
 
-  const rowsByDay = new Map<string, SalesDailyEntryInput[]>();
-  const importedDates = new Set<string>();
-
-  aggregatedByDateProduct.forEach((entry) => {
-    importedDates.add(entry.date);
-
+  importedEntries.forEach((entry) => {
     const prev = existingByKey.get(`${entry.date}|${entry.productId}`);
-    if (!prev) {
-      imported += 1;
-    } else if (prev.qty !== entry.qty || prev.grossSalesClp !== entry.grossSalesClp) {
-      updated += 1;
-    }
-
-    const current = rowsByDay.get(entry.date);
-    const payload = {
-      productId: entry.productId,
-      qty: entry.qty,
-      grossSalesClp: entry.grossSalesClp,
-    };
-
-    if (current) {
-      current.push(payload);
-    } else {
-      rowsByDay.set(entry.date, [payload]);
-    }
+    if (!prev) imported += 1;
+    else if (prev.qty !== entry.qty || prev.grossSalesClp !== entry.grossSalesClp) updated += 1;
   });
 
-  if (!keepSales) {
-    const current = readData();
-    writeData({
-      ...current,
-      salesDaily: current.salesDaily.filter(
-        (entry) => entry.branch !== 'Temuco' || importedDates.has(entry.date),
-      ),
-    });
-  }
+  const keep = data.salesDaily.filter((entry) => {
+    if (entry.branch !== 'Temuco') return true;
+    if (importedDates.has(entry.date)) return false;
+    return keepSales;
+  });
 
-  rowsByDay.forEach((entries, date) => {
-    setSalesDaily(date, 'Temuco', entries);
+  writeData({
+    ...data,
+    products: nextProducts,
+    salesDaily: [...keep, ...importedEntries],
   });
 
   logAudit({
@@ -1388,11 +1411,12 @@ export function importSalesTemuco(
     action: 'sales_import_temuco',
     diffJson: {
       rowsRead: rows.length,
-      rowsValid: aggregatedByDateProduct.size,
+      rowsValid,
       imported,
       updated,
-      skipped: rows.length - aggregatedByDateProduct.size,
+      skipped: rows.length - rowsValid,
       keepSales,
+      createdProductsCount,
     },
     actor: 'local',
   });
@@ -1400,7 +1424,7 @@ export function importSalesTemuco(
   return {
     imported,
     updated,
-    skipped: rows.length - aggregatedByDateProduct.size,
+    skipped: rows.length - rowsValid,
     errors,
   };
 }
