@@ -1,270 +1,130 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 
-import type { Product } from '@/src/domain/types';
-import {
-  duplicateSalesFromPreviousDay,
-  listProducts,
-  listSalesDaily,
-  setSalesDaily,
-} from '@/src/storage/local/store';
+import { listProducts, listSalesDaily } from '@/src/storage/local/store';
 
-type DraftRow = {
-  productId: string;
-  productName: string;
-  qty: string;
-  grossSalesClp: string;
+const containerStyle: CSSProperties = { padding: 20 };
+const inputStyle: CSSProperties = { padding: 8, border: '1px solid #ccc', borderRadius: 6 };
+const buttonStyle: CSSProperties = {
+  padding: '8px 12px',
+  background: '#2563eb',
+  color: '#fff',
+  borderRadius: 6,
+  border: 0,
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-block',
 };
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function toNumber(value: string): number {
-  const normalized = value.trim().replace(',', '.');
-  if (!normalized) {
-    return 0;
-  }
-
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 export default function SalesTemucoPage() {
-  const [date, setDate] = useState<string>(todayIsoDate());
-  const [products, setProducts] = useState<Product[]>([]);
-  const [draftRows, setDraftRows] = useState<DraftRow[]>([]);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [from, setFrom] = useState('2026-01-31');
+  const [to, setTo] = useState('2026-03-01');
+  const [rows, setRows] = useState<
+    { date: string; productId: string; qty: number; grossSalesClp: number }[]
+  >([]);
 
-  const activeProducts = useMemo(
-    () =>
-      products
-        .filter((product) => product.active)
-        .sort((a, b) => a.name.localeCompare(b.name, 'es-CL')),
-    [products],
-  );
-
-  function loadDraftRows(targetDate: string, sourceProducts?: Product[]): void {
-    const availableProducts = sourceProducts ?? activeProducts;
-    const entries = listSalesDaily({ date: targetDate, branch: 'Temuco' });
-    const byProduct = new Map(entries.map((entry) => [entry.productId, entry]));
-
-    setDraftRows(
-      availableProducts.map((product) => {
-        const entry = byProduct.get(product.id);
-
-        return {
-          productId: product.id,
-          productName: product.name,
-          qty: entry ? String(entry.qty) : '0',
-          grossSalesClp: entry ? String(entry.grossSalesClp) : '0',
-        };
-      }),
-    );
-  }
-
-  useEffect(() => {
-    const loadedProducts = listProducts();
-    setProducts(loadedProducts);
-    const active = loadedProducts
-      .filter((product) => product.active)
-      .sort((a, b) => a.name.localeCompare(b.name, 'es-CL'));
-    loadDraftRows(date, active);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const productsById = useMemo(() => {
+    const map = new Map<string, { name: string }>();
+    listProducts().forEach((p) => map.set(p.id, { name: p.name }));
+    return map;
   }, []);
 
-  useEffect(() => {
-    loadDraftRows(date);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, activeProducts.length]);
-
-  function updateDraft(productId: string, patch: Partial<Pick<DraftRow, 'qty' | 'grossSalesClp'>>): void {
-    setDraftRows((current) =>
-      current.map((row) => (row.productId === productId ? { ...row, ...patch } : row)),
-    );
-  }
-
-  function saveRows(rows: DraftRow[]): void {
-    setSalesDaily(
-      date,
-      'Temuco',
-      rows.map((row) => ({
-        productId: row.productId,
-        qty: toNumber(row.qty),
-        grossSalesClp: toNumber(row.grossSalesClp),
-      })),
-    );
-  }
-
-  function handleSave(): void {
-    try {
-      saveRows(draftRows);
-      loadDraftRows(date);
-      setMessage({ type: 'success', text: 'Ventas guardadas.' });
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Error al guardar ventas.',
-      });
-    }
-  }
-
-  function handleDuplicatePrevious(): void {
-    try {
-      duplicateSalesFromPreviousDay(date, 'Temuco');
-      loadDraftRows(date);
-      setMessage({ type: 'success', text: 'Se duplicó el día anterior.' });
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Error al duplicar día anterior.',
-      });
-    }
-  }
-
-  function handleClearDay(): void {
-    const cleared = draftRows.map((row) => ({ ...row, qty: '0', grossSalesClp: '0' }));
-    setDraftRows(cleared);
-
-    try {
-      saveRows(cleared);
-      loadDraftRows(date);
-      setMessage({ type: 'success', text: 'Día limpiado.' });
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Error al limpiar día.',
-      });
-    }
-  }
-
-  function handlePasteFromRow(startIndex: number, text: string): void {
-    const lines = text
-      .trim()
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (lines.length === 0) {
-      return;
-    }
-
-    setDraftRows((current) => {
-      const next = [...current];
-
-      lines.forEach((line, offset) => {
-        const targetIndex = startIndex + offset;
-        if (targetIndex >= next.length) {
-          return;
-        }
-
-        const cells = line.split('\t');
-        const qtyCell = cells[0]?.trim() ?? '';
-        const amountCell = cells[1]?.trim() ?? '';
-
-        next[targetIndex] = {
-          ...next[targetIndex],
-          qty: qtyCell || '0',
-          grossSalesClp: amountCell || '0',
-        };
-      });
-
-      return next;
+  const totals = useMemo(() => {
+    let totalQty = 0;
+    let totalGross = 0;
+    rows.forEach((r) => {
+      totalQty += r.qty;
+      totalGross += r.grossSalesClp;
     });
-  }
+    return { totalQty, totalGross };
+  }, [rows]);
+
+  const refresh = (): void => {
+    const out: { date: string; productId: string; qty: number; grossSalesClp: number }[] = [];
+    const start = new Date(from);
+    const end = new Date(to);
+
+    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const date = d.toISOString().slice(0, 10);
+      const day = listSalesDaily({ date, branch: 'Temuco' });
+      day.forEach((entry) => {
+        out.push({
+          date: entry.date,
+          productId: entry.productId,
+          qty: entry.qty,
+          grossSalesClp: entry.grossSalesClp,
+        });
+      });
+    }
+
+    setRows(out);
+  };
 
   return (
-    <main>
-      <h1>Ventas Temuco (manual)</h1>
+    <div style={containerStyle}>
+      <h1>Ventas Temuco (importadas)</h1>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
-        <label>
-          Fecha
-          <br />
-          <input className="input"
-            type="date"
-            value={date}
-            onChange={(event) => {
-              setDate(event.target.value);
-              setMessage(null);
-            }}
-          />
-        </label>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div>
+          <div>Desde</div>
+          <input style={inputStyle} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <div>Hasta</div>
+          <input style={inputStyle} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
 
-        <button className="btn" type="button" onClick={handleSave}>
-          Guardar
+        <button style={buttonStyle} type="button" onClick={refresh}>
+          Refrescar
         </button>
-        <button className="btnSecondary" type="button" onClick={handleDuplicatePrevious}>
-          Duplicar día anterior
-        </button>
-        <button className="btnSecondary" type="button" onClick={handleClearDay}>
-          Limpiar día
-        </button>
-        <Link className="btnSecondary" href="/sales/temuco/import">
+
+        <Link href="/sales/temuco/import" style={buttonStyle}>
           Importar XLSX
         </Link>
       </div>
 
-      {message ? (
-        <p style={{ color: message.type === 'error' ? '#b00020' : '#0f5132' }}>{message.text}</p>
-      ) : null}
+      <div style={{ marginTop: 16 }}>
+        <b>Total ventas (CLP):</b> {totals.totalGross} &nbsp;&nbsp; <b>Total qty:</b> {totals.totalQty}
+      </div>
 
-      <div className="tableWrap"><table className="table">
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Product</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Qty</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Monto (CLP)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {draftRows.map((row, index) => (
-            <tr key={row.productId}>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={row.qty}
-                  onChange={(event) => updateDraft(row.productId, { qty: event.target.value })}
-                  onPaste={(event) => {
-                    const pasted = event.clipboardData.getData('text/plain');
-                    if (!pasted.includes('\t') && !pasted.includes('\n')) {
-                      return;
-                    }
-
-                    event.preventDefault();
-                    handlePasteFromRow(index, pasted);
-                  }}
-                />
-              </td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={row.grossSalesClp}
-                  onChange={(event) =>
-                    updateDraft(row.productId, {
-                      grossSalesClp: event.target.value,
-                    })
-                  }
-                />
-              </td>
-            </tr>
-          ))}
-          {draftRows.length === 0 ? (
+      <div style={{ marginTop: 16, overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
             <tr>
-              <td colSpan={3} style={{ padding: 8 }}>
-                No hay productos activos.
-              </td>
+              <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 8 }}>date</th>
+              <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 8 }}>product</th>
+              <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 8 }}>qty</th>
+              <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: 8 }}>grossSalesClp</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table></div>
-    </main>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: 12 }}>
+                  No hay ventas para el rango seleccionado.
+                </td>
+              </tr>
+            ) : (
+              rows.map((r, i) => (
+                <tr key={`${r.date}-${r.productId}-${i}`}>
+                  <td style={{ borderBottom: '1px solid #f0f0f0', padding: 8 }}>{r.date}</td>
+                  <td style={{ borderBottom: '1px solid #f0f0f0', padding: 8 }}>
+                    {productsById.get(r.productId)?.name ?? '(Producto no encontrado)'}
+                  </td>
+                  <td style={{ borderBottom: '1px solid #f0f0f0', padding: 8 }}>{r.qty}</td>
+                  <td style={{ borderBottom: '1px solid #f0f0f0', padding: 8 }}>{r.grossSalesClp}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <Link href="/sales/temuco/manual">Ir a modo manual</Link>
+      </div>
+    </div>
   );
 }
