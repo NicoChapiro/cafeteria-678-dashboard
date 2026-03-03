@@ -430,7 +430,18 @@ export default function SalesImportFudo(props: Props) {
             <ul style={{ margin: 0 }}>
               {unknownProductsTop.map(([normalizedName, value]) => (
                 <li key={normalizedName}>
-                  {value.displayName}: {value.count}
+                  <span>
+                    {value.displayName}: {value.count}
+                  </span>{' '}
+                  <Link
+                    href={{
+                      pathname: '/products/aliases',
+                      query: { source: 'fudo', name: value.displayName },
+                    }}
+                    style={{ fontSize: 12 }}
+                  >
+                    Mapear
+                  </Link>
                 </li>
               ))}
             </ul>
