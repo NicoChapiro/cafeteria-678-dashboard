@@ -4,6 +4,8 @@ import { useState } from 'react';
 import * as XLSX from 'xlsx';
 
 import BackNav from '@/src/components/BackNav';
+import PageHeader from '@/src/components/PageHeader';
+import PageShell from '@/src/components/PageShell';
 import {
   addAuditEvent,
   addItemCostVersion,
@@ -548,37 +550,39 @@ export default function ImportBasePage() {
   }
 
   return (
-    <main>
-      <BackNav />
-      <h1>Importar Base Consolidada v3</h1>
+    <PageShell>
+      <PageHeader title="Importar Base Consolidada v3" backNav={<BackNav />} />
 
-      <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-        <label>
-          Archivo .xlsx
-          <br />
-          <input className="input"
-            type="file"
-            accept=".xlsx"
-            onChange={(event) => {
-              setFile(event.target.files?.[0] ?? null);
-              setPreview(null);
-              setSummary(null);
-              setMessage(null);
-            }}
-          />
-        </label>
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Filtros</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+          <label>
+            Archivo .xlsx
+            <br />
+            <input className="input"
+              type="file"
+              accept=".xlsx"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] ?? null);
+                setPreview(null);
+                setSummary(null);
+                setMessage(null);
+              }}
+            />
+          </label>
 
-        <label>
-          Vigencia desde
-          <br />
-          <input className="input" type="date" value={validFrom} onChange={(event) => setValidFrom(event.target.value)} />
-        </label>
+          <label>
+            Vigencia desde
+            <br />
+            <input className="input" type="date" value={validFrom} onChange={(event) => setValidFrom(event.target.value)} />
+          </label>
 
-        <button className="btn" type="button" onClick={handlePreview}>Previsualizar</button>
-        <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>Importar</button>
+          <button className="btn" type="button" onClick={handlePreview}>Previsualizar</button>
+          <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>Importar</button>
+        </div>
       </section>
 
-      <section className="card">
+      <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Opciones de actualización</h2>
         <label style={{ display: 'block', marginBottom: 6 }}>
           <input type="checkbox" checked={updatePrices} onChange={(event) => setUpdatePrices(event.target.checked)} /> Actualizar precios
@@ -600,8 +604,8 @@ export default function ImportBasePage() {
       {message ? <p style={{ color: message.type === 'error' ? '#b00020' : '#0f5132' }}>{message.text}</p> : null}
 
       {preview ? (
-        <section style={{ marginBottom: 16 }}>
-          <h2>Resumen previsualización</h2>
+        <section className="card" style={{ marginBottom: 0 }}>
+          <h2 style={{ marginTop: 0 }}>Resumen</h2>
           <ul>
             <li>Ingredientes leídos/válidos: {preview.rowsRead.items} / {preview.rowsValid.items}</li>
             <li>Productos leídos/válidos: {preview.rowsRead.products} / {preview.rowsValid.products}</li>
@@ -623,8 +627,8 @@ export default function ImportBasePage() {
       ) : null}
 
       {summary ? (
-        <section>
-          <h2>Resumen importación</h2>
+        <section className="card" style={{ marginBottom: 0 }}>
+          <h2 style={{ marginTop: 0 }}>Detalle</h2>
           <ul>
             <li>Items creados/actualizados: {summary.created.items} / {summary.updated.items}</li>
             <li>Productos creados/actualizados: {summary.created.products} / {summary.updated.products}</li>
@@ -635,6 +639,6 @@ export default function ImportBasePage() {
           </ul>
         </section>
       ) : null}
-    </main>
+    </PageShell>
   );
 }

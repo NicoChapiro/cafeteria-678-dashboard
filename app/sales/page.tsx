@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import PageHeader from '@/src/components/PageHeader';
+import PageShell from '@/src/components/PageShell';
 import type { Branch } from '@/src/domain/types';
 import { listProducts, listSalesEffective } from '@/src/storage/local/store';
 
@@ -119,12 +121,17 @@ export default function SalesPage() {
   );
 
   return (
-    <main>
-      <BackNav />
-      <h1>Ventas</h1>
-      <p style={{ marginBottom: 16 }}><Link href="/sales/adjustments">Ajustes de ventas</Link></p>
+    <PageShell>
+      <PageHeader
+        title="Ventas"
+        description={branch === 'Consolidado' ? 'Consolidado = Santiago + Temuco (incluye ajustes)' : undefined}
+        backNav={<BackNav />}
+        actions={<Link href="/sales/adjustments">Ajustes de ventas</Link>}
+      />
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Filtros</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
         <label>
           Sucursal
           <br />
@@ -146,52 +153,55 @@ export default function SalesPage() {
           <br />
           <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
         </label>
-      </div>
-
-      {branch === 'Consolidado' ? (
-        <p style={{ marginTop: 0, marginBottom: 16 }}>Consolidado = Santiago + Temuco (incluye ajustes)</p>
-      ) : null}
-
-      <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div>
-          <strong>Total gross (CLP): </strong>
-          <span>{totals.totalGrossSalesClp.toLocaleString('es-CL')}</span>
         </div>
-        <div>
-          <strong>Total qty: </strong>
-          <span>{totals.totalQty.toLocaleString('es-CL')}</span>
-        </div>
-      </div>
+      </section>
 
-      <div className="tableWrap"><table className="table">
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>fecha</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>producto</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>gross</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.date}:${branch}:${row.productId}`}>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.grossSalesClp.toLocaleString('es-CL')}</td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Resumen</h2>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          <div>
+            <strong>Total gross (CLP): </strong>
+            <span>{totals.totalGrossSalesClp.toLocaleString('es-CL')}</span>
+          </div>
+          <div>
+            <strong>Total qty: </strong>
+            <span>{totals.totalQty.toLocaleString('es-CL')}</span>
+          </div>
+        </div>
+      </section>
+
+      <section style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Detalle</h2>
+        <div className="tableWrap"><table className="table">
+          <thead>
             <tr>
-              <td colSpan={4} style={{ padding: 8 }}>
-                {fromDate > toDate
-                  ? 'Rango inválido: la fecha Desde debe ser menor o igual a Hasta.'
-                  : 'No hay ventas para los filtros seleccionados.'}
-              </td>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>fecha</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>producto</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>gross</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table></div>
-    </main>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={`${row.date}:${branch}:${row.productId}`}>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.grossSalesClp.toLocaleString('es-CL')}</td>
+              </tr>
+            ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: 8 }}>
+                  {fromDate > toDate
+                    ? 'Rango inválido: la fecha Desde debe ser menor o igual a Hasta.'
+                    : 'No hay ventas para los filtros seleccionados.'}
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table></div>
+      </section>
+    </PageShell>
   );
 }

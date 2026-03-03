@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import PageHeader from '@/src/components/PageHeader';
+import PageShell from '@/src/components/PageShell';
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
 import { getProductWasteRate } from '@/src/services/product-waste';
@@ -346,46 +348,48 @@ export default function DashboardPage() {
   }, [salesRows]);
 
   return (
-    <main>
-      <BackNav />
-      <h1>Dashboard rentabilidad teórica</h1>
+    <PageShell>
+      <PageHeader
+        title="Dashboard rentabilidad teórica"
+        description={selectedBranch === 'Consolidado' ? 'Consolidado = Santiago + Temuco (incluye ajustes)' : undefined}
+        backNav={<BackNav />}
+      />
 
-      <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-        <label>
-          Sucursal
-          <br />
-          <select className="select"
-            value={selectedBranch}
-            onChange={(event) => setSelectedBranch(event.target.value as DashboardBranch)}
-          >
-            <option value="Santiago">Santiago</option>
-            <option value="Temuco">Temuco</option>
-            <option value="Consolidado">Consolidado</option>
-          </select>
-        </label>
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Filtros</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+          <label>
+            Sucursal
+            <br />
+            <select className="select"
+              value={selectedBranch}
+              onChange={(event) => setSelectedBranch(event.target.value as DashboardBranch)}
+            >
+              <option value="Santiago">Santiago</option>
+              <option value="Temuco">Temuco</option>
+              <option value="Consolidado">Consolidado</option>
+            </select>
+          </label>
 
-        <label>
-          Desde
-          <br />
-          <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        </label>
+          <label>
+            Desde
+            <br />
+            <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          </label>
 
-        <label>
-          Hasta
-          <br />
-          <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-        </label>
+          <label>
+            Hasta
+            <br />
+            <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          </label>
 
-        <button className="btn" type="button" onClick={refresh}>
-          Refrescar
-        </button>
+          <button className="btn" type="button" onClick={refresh}>
+            Refrescar
+          </button>
+        </div>
       </section>
 
-      {selectedBranch === 'Consolidado' ? (
-        <p style={{ marginTop: 16, marginBottom: 0 }}>Consolidado = Santiago + Temuco (incluye ajustes)</p>
-      ) : null}
-
-      <section className="card">
+      <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
         <p style={{ margin: '4px 0' }}>
           <strong>Ventas reales (CLP): </strong>
@@ -409,7 +413,7 @@ export default function DashboardPage() {
         </p>
       </section>
 
-      <section className="card">
+      <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Alertas</h2>
         <p style={{ margin: '4px 0' }}>
           <strong>Sin receta:</strong> {dashboard.alerts.sinReceta.length}
@@ -432,49 +436,52 @@ export default function DashboardPage() {
         </ul>
       </section>
 
-      <div className="tableWrap"><table className="table">
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>product</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasReales</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasLista</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>deltaLista</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoTeorico</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoUnitario</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenTeorico</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenUnitario</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margen%</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>alertas</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dashboard.rows.map((row) => (
-            <tr key={row.productId}>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasLista.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.deltaLista.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoTeorico.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoUnitario !== null ? row.costoUnitario.toLocaleString('es-CL') : '-'}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenTeorico.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenUnitario !== null ? row.margenUnitario.toLocaleString('es-CL') : '-'}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenPct.toFixed(2)}%</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                {[...row.alertas].join(', ') || '-'}
-              </td>
-            </tr>
-          ))}
-          {dashboard.rows.length === 0 ? (
+      <section style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Detalle</h2>
+        <div className="tableWrap"><table className="table">
+          <thead>
             <tr>
-              <td colSpan={11} style={{ padding: 8 }}>
-                No hay ventas para el rango seleccionado.
-              </td>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>product</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasReales</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasLista</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>deltaLista</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoTeorico</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoUnitario</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenTeorico</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenUnitario</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margen%</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>alertas</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table></div>
-    </main>
+          </thead>
+          <tbody>
+            {dashboard.rows.map((row) => (
+              <tr key={row.productId}>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasLista.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.deltaLista.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoTeorico.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoUnitario !== null ? row.costoUnitario.toLocaleString('es-CL') : '-'}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenTeorico.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenUnitario !== null ? row.margenUnitario.toLocaleString('es-CL') : '-'}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenPct.toFixed(2)}%</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                  {[...row.alertas].join(', ') || '-'}
+                </td>
+              </tr>
+            ))}
+            {dashboard.rows.length === 0 ? (
+              <tr>
+                <td colSpan={11} style={{ padding: 8 }}>
+                  No hay ventas para el rango seleccionado.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table></div>
+      </section>
+    </PageShell>
   );
 }
