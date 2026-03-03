@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import KpiCard from '@/src/components/KpiCard';
 import PageHeader from '@/src/components/PageHeader';
 import PageShell from '@/src/components/PageShell';
 import type { Branch } from '@/src/domain/types';
@@ -132,45 +133,41 @@ export default function SalesPage() {
       <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Filtros</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-        <label>
-          Sucursal
-          <br />
-          <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as BranchFilter)}>
-            <option value="Santiago">Santiago</option>
-            <option value="Temuco">Temuco</option>
-            <option value="Consolidado">Consolidado</option>
-          </select>
-        </label>
+          <label>
+            Sucursal
+            <br />
+            <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as BranchFilter)}>
+              <option value="Santiago">Santiago</option>
+              <option value="Temuco">Temuco</option>
+              <option value="Consolidado">Consolidado</option>
+            </select>
+          </label>
 
-        <label>
-          Desde
-          <br />
-          <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        </label>
+          <label>
+            Desde
+            <br />
+            <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          </label>
 
-        <label>
-          Hasta
-          <br />
-          <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-        </label>
+          <label>
+            Hasta
+            <br />
+            <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          </label>
         </div>
       </section>
 
       <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <div>
-            <strong>Total gross (CLP): </strong>
-            <span>{totals.totalGrossSalesClp.toLocaleString('es-CL')}</span>
-          </div>
-          <div>
-            <strong>Total qty: </strong>
-            <span>{totals.totalQty.toLocaleString('es-CL')}</span>
-          </div>
+        <div className="grid">
+          <KpiCard label="Total gross (CLP)" value={totals.totalGrossSalesClp.toLocaleString('es-CL')} />
+          <KpiCard label="Total qty" value={totals.totalQty.toLocaleString('es-CL')} />
+          <KpiCard label="# filas mostradas" value={rows.length.toLocaleString('es-CL')} />
+          <KpiCard label="Rango seleccionado" value={`${fromDate} → ${toDate}`} />
         </div>
       </section>
 
-      <section style={{ marginBottom: 0 }}>
+      <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Detalle</h2>
         <div className="tableWrap"><table className="table">
           <thead>

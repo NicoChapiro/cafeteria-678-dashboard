@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import KpiCard from '@/src/components/KpiCard';
 import PageHeader from '@/src/components/PageHeader';
 import PageShell from '@/src/components/PageShell';
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
@@ -391,52 +392,67 @@ export default function DashboardPage() {
 
       <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Ventas reales (CLP): </strong>
-          {dashboard.summary.ventasReales.toLocaleString('es-CL')}
-        </p>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Costo teórico (CLP): </strong>
-          {dashboard.summary.costoTeorico.toLocaleString('es-CL')}
-        </p>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Margen teórico (CLP): </strong>
-          {dashboard.summary.margenTeorico.toLocaleString('es-CL')} ({dashboard.summary.margenPct.toFixed(2)}%)
-        </p>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Ventas a precio lista (CLP): </strong>
-          {dashboard.summary.ventasLista.toLocaleString('es-CL')}
-        </p>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Diferencia vs real (CLP): </strong>
-          {dashboard.summary.deltaLista.toLocaleString('es-CL')}
-        </p>
+        <div className="grid">
+          <KpiCard label="Ventas reales (CLP)" value={dashboard.summary.ventasReales.toLocaleString('es-CL')} />
+          <KpiCard label="Costo teórico (CLP)" value={dashboard.summary.costoTeorico.toLocaleString('es-CL')} />
+          <KpiCard label="Margen teórico (CLP)" value={dashboard.summary.margenTeorico.toLocaleString('es-CL')} />
+          <KpiCard label="Margen %" value={`${dashboard.summary.margenPct.toFixed(2)}%`} />
+          <KpiCard label="Ventas a precio lista (CLP)" value={dashboard.summary.ventasLista.toLocaleString('es-CL')} />
+          <KpiCard label="Diferencia vs real (CLP)" value={dashboard.summary.deltaLista.toLocaleString('es-CL')} />
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Alertas</h2>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Sin receta:</strong> {dashboard.alerts.sinReceta.length}
-        </p>
-        <p style={{ margin: '4px 0' }}>
-          <strong>Sin costo vigente:</strong> {dashboard.alerts.sinCosto.length}
-        </p>
-        <p style={{ margin: '4px 0 8px 0' }}>
-          <strong>Sin precio vigente:</strong> {dashboard.alerts.sinPrecio.length}
-        </p>
-        <ul style={{ margin: 0, paddingLeft: 20 }}>
-          {dashboard.rows
-            .filter((row) => row.alertas.size > 0)
-            .map((row) => (
-              <li key={row.productId}>
-                {row.productName} — {[...row.alertas].join(', ')}
-              </li>
-            ))}
-          {dashboard.rows.every((row) => row.alertas.size === 0) ? <li>Sin alertas</li> : null}
-        </ul>
+        <div className="grid">
+          <article className="card" style={{ marginBottom: 0 }}>
+            <p className="muted" style={{ marginBottom: 6 }}>Sin receta</p>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinReceta.length.toLocaleString('es-CL')}</p>
+            {dashboard.alerts.sinReceta.length > 0 ? (
+              <details style={{ marginTop: 8 }}>
+                <summary>Ver productos (máximo 10)</summary>
+                <ul style={{ marginBottom: 0 }}>
+                  {dashboard.alerts.sinReceta.slice(0, 10).map((row) => (
+                    <li key={row.productId}>{row.productName}</li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </article>
+
+          <article className="card" style={{ marginBottom: 0 }}>
+            <p className="muted" style={{ marginBottom: 6 }}>Sin costo vigente</p>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinCosto.length.toLocaleString('es-CL')}</p>
+            {dashboard.alerts.sinCosto.length > 0 ? (
+              <details style={{ marginTop: 8 }}>
+                <summary>Ver productos (máximo 10)</summary>
+                <ul style={{ marginBottom: 0 }}>
+                  {dashboard.alerts.sinCosto.slice(0, 10).map((row) => (
+                    <li key={row.productId}>{row.productName}</li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </article>
+
+          <article className="card" style={{ marginBottom: 0 }}>
+            <p className="muted" style={{ marginBottom: 6 }}>Sin precio vigente</p>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinPrecio.length.toLocaleString('es-CL')}</p>
+            {dashboard.alerts.sinPrecio.length > 0 ? (
+              <details style={{ marginTop: 8 }}>
+                <summary>Ver productos (máximo 10)</summary>
+                <ul style={{ marginBottom: 0 }}>
+                  {dashboard.alerts.sinPrecio.slice(0, 10).map((row) => (
+                    <li key={row.productId}>{row.productName}</li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </article>
+        </div>
       </section>
 
-      <section style={{ marginBottom: 0 }}>
+      <section className="card" style={{ marginBottom: 0 }}>
         <h2 style={{ marginTop: 0 }}>Detalle</h2>
         <div className="tableWrap"><table className="table">
           <thead>
