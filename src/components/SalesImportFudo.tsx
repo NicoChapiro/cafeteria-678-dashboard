@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { parseFudoProductsXlsx, type FudoParsedRow } from '@/src/services/fudoReport';
@@ -7,6 +8,7 @@ import {
   importSalesSantiago,
   importSalesTemuco,
   listProducts,
+  resolveProductIdByAlias,
   upsertProduct,
 } from '@/src/storage/local/store';
 
@@ -15,6 +17,7 @@ type BranchOption = 'Santiago' | 'Temuco';
 type PreviewState = {
   rowsRead: number;
   validRows: FudoParsedRow[];
+  unknownProducts: Map<string, { displayName: string; count: number }>;
   errors: string[];
   dateMin: string | null;
   dateMax: string | null;
@@ -44,10 +47,46 @@ const BRANCHES: BranchOption[] = ['Santiago', 'Temuco'];
 
 function toPreview(buffer: ArrayBuffer): PreviewState {
   const parsed = parseFudoProductsXlsx(buffer);
+  const products = listProducts();
+  const productsById = new Map(products.map((product) => [product.id, product]));
+  const productsByNormalizedName = new Map(
+    products.map((product) => [product.name.trim().toLocaleLowerCase('es-CL'), product]),
+  );
+  const unknownProducts = new Map<string, { displayName: string; count: number }>();
+
+  const validRows = parsed.rows.map((row) => {
+    const externalName = row.productName.trim();
+    const normalizedName = externalName.toLocaleLowerCase('es-CL');
+    const aliasProductId = resolveProductIdByAlias('fudo', externalName);
+
+    if (aliasProductId) {
+      const aliasedProduct = productsById.get(aliasProductId);
+      if (aliasedProduct) {
+        return { ...row, productName: aliasedProduct.name };
+      }
+    }
+
+    const matchedProduct = productsByNormalizedName.get(normalizedName);
+    if (matchedProduct) {
+      return { ...row, productName: matchedProduct.name };
+    }
+
+    if (normalizedName) {
+      const current = unknownProducts.get(normalizedName);
+      if (current) {
+        current.count += 1;
+      } else {
+        unknownProducts.set(normalizedName, { displayName: externalName, count: 1 });
+      }
+    }
+
+    return row;
+  });
 
   return {
     rowsRead: parsed.rowsRead,
-    validRows: parsed.rows,
+    validRows,
+    unknownProducts,
     errors: parsed.errors,
     dateMin: parsed.dateMin,
     dateMax: parsed.dateMax,
@@ -67,10 +106,19 @@ export default function SalesImportFudo(props: Props) {
   const [message, setMessage] = useState<Message | null>(null);
   const [keepSales, setKeepSales] = useState(defaultKeepSales);
   const [createMissingProducts, setCreateMissingProducts] = useState(defaultCreateMissingProducts);
+  const [strictMode, setStrictMode] = useState(false);
 
   const branch: BranchOption = mode === 'fixed' ? props.fixedBranch : selectedBranch;
   const previewRows = useMemo(() => preview?.validRows.slice(0, 40) ?? [], [preview]);
+  const unknownProductsTop = useMemo(
+    () =>
+      [...(preview?.unknownProducts.entries() ?? [])]
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 20),
+    [preview],
+  );
   const showKeepSales = branch === 'Temuco';
+  const hasUnknownProducts = (preview?.unknownProducts.size ?? 0) > 0;
 
   async function handlePreview(): Promise<void> {
     if (!file) {
@@ -125,9 +173,19 @@ export default function SalesImportFudo(props: Props) {
     }
 
     try {
+      if (strictMode && hasUnknownProducts) {
+        setMessage({
+          type: 'error',
+          text: 'Hay productos no mapeados; crea alias o corrige nombres.',
+        });
+        return;
+      }
+
+      const canCreateMissingProducts = strictMode ? false : createMissingProducts;
+
       if (branch === 'Santiago') {
         const summary = importSalesSantiago(preview.validRows, {
-          createMissingProducts,
+          createMissingProducts: canCreateMissingProducts,
           rowsRead: preview.rowsRead,
         });
 
@@ -139,7 +197,7 @@ export default function SalesImportFudo(props: Props) {
       }
 
       let createdProductsCount = 0;
-      if (createMissingProducts) {
+      if (canCreateMissingProducts) {
         createdProductsCount = ensureMissingProducts(preview.validRows);
       }
 
@@ -161,7 +219,7 @@ export default function SalesImportFudo(props: Props) {
         return;
       }
 
-      const createdText = createMissingProducts ? ` Productos creados: ${createdProductsCount}.` : '';
+      const createdText = canCreateMissingProducts ? ` Productos creados: ${createdProductsCount}.` : '';
       setMessage({ type: 'success', text: `${baseText}${createdText}` });
     } catch (error) {
       setMessage({
@@ -235,13 +293,34 @@ export default function SalesImportFudo(props: Props) {
         <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input
             type="checkbox"
+            checked={strictMode}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setStrictMode(checked);
+              if (checked) {
+                setCreateMissingProducts(false);
+              }
+            }}
+          />
+          Modo estricto (no crear productos faltantes)
+        </label>
+
+        <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="checkbox"
             checked={createMissingProducts}
             onChange={(event) => setCreateMissingProducts(event.target.checked)}
+            disabled={strictMode}
           />
           Crear productos faltantes
         </label>
 
-        <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>
+        <button
+          className="btnSecondary"
+          type="button"
+          onClick={handleImport}
+          disabled={!preview || (strictMode && hasUnknownProducts)}
+        >
           Importar
         </button>
       </div>
@@ -271,6 +350,24 @@ export default function SalesImportFudo(props: Props) {
                 ))}
               </ul>
             </details>
+          ) : null}
+
+          {hasUnknownProducts ? (
+            <section>
+              <h3>Productos no mapeados ({preview?.unknownProducts.size ?? 0})</h3>
+              <p style={{ marginTop: 0 }}>
+                Crea alias FU.DO o corrige nombres para continuar.
+                {' '}
+                <Link href="/products/aliases">Ir a aliases</Link>
+              </p>
+              <ul>
+                {unknownProductsTop.map(([normalizedName, value]) => (
+                  <li key={normalizedName}>
+                    {value.displayName}: {value.count}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
         </section>
       ) : null}

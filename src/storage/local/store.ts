@@ -98,6 +98,13 @@ type SerializedLocalData = {
 };
 
 const STORAGE_KEY = 'cafe678:data:v1';
+const PRODUCT_ALIASES_KEY = 'cafe678:product-aliases:v1';
+
+type ProductAliasEntry = {
+  source: string;
+  externalName: string;
+  productId: string;
+};
 
 function ensureBrowserStorage(): Storage {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -129,6 +136,54 @@ function emptyData(): LocalData {
     salesDaily: [],
     salesAdjustments: [],
   };
+}
+
+function readProductAliases(): ProductAliasEntry[] {
+  const storage = ensureBrowserStorage();
+  const raw = storage.getItem(PRODUCT_ALIASES_KEY);
+
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((entry): entry is ProductAliasEntry => {
+      if (typeof entry !== 'object' || entry === null) {
+        return false;
+      }
+
+      const candidate = entry as Partial<ProductAliasEntry>;
+      return (
+        typeof candidate.source === 'string' &&
+        typeof candidate.externalName === 'string' &&
+        typeof candidate.productId === 'string'
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function resolveProductIdByAlias(source: string, externalName: string): string | null {
+  const normalizedSource = source.trim().toLocaleLowerCase('es-CL');
+  const normalizedExternalName = externalName.trim().toLocaleLowerCase('es-CL');
+
+  if (!normalizedSource || !normalizedExternalName) {
+    return null;
+  }
+
+  const alias = readProductAliases().find(
+    (entry) =>
+      entry.source.trim().toLocaleLowerCase('es-CL') === normalizedSource &&
+      entry.externalName.trim().toLocaleLowerCase('es-CL') === normalizedExternalName,
+  );
+
+  return alias?.productId ?? null;
 }
 
 function isBranch(value: unknown): value is Branch {
