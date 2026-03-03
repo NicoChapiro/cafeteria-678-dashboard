@@ -64,6 +64,33 @@ function listDatesInRange(from: string, to: string): string[] {
   return dates;
 }
 
+
+function loadEffectiveSalesRows(from: string, to: string, branch: DashboardBranch): SalesDaily[] {
+  const dates = listDatesInRange(from, to);
+
+  if (branch !== 'Consolidado') {
+    return dates.flatMap((date) => listSalesEffective({ date, branch }));
+  }
+
+  const consolidatedByKey = dates
+    .flatMap((date) =>
+      BRANCHES.flatMap((sourceBranch) => listSalesEffective({ date, branch: sourceBranch })),
+    )
+    .reduce((acc, row) => {
+      const key = `${row.date}:${row.branch}:${row.productId}`;
+      const current = acc.get(key);
+      if (current) {
+        current.qty += row.qty;
+        current.grossSalesClp += row.grossSalesClp;
+      } else {
+        acc.set(key, { ...row });
+      }
+      return acc;
+    }, new Map<string, SalesDaily>());
+
+  return [...consolidatedByKey.values()];
+}
+
 function findEffectivePrice(versions: ProductPriceVersion[], asOfDate: Date): number | null {
   const target = asOfDate.getTime();
   const effective = versions
@@ -97,14 +124,7 @@ export default function DashboardPage() {
   const [salesRows, setSalesRows] = useState<SalesDaily[]>([]);
 
   function refresh(): void {
-    const dates = listDatesInRange(fromDate, toDate);
-    const branches = selectedBranch === 'Consolidado' ? BRANCHES : [selectedBranch];
-
-    const rows = dates.flatMap((date) =>
-      branches.flatMap((branch) => listSalesEffective({ date, branch })),
-    );
-
-    setSalesRows(rows);
+    setSalesRows(loadEffectiveSalesRows(fromDate, toDate, selectedBranch));
   }
 
   useEffect(() => {
@@ -354,6 +374,10 @@ export default function DashboardPage() {
           Refrescar
         </button>
       </section>
+
+      {selectedBranch === 'Consolidado' ? (
+        <p style={{ marginTop: 16, marginBottom: 0 }}>Consolidado = Santiago + Temuco (incluye ajustes)</p>
+      ) : null}
 
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Resumen</h2>

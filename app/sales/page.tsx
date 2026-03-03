@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Branch } from '@/src/domain/types';
 import { listProducts, listSalesEffective } from '@/src/storage/local/store';
 
+type BranchFilter = Branch | 'Consolidado';
+
 type SalesRow = {
   date: string;
   productId: string;
@@ -45,20 +47,42 @@ function listDatesInRange(from: string, to: string): string[] {
   return dates;
 }
 
-function loadRows(branch: Branch, fromDate: string, toDate: string): SalesRow[] {
+function loadRows(branch: BranchFilter, fromDate: string, toDate: string): SalesRow[] {
   const products = listProducts();
   const productNameById = new Map(products.map((product) => [product.id, product.name]));
 
   return listDatesInRange(fromDate, toDate)
-    .flatMap((date) =>
-      listSalesEffective({ date, branch }).map((entry) => ({
-        date: entry.date,
-        productId: entry.productId,
-        productName: productNameById.get(entry.productId) ?? '(Producto no encontrado)',
-        qty: entry.qty,
-        grossSalesClp: entry.grossSalesClp,
-      })),
-    )
+    .flatMap((date) => {
+      if (branch !== 'Consolidado') {
+        return listSalesEffective({ date, branch }).map((entry) => ({
+          date: entry.date,
+          productId: entry.productId,
+          productName: productNameById.get(entry.productId) ?? '(Producto no encontrado)',
+          qty: entry.qty,
+          grossSalesClp: entry.grossSalesClp,
+        }));
+      }
+
+      const consolidated = [...listSalesEffective({ date, branch: 'Santiago' }), ...listSalesEffective({ date, branch: 'Temuco' })]
+        .reduce((acc, entry) => {
+          const current = acc.get(entry.productId);
+          if (current) {
+            current.qty += entry.qty;
+            current.grossSalesClp += entry.grossSalesClp;
+          } else {
+            acc.set(entry.productId, {
+              date,
+              productId: entry.productId,
+              productName: productNameById.get(entry.productId) ?? '(Producto no encontrado)',
+              qty: entry.qty,
+              grossSalesClp: entry.grossSalesClp,
+            });
+          }
+          return acc;
+        }, new Map<string, SalesRow>());
+
+      return [...consolidated.values()];
+    })
     .sort((a, b) => {
       const dateComparison = a.date.localeCompare(b.date);
       if (dateComparison !== 0) {
@@ -70,7 +94,7 @@ function loadRows(branch: Branch, fromDate: string, toDate: string): SalesRow[] 
 }
 
 export default function SalesPage() {
-  const [branch, setBranch] = useState<Branch>('Santiago');
+  const [branch, setBranch] = useState<BranchFilter>('Santiago');
   const [fromDate, setFromDate] = useState<string>(defaultFromIsoDate());
   const [toDate, setToDate] = useState<string>(todayIsoDate());
 
@@ -102,9 +126,10 @@ export default function SalesPage() {
         <label>
           Sucursal
           <br />
-          <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
+          <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as BranchFilter)}>
             <option value="Santiago">Santiago</option>
             <option value="Temuco">Temuco</option>
+            <option value="Consolidado">Consolidado</option>
           </select>
         </label>
 
@@ -120,6 +145,10 @@ export default function SalesPage() {
           <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
         </label>
       </div>
+
+      {branch === 'Consolidado' ? (
+        <p style={{ marginTop: 0, marginBottom: 16 }}>Consolidado = Santiago + Temuco (incluye ajustes)</p>
+      ) : null}
 
       <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
         <div>
