@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import KpiCard from '@/src/components/KpiCard';
+import PageHeader from '@/src/components/PageHeader';
+import PageShell from '@/src/components/PageShell';
 import type { Branch } from '@/src/domain/types';
 import { listProducts, listSalesEffective } from '@/src/storage/local/store';
 
@@ -119,79 +122,83 @@ export default function SalesPage() {
   );
 
   return (
-    <main>
-      <BackNav />
-      <h1>Ventas</h1>
-      <p style={{ marginBottom: 16 }}><Link href="/sales/adjustments">Ajustes de ventas</Link></p>
+    <PageShell>
+      <PageHeader
+        title="Ventas"
+        description={branch === 'Consolidado' ? 'Consolidado = Santiago + Temuco (incluye ajustes)' : undefined}
+        backNav={<BackNav />}
+        actions={<Link href="/sales/adjustments">Ajustes de ventas</Link>}
+      />
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
-        <label>
-          Sucursal
-          <br />
-          <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as BranchFilter)}>
-            <option value="Santiago">Santiago</option>
-            <option value="Temuco">Temuco</option>
-            <option value="Consolidado">Consolidado</option>
-          </select>
-        </label>
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Filtros</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+          <label>
+            Sucursal
+            <br />
+            <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as BranchFilter)}>
+              <option value="Santiago">Santiago</option>
+              <option value="Temuco">Temuco</option>
+              <option value="Consolidado">Consolidado</option>
+            </select>
+          </label>
 
-        <label>
-          Desde
-          <br />
-          <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        </label>
+          <label>
+            Desde
+            <br />
+            <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          </label>
 
-        <label>
-          Hasta
-          <br />
-          <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-        </label>
-      </div>
-
-      {branch === 'Consolidado' ? (
-        <p style={{ marginTop: 0, marginBottom: 16 }}>Consolidado = Santiago + Temuco (incluye ajustes)</p>
-      ) : null}
-
-      <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div>
-          <strong>Total gross (CLP): </strong>
-          <span>{totals.totalGrossSalesClp.toLocaleString('es-CL')}</span>
+          <label>
+            Hasta
+            <br />
+            <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          </label>
         </div>
-        <div>
-          <strong>Total qty: </strong>
-          <span>{totals.totalQty.toLocaleString('es-CL')}</span>
-        </div>
-      </div>
+      </section>
 
-      <div className="tableWrap"><table className="table">
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>fecha</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>producto</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
-            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>gross</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.date}:${branch}:${row.productId}`}>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-              <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.grossSalesClp.toLocaleString('es-CL')}</td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Resumen</h2>
+        <div className="grid">
+          <KpiCard label="Total gross (CLP)" value={totals.totalGrossSalesClp.toLocaleString('es-CL')} />
+          <KpiCard label="Total qty" value={totals.totalQty.toLocaleString('es-CL')} />
+          <KpiCard label="# filas mostradas" value={rows.length.toLocaleString('es-CL')} />
+          <KpiCard label="Rango seleccionado" value={`${fromDate} → ${toDate}`} />
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Detalle</h2>
+        <div className="tableWrap"><table className="table">
+          <thead>
             <tr>
-              <td colSpan={4} style={{ padding: 8 }}>
-                {fromDate > toDate
-                  ? 'Rango inválido: la fecha Desde debe ser menor o igual a Hasta.'
-                  : 'No hay ventas para los filtros seleccionados.'}
-              </td>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>fecha</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>producto</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>gross</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table></div>
-    </main>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={`${row.date}:${branch}:${row.productId}`}>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.grossSalesClp.toLocaleString('es-CL')}</td>
+              </tr>
+            ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: 8 }}>
+                  {fromDate > toDate
+                    ? 'Rango inválido: la fecha Desde debe ser menor o igual a Hasta.'
+                    : 'No hay ventas para los filtros seleccionados.'}
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table></div>
+      </section>
+    </PageShell>
   );
 }

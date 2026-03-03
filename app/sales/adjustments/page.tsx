@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import PageHeader from '@/src/components/PageHeader';
+import PageShell from '@/src/components/PageShell';
 import type { Branch, Product } from '@/src/domain/types';
 import {
   addSalesAdjustment,
@@ -94,60 +96,71 @@ export default function SalesAdjustmentsPage() {
   }
 
   return (
-    <main>
-      <BackNav backTo={{ href: '/sales', label: 'Ventas' }} />
-      <h1>Ajustes de ventas</h1>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
-        <label>Sucursal<br />
-          <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
-            <option value="Santiago">Santiago</option>
-            <option value="Temuco">Temuco</option>
-          </select>
-        </label>
-        <label>Fecha<br />
-          <input className="input" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-        </label>
-      </div>
+    <PageShell>
+      <PageHeader title="Ajustes de ventas" backNav={<BackNav backTo={{ href: '/sales', label: 'Ventas' }} />} />
 
-      <h2>Agregar ajuste</h2>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
-        <label>Producto<br />
-          <select className="select" value={productId} onChange={(event) => setProductId(event.target.value)}>
-            {activeProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-          </select>
-        </label>
-        <label>Qty<br />
-          <input className="input" type="number" min="0" step="0.001" value={qty} onChange={(event) => setQty(event.target.value)} />
-        </label>
-        <label>GrossSalesClp<br />
-          <input className="input" type="number" min="0" step="1" value={grossSalesClp} onChange={(event) => setGrossSalesClp(event.target.value)} />
-        </label>
-        <label>Nota<br />
-          <input className="input" value={note} onChange={(event) => setNote(event.target.value)} />
-        </label>
-        <button className="btn" type="button" onClick={handleAdd}>Agregar ajuste</button>
-      </div>
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Filtros</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+          <label>Sucursal<br />
+            <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
+              <option value="Santiago">Santiago</option>
+              <option value="Temuco">Temuco</option>
+            </select>
+          </label>
+          <label>Fecha<br />
+            <input className="input" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+          </label>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Agregar ajuste</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+          <label>Producto<br />
+            <select className="select" value={productId} onChange={(event) => setProductId(event.target.value)}>
+              {activeProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+            </select>
+          </label>
+          <label>Qty<br />
+            <input className="input" type="number" min="0" step="0.001" value={qty} onChange={(event) => setQty(event.target.value)} />
+          </label>
+          <label>GrossSalesClp<br />
+            <input className="input" type="number" min="0" step="1" value={grossSalesClp} onChange={(event) => setGrossSalesClp(event.target.value)} />
+          </label>
+          <label>Nota<br />
+            <input className="input" value={note} onChange={(event) => setNote(event.target.value)} />
+          </label>
+          <button className="btn" type="button" onClick={handleAdd}>Agregar ajuste</button>
+        </div>
+      </section>
 
       {message ? <p>{message}</p> : null}
 
-      <p><strong>Total qty ajustes:</strong> {totals.totalQty.toLocaleString('es-CL')} | <strong>Total gross ajustes (CLP):</strong> {totals.totalGross.toLocaleString('es-CL')}</p>
+      <section className="card" style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Resumen</h2>
+        <p><strong>Total qty ajustes:</strong> {totals.totalQty.toLocaleString('es-CL')} | <strong>Total gross ajustes (CLP):</strong> {totals.totalGross.toLocaleString('es-CL')}</p>
+      </section>
 
-      <div className="tableWrap"><table className="table">
-        <thead><tr><th>Producto</th><th>Qty</th><th>Gross</th><th>Nota</th><th>Creado</th><th>Acciones</th></tr></thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{productNameById.get(row.productId) ?? '(Producto no encontrado)'}</td>
-              <td>{row.qty.toLocaleString('es-CL')}</td>
-              <td>{row.grossSalesClp.toLocaleString('es-CL')}</td>
-              <td>{row.note ?? '-'}</td>
-              <td>{row.createdAt.toLocaleString('es-CL')}</td>
-              <td><button className="btnSecondary" type="button" onClick={() => handleDelete(row.id)}>Eliminar</button></td>
-            </tr>
-          ))}
-          {rows.length === 0 ? <tr><td colSpan={6}>No hay ajustes para el filtro seleccionado.</td></tr> : null}
-        </tbody>
-      </table></div>
-    </main>
+      <section style={{ marginBottom: 0 }}>
+        <h2 style={{ marginTop: 0 }}>Detalle</h2>
+        <div className="tableWrap"><table className="table">
+          <thead><tr><th>Producto</th><th>Qty</th><th>Gross</th><th>Nota</th><th>Creado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td>{productNameById.get(row.productId) ?? '(Producto no encontrado)'}</td>
+                <td>{row.qty.toLocaleString('es-CL')}</td>
+                <td>{row.grossSalesClp.toLocaleString('es-CL')}</td>
+                <td>{row.note ?? '-'}</td>
+                <td>{row.createdAt.toLocaleString('es-CL')}</td>
+                <td><button className="btnSecondary" type="button" onClick={() => handleDelete(row.id)}>Eliminar</button></td>
+              </tr>
+            ))}
+            {rows.length === 0 ? <tr><td colSpan={6}>No hay ajustes para el filtro seleccionado.</td></tr> : null}
+          </tbody>
+        </table></div>
+      </section>
+    </PageShell>
   );
 }
