@@ -100,7 +100,7 @@ type SerializedLocalData = {
 const STORAGE_KEY = 'cafe678:data:v1';
 const PRODUCT_ALIASES_KEY = 'cafe678:product-aliases:v1';
 
-type ProductAliasEntry = {
+export type ProductAliasEntry = {
   source: string;
   externalName: string;
   productId: string;
@@ -167,6 +167,74 @@ function readProductAliases(): ProductAliasEntry[] {
   } catch {
     return [];
   }
+}
+
+
+function writeProductAliases(entries: ProductAliasEntry[]): void {
+  const storage = ensureBrowserStorage();
+  storage.setItem(PRODUCT_ALIASES_KEY, JSON.stringify(entries));
+}
+
+export function listProductAliases(): ProductAliasEntry[] {
+  return readProductAliases();
+}
+
+export function upsertProductAlias(entry: ProductAliasEntry): void {
+  const normalizedSource = entry.source.trim();
+  const normalizedExternalName = entry.externalName.trim();
+  const normalizedProductId = entry.productId.trim();
+
+  if (!normalizedSource || !normalizedExternalName || !normalizedProductId) {
+    throw new Error('source, externalName y productId son obligatorios');
+  }
+
+  const aliases = readProductAliases();
+  const existingIndex = aliases.findIndex(
+    (candidate) =>
+      candidate.source.trim().toLocaleLowerCase('es-CL') ===
+        normalizedSource.toLocaleLowerCase('es-CL') &&
+      candidate.externalName.trim().toLocaleLowerCase('es-CL') ===
+        normalizedExternalName.toLocaleLowerCase('es-CL'),
+  );
+
+  const nextEntry: ProductAliasEntry = {
+    source: normalizedSource,
+    externalName: normalizedExternalName,
+    productId: normalizedProductId,
+  };
+
+  if (existingIndex >= 0) {
+    aliases[existingIndex] = nextEntry;
+  } else {
+    aliases.push(nextEntry);
+  }
+
+  writeProductAliases(aliases);
+}
+
+export function deleteProductAlias(source: string, externalName: string): boolean {
+  const normalizedSource = source.trim().toLocaleLowerCase('es-CL');
+  const normalizedExternalName = externalName.trim().toLocaleLowerCase('es-CL');
+
+  if (!normalizedSource || !normalizedExternalName) {
+    return false;
+  }
+
+  const aliases = readProductAliases();
+  const nextAliases = aliases.filter(
+    (entry) =>
+      !(
+        entry.source.trim().toLocaleLowerCase('es-CL') === normalizedSource &&
+        entry.externalName.trim().toLocaleLowerCase('es-CL') === normalizedExternalName
+      ),
+  );
+
+  if (nextAliases.length === aliases.length) {
+    return false;
+  }
+
+  writeProductAliases(nextAliases);
+  return true;
 }
 
 export function resolveProductIdByAlias(source: string, externalName: string): string | null {
