@@ -45,18 +45,27 @@ type Props =
 
 const BRANCHES: BranchOption[] = ['Santiago', 'Temuco'];
 
+function normalizeName(s: string): string {
+  return s
+    .trim()
+    .replace(/\s+/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-CL');
+}
+
 function toPreview(buffer: ArrayBuffer): PreviewState {
   const parsed = parseFudoProductsXlsx(buffer);
   const products = listProducts();
   const productsById = new Map(products.map((product) => [product.id, product]));
   const productsByNormalizedName = new Map(
-    products.map((product) => [product.name.trim().toLocaleLowerCase('es-CL'), product]),
+    products.map((product) => [normalizeName(product.name), product]),
   );
   const unknownProducts = new Map<string, { displayName: string; count: number }>();
 
   const validRows = parsed.rows.map((row) => {
     const externalName = row.productName.trim();
-    const normalizedName = externalName.toLocaleLowerCase('es-CL');
+    const normalizedName = normalizeName(externalName);
     const aliasProductId = resolveProductIdByAlias('fudo', externalName);
 
     if (aliasProductId) {
@@ -139,15 +148,13 @@ export default function SalesImportFudo(props: Props) {
   }
 
   function ensureMissingProducts(rows: FudoParsedRow[]): number {
-    const existing = new Set(
-      listProducts().map((product) => product.name.trim().toLocaleLowerCase('es-CL')),
-    );
+    const existing = new Set(listProducts().map((product) => normalizeName(product.name)));
 
     let createdProductsCount = 0;
 
     rows.forEach((row) => {
       const productName = row.productName.trim();
-      const normalizedName = productName.toLocaleLowerCase('es-CL');
+      const normalizedName = normalizeName(row.productName);
       if (!normalizedName || existing.has(normalizedName)) {
         return;
       }
