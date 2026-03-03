@@ -72,23 +72,9 @@ function loadEffectiveSalesRows(from: string, to: string, branch: DashboardBranc
     return dates.flatMap((date) => listSalesEffective({ date, branch }));
   }
 
-  const consolidatedByKey = dates
-    .flatMap((date) =>
-      BRANCHES.flatMap((sourceBranch) => listSalesEffective({ date, branch: sourceBranch })),
-    )
-    .reduce((acc, row) => {
-      const key = `${row.date}:${row.branch}:${row.productId}`;
-      const current = acc.get(key);
-      if (current) {
-        current.qty += row.qty;
-        current.grossSalesClp += row.grossSalesClp;
-      } else {
-        acc.set(key, { ...row });
-      }
-      return acc;
-    }, new Map<string, SalesDaily>());
-
-  return [...consolidatedByKey.values()];
+  return dates.flatMap((date) =>
+    BRANCHES.flatMap((sourceBranch) => listSalesEffective({ date, branch: sourceBranch })),
+  );
 }
 
 function findEffectivePrice(versions: ProductPriceVersion[], asOfDate: Date): number | null {
@@ -188,6 +174,21 @@ export default function DashboardPage() {
       );
     });
 
+    const effectiveTotalsByProduct = salesRows
+      .reduce((acc, sale) => {
+        const current = acc.get(sale.productId);
+        if (current) {
+          current.qty += sale.qty;
+          current.ventasReales += sale.grossSalesClp;
+        } else {
+          acc.set(sale.productId, {
+            qty: sale.qty,
+            ventasReales: sale.grossSalesClp,
+          });
+        }
+        return acc;
+      }, new Map<string, { qty: number; ventasReales: number }>());
+
     const perProduct = new Map<string, ProductAggregate>();
 
     salesRows.forEach((sale) => {
@@ -209,8 +210,6 @@ export default function DashboardPage() {
         };
 
       aggregate.recipeId = product?.recipeId ?? aggregate.recipeId ?? null;
-      aggregate.qty += sale.qty;
-      aggregate.ventasReales += sale.grossSalesClp;
 
       const priceVersions = pricesByKey.get(`${sale.productId}:${sale.branch}`) ?? [];
       const effectivePrice = findEffectivePrice(priceVersions, asOfDate);
@@ -267,12 +266,15 @@ export default function DashboardPage() {
     });
 
     const rows = [...perProduct.values()].map((row) => {
+      const totals = effectiveTotalsByProduct.get(row.productId);
+      const qty = totals?.qty ?? 0;
+      const ventasReales = totals?.ventasReales ?? 0;
       const costoTeorico = Math.round(row.costoTeorico);
-      const margenTeorico = Math.round(row.ventasReales - costoTeorico);
-      const margenPct = row.ventasReales > 0 ? (margenTeorico / row.ventasReales) * 100 : 0;
-      const deltaLista = Math.round(row.ventasLista - row.ventasReales);
-      const costoUnitario = row.qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(costoTeorico / row.qty) : null;
-      const margenUnitario = row.qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(margenTeorico / row.qty) : null;
+      const margenTeorico = Math.round(ventasReales - costoTeorico);
+      const margenPct = ventasReales > 0 ? (margenTeorico / ventasReales) * 100 : 0;
+      const deltaLista = Math.round(row.ventasLista - ventasReales);
+      const costoUnitario = qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(costoTeorico / qty) : null;
+      const margenUnitario = qty > 0 && !row.alertas.has('sin costo vigente') ? Math.round(margenTeorico / qty) : null;
       const motivoPrincipal = row.alertas.has('sin costo vigente')
         ? row.recipeId
           ? 'Tiene receta pero faltan costos de insumos'
@@ -280,6 +282,8 @@ export default function DashboardPage() {
         : null;
       return {
         ...row,
+        qty,
+        ventasReales,
         costoTeorico,
         margenTeorico,
         margenPct,
