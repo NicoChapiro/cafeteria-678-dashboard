@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import BackNav from '@/src/components/BackNav';
 import type { Branch } from '@/src/domain/types';
 import { listProducts, listSalesEffective } from '@/src/storage/local/store';
 
@@ -119,6 +120,7 @@ export default function SalesPage() {
 
   return (
     <main>
+      <BackNav />
       <h1>Ventas</h1>
       <p style={{ marginBottom: 16 }}><Link href="/sales/adjustments">Ajustes de ventas</Link></p>
 
