@@ -22,6 +22,12 @@ const primarySections: Section[] = [
     href: '/sales/import',
     cta: 'Ir a importador FU.DO',
   },
+  {
+    title: 'Aliases FU.DO',
+    description: 'Diccionario de equivalencias FU.DO → Producto interno.',
+    href: '/products/aliases',
+    cta: 'Ir a aliases FU.DO',
+  },
 ];
 
 const sections: Section[] = [

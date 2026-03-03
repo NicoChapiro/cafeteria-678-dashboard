@@ -7,6 +7,7 @@ import {
   importSalesSantiago,
   importSalesTemuco,
   listProducts,
+  resolveProductIdByAlias,
   upsertProduct,
 } from '@/src/storage/local/store';
 
@@ -54,6 +55,28 @@ function toPreview(buffer: ArrayBuffer): PreviewState {
     totalGross: parsed.totalGross,
     totalQty: parsed.totalQty,
   };
+}
+
+
+function canonicalizeRowsByAlias(rows: FudoParsedRow[]): FudoParsedRow[] {
+  const productsById = new Map(listProducts().map((product) => [product.id, product]));
+
+  return rows.map((row) => {
+    const productId = resolveProductIdByAlias('fudo', row.productName);
+    if (!productId) {
+      return row;
+    }
+
+    const canonicalProduct = productsById.get(productId);
+    if (!canonicalProduct) {
+      return row;
+    }
+
+    return {
+      ...row,
+      productName: canonicalProduct.name,
+    };
+  });
 }
 
 export default function SalesImportFudo(props: Props) {
@@ -125,8 +148,10 @@ export default function SalesImportFudo(props: Props) {
     }
 
     try {
+      const rowsToImport = canonicalizeRowsByAlias(preview.validRows);
+
       if (branch === 'Santiago') {
-        const summary = importSalesSantiago(preview.validRows, {
+        const summary = importSalesSantiago(rowsToImport, {
           createMissingProducts,
           rowsRead: preview.rowsRead,
         });
@@ -140,10 +165,10 @@ export default function SalesImportFudo(props: Props) {
 
       let createdProductsCount = 0;
       if (createMissingProducts) {
-        createdProductsCount = ensureMissingProducts(preview.validRows);
+        createdProductsCount = ensureMissingProducts(rowsToImport);
       }
 
-      const rowsForTemuco = preview.validRows.map((row) => ({
+      const rowsForTemuco = rowsToImport.map((row) => ({
         date: row.date,
         product: row.productName,
         qty: row.qty,

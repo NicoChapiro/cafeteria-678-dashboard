@@ -43,6 +43,17 @@ export type Product = {
   updatedAt: Date;
 };
 
+export type ProductAliasSource = 'fudo';
+
+export type ProductAlias = {
+  id: string;
+  source: ProductAliasSource;
+  externalName: string;
+  externalNameNormalized: string;
+  productId: string;
+  createdAt: Date;
+};
+
 export type ProductPriceVersion = {
   id: string;
   productId: string;

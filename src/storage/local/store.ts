@@ -8,6 +8,8 @@ import type {
   NewProductCostVersion,
   NewProductPriceVersion,
   Product,
+  ProductAlias,
+  ProductAliasSource,
   ProductCostVersion,
   ProductPriceVersion,
   Recipe,
@@ -34,6 +36,10 @@ type SerializedItemCostVersion = Omit<
 type SerializedProduct = Omit<Product, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
   updatedAt: string;
+};
+
+type SerializedProductAlias = Omit<ProductAlias, 'createdAt'> & {
+  createdAt: string;
 };
 
 type SerializedProductPriceVersion = Omit<
@@ -75,6 +81,7 @@ type LocalData = {
   items: Item[];
   itemCostVersions: ItemCostVersion[];
   products: Product[];
+  productAliases: ProductAlias[];
   productPriceVersions: ProductPriceVersion[];
   productCostVersions: ProductCostVersion[];
   recipes: Recipe[];
@@ -88,6 +95,7 @@ type SerializedLocalData = {
   items: SerializedItem[];
   itemCostVersions: SerializedItemCostVersion[];
   products: SerializedProduct[];
+  productAliases: SerializedProductAlias[];
   productPriceVersions: SerializedProductPriceVersion[];
   productCostVersions: SerializedProductCostVersion[];
   recipes: SerializedRecipe[];
@@ -121,6 +129,7 @@ function emptyData(): LocalData {
     items: [],
     itemCostVersions: [],
     products: [],
+    productAliases: [],
     productPriceVersions: [],
     productCostVersions: [],  
     recipes: [],
@@ -207,6 +216,10 @@ function serializeData(data: LocalData): SerializedLocalData {
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     })),
+    productAliases: (data.productAliases ?? []).map((alias) => ({
+      ...alias,
+      createdAt: alias.createdAt.toISOString(),
+    })),
     productPriceVersions: (data.productPriceVersions ?? []).map((version) => ({
       ...version,
       validFrom: version.validFrom.toISOString(),
@@ -255,6 +268,10 @@ function deserializeData(data: SerializedLocalData | Partial<SerializedLocalData
       createdAt: toDate(product.createdAt),
       updatedAt: toDate(product.updatedAt),
     })),
+    productAliases: (data.productAliases ?? []).map((alias) => ({
+      ...alias,
+      createdAt: toDate(alias.createdAt),
+    })),
     productPriceVersions: (data.productPriceVersions ?? []).map((version) => ({
       ...version,
       validFrom: toDate(version.validFrom),
@@ -299,7 +316,8 @@ function isSerializedData(value: unknown): value is Partial<SerializedLocalData>
     (candidate.productPriceVersions === undefined ||
       Array.isArray(candidate.productPriceVersions)) &&
     (candidate.productCostVersions === undefined ||
-      Array.isArray(candidate.productCostVersions));
+      Array.isArray(candidate.productCostVersions)) &&
+    (candidate.productAliases === undefined || Array.isArray(candidate.productAliases));
 
   const hasOptionalRecipeArrays =
     (candidate.recipes === undefined || Array.isArray(candidate.recipes)) &&
@@ -361,6 +379,15 @@ function roundQty(value: number): number {
 
 function roundMoney(value: number): number {
   return Math.round(value);
+}
+
+
+function normalizeAliasName(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase('es-CL')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 
@@ -626,6 +653,7 @@ export function deleteProduct(id: string): void {
     productCostVersions: data.productCostVersions.filter(
       (version) => version.productId !== id,
     ),
+    productAliases: data.productAliases.filter((alias) => alias.productId !== id),
   });
 
   logAudit({
@@ -634,6 +662,114 @@ export function deleteProduct(id: string): void {
     action: 'delete',
     diffJson: { removed },
   });
+}
+
+export function listProductAliases(source: ProductAliasSource = 'fudo'): ProductAlias[] {
+  const data = readData();
+  return [...data.productAliases]
+    .filter((alias) => alias.source === source)
+    .sort((a, b) => a.externalName.localeCompare(b.externalName, 'es-CL'));
+}
+
+export function upsertProductAlias(input: {
+  source: ProductAliasSource;
+  externalName: string;
+  productId: string;
+}): ProductAlias {
+  const source = input.source ?? 'fudo';
+  const externalName = input.externalName.trim();
+
+  if (!externalName) {
+    throw new Error('externalName es obligatorio');
+  }
+
+  if (!input.productId) {
+    throw new Error('productId es obligatorio');
+  }
+
+  const data = readData();
+  const productExists = data.products.some((product) => product.id === input.productId);
+  if (!productExists) {
+    throw new Error('productId no existe');
+  }
+
+  const externalNameNormalized = normalizeAliasName(externalName);
+  const current = data.productAliases.find(
+    (alias) =>
+      alias.source === source && alias.externalNameNormalized === externalNameNormalized,
+  );
+
+  const nextAlias: ProductAlias = current
+    ? {
+        ...current,
+        externalName,
+        externalNameNormalized,
+        productId: input.productId,
+      }
+    : {
+        id: buildId('product_alias'),
+        source,
+        externalName,
+        externalNameNormalized,
+        productId: input.productId,
+        createdAt: new Date(),
+      };
+
+  const nextAliases = current
+    ? data.productAliases.map((alias) => (alias.id === current.id ? nextAlias : alias))
+    : [...data.productAliases, nextAlias];
+
+  writeData({ ...data, productAliases: nextAliases });
+
+  logAudit({
+    entityType: 'product_alias',
+    entityId: nextAlias.id,
+    action: current ? 'update' : 'create',
+    diffJson: { before: current ?? null, after: nextAlias },
+  });
+
+  return nextAlias;
+}
+
+export function deleteProductAlias(id: string): void {
+  if (!id) {
+    throw new Error('id es obligatorio');
+  }
+
+  const data = readData();
+  const removed = data.productAliases.find((alias) => alias.id === id);
+
+  if (!removed) {
+    throw new Error('Alias no encontrado');
+  }
+
+  writeData({
+    ...data,
+    productAliases: data.productAliases.filter((alias) => alias.id !== id),
+  });
+
+  logAudit({
+    entityType: 'product_alias',
+    entityId: id,
+    action: 'delete',
+    diffJson: { removed },
+  });
+}
+
+export function resolveProductIdByAlias(
+  source: ProductAliasSource = 'fudo',
+  externalName: string,
+): string | null {
+  const normalized = normalizeAliasName(externalName);
+  if (!normalized) {
+    return null;
+  }
+
+  const alias = readData().productAliases.find(
+    (entry) => entry.source === source && entry.externalNameNormalized === normalized,
+  );
+
+  return alias?.productId ?? null;
 }
 
 export function listProductPrices(
@@ -1590,6 +1726,7 @@ export function exportData(): void {
     diffJson: {
       items: data.items.length,
       products: data.products.length,
+      productAliases: data.productAliases.length,
       recipes: data.recipes.length,
       recipeLines: data.recipeLines.length,
       auditLogs: data.auditLogs.length,
@@ -1620,6 +1757,11 @@ export function importData(json: string): void {
     parsed !== null &&
     Object.prototype.hasOwnProperty.call(parsed, 'salesAdjustments');
 
+  const hasProductAliasesInImport =
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    Object.prototype.hasOwnProperty.call(parsed, 'productAliases');
+
   const dataSanitized: LocalData = {
     ...data,
     products: data.products.map((product) => {
@@ -1635,6 +1777,7 @@ export function importData(json: string): void {
     }),
     auditLogs: hasAuditLogsInImport ? data.auditLogs : existing.auditLogs,
     salesAdjustments: hasSalesAdjustmentsInImport ? data.salesAdjustments : existing.salesAdjustments,
+    productAliases: hasProductAliasesInImport ? data.productAliases : existing.productAliases,
   };
 
   writeData(dataSanitized);
@@ -1647,6 +1790,7 @@ export function importData(json: string): void {
       items: dataSanitized.items.length,
       itemCostVersions: dataSanitized.itemCostVersions.length,
       products: dataSanitized.products.length,
+      productAliases: dataSanitized.productAliases.length,
       productPriceVersions: dataSanitized.productPriceVersions.length,
       productCostVersions: dataSanitized.productCostVersions.length,
       recipes: dataSanitized.recipes.length,
