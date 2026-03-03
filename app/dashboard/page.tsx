@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import BackNav from '@/src/components/BackNav';
 import type { Branch, ProductCostVersion, ProductPriceVersion, SalesDaily } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
 import { getProductWasteRate } from '@/src/services/product-waste';
@@ -346,6 +347,7 @@ export default function DashboardPage() {
 
   return (
     <main>
+      <BackNav />
       <h1>Dashboard rentabilidad teórica</h1>
 
       <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
