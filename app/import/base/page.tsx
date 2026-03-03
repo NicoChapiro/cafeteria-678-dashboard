@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
 
+import BackNav from '@/src/components/BackNav';
 import {
   addAuditEvent,
   addItemCostVersion,
@@ -548,6 +549,7 @@ export default function ImportBasePage() {
 
   return (
     <main>
+      <BackNav />
       <h1>Importar Base Consolidada v3</h1>
 
       <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>

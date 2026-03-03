@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import BackNav from '@/src/components/BackNav';
 import type { Branch, Product } from '@/src/domain/types';
 import {
   addSalesAdjustment,
@@ -94,6 +95,7 @@ export default function SalesAdjustmentsPage() {
 
   return (
     <main>
+      <BackNav backTo={{ href: '/sales', label: 'Ventas' }} />
       <h1>Ajustes de ventas</h1>
       <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>Sucursal<br />
