@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
   Branch,
@@ -172,6 +172,10 @@ export default function ProductCostingPage() {
   const [recipeLinesByRecipeId, setRecipeLinesByRecipeId] = useState<Map<string, RecipeLine[]>>(new Map());
   const [itemsById, setItemsById] = useState<Map<string, Item>>(new Map());
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [drawerIntent, setDrawerIntent] = useState<'missingCosts' | 'missingPrice' | null>(null);
+
+  const missingCostsRef = useRef<HTMLDivElement | null>(null);
+  const kpiRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const loadedProducts = listProducts();
@@ -266,6 +270,24 @@ export default function ProductCostingPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectedProductId]);
 
+
+  useEffect(() => {
+    if (!selectedProductId || !drawerIntent) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (drawerIntent === 'missingCosts') {
+        missingCostsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        kpiRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      setDrawerIntent(null);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [drawerIntent, selectedProductId]);
+
   return (
     <main>
       <h1>Costos &amp; Recetas (Mockup 1)</h1>
@@ -328,7 +350,10 @@ export default function ProductCostingPage() {
             key={product.id}
             className="card"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
-            onClick={() => setSelectedProductId(product.id)}
+            onClick={() => {
+              setDrawerIntent(null);
+              setSelectedProductId(product.id);
+            }}
             aria-label={`Abrir detalle de ${product.name}`}
             aria-haspopup="dialog"
             type="button"
@@ -363,6 +388,13 @@ export default function ProductCostingPage() {
                   aria-label={`Resolver problemas de ${product.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
+                    const hasMissingCosts = costing.badges.some((badge) => {
+                      const normalized = badge.toLocaleLowerCase('es-CL');
+                      return normalized.includes('sin costo') || normalized.startsWith('faltan costos');
+                    });
+                    const hasMissingPrice = costing.badges.some((badge) =>
+                      badge.toLocaleLowerCase('es-CL').includes('sin precio'));
+                    setDrawerIntent(hasMissingCosts ? 'missingCosts' : hasMissingPrice ? 'missingPrice' : null);
                     setSelectedProductId(product.id);
                   }}
                   style={{ fontSize: 12, padding: '4px 10px' }}
@@ -383,7 +415,10 @@ export default function ProductCostingPage() {
       {selected ? (
         <>
           <div
-            onClick={() => setSelectedProductId(null)}
+            onClick={() => {
+              setDrawerIntent(null);
+              setSelectedProductId(null);
+            }}
             style={{
               position: 'fixed',
               inset: 0,
@@ -426,7 +461,10 @@ export default function ProductCostingPage() {
               </div>
               <button
                 className="btnSecondary"
-                onClick={() => setSelectedProductId(null)}
+                onClick={() => {
+                  setDrawerIntent(null);
+                  setSelectedProductId(null);
+                }}
                 aria-label="Cerrar detalle"
                 type="button"
               >
@@ -434,7 +472,8 @@ export default function ProductCostingPage() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
+            <div ref={kpiRef}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
               <div className="card" style={{ marginBottom: 0 }}>
                 <p className="muted">Precio</p>
                 <strong>{formatClp(selected.costing.priceClp)}</strong>
@@ -450,6 +489,7 @@ export default function ProductCostingPage() {
                     ? 'N/D'
                     : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
                 </strong>
+              </div>
               </div>
             </div>
 
@@ -494,7 +534,7 @@ export default function ProductCostingPage() {
               </table>
             </div>
 
-            <div style={{ marginTop: 12 }}>
+            <div ref={missingCostsRef} style={{ marginTop: 12 }}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
