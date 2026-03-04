@@ -105,7 +105,7 @@ function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
         {drivers.map((driver) => {
           const widthPct = maxLineCost > 0 ? (driver.lineCostClp / maxLineCost) * 100 : 0;
           return (
-            <div key={driver.itemId}>
+            <div key={`${driver.itemId}-${driver.itemName}`}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                 <span>{driver.itemName}</span>
                 <span className="muted" style={{ fontWeight: 600 }}>{formatClp(driver.lineCostClp)}</span>
