@@ -1,11 +1,25 @@
 :root {
+  --brand-green: #486630;
+  --brand-orange: #f49022;
+  --brand-yellow: #ffcd50;
+  --brand-lilac: #d6bae8;
+
+  --text-on-dark: #ffffff;
+  --border-soft: #e5e7eb;
+  --bg-soft: #f8fafc;
+
+  --status-success: var(--brand-green);
+  --status-warning: var(--brand-orange);
+  --status-info: var(--brand-lilac);
+  --status-error: #b00020;
+
   --bg: #f6f8fb;
   --text: #1f2937;
   --muted: #6b7280;
   --card: #ffffff;
   --border: #d7dde7;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --primary: var(--brand-green);
+  --primary-hover: #3f5a2a;
 }
 
 * { box-sizing: border-box; }
@@ -16,8 +30,9 @@ body.appBody {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
-a { color: var(--primary); text-decoration: none; }
+a { color: var(--brand-green); text-decoration: none; }
 a:hover { text-decoration: underline; }
+a:hover { color: var(--brand-orange); }
 
 .container {
   max-width: 1180px;
@@ -45,19 +60,28 @@ a:hover { text-decoration: underline; }
 
 .btn,
 .btnSecondary {
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: #fff;
+  border: 1px solid var(--brand-green);
+  background: var(--brand-green);
+  color: var(--text-on-dark);
   border-radius: 8px;
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
 }
-.btn:hover { background: var(--primary-hover); }
-.btnSecondary {
-  background: #fff;
-  color: var(--primary);
+.btn:hover { filter: brightness(0.95); }
+.btn:focus-visible,
+.btnSecondary:focus-visible,
+.input:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--brand-lilac);
+  outline-offset: 2px;
 }
+.btnSecondary {
+  border: 1px solid var(--brand-lilac);
+  background: transparent;
+  color: var(--brand-green);
+}
+.btnSecondary:hover { background: rgba(214, 186, 232, 0.18); }
 
 .input,
 .select {
@@ -66,6 +90,11 @@ a:hover { text-decoration: underline; }
   border-radius: 8px;
   padding: 7px 10px;
   background: #fff;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--brand-lilac);
 }
 
 .tableWrap {
@@ -102,6 +131,27 @@ a:hover { text-decoration: underline; }
   border: 1px solid #ffd399;
   background: #fff4e5;
   color: #6b3d00;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.calloutWarning {
+  border: 1px solid var(--brand-orange);
+  background: rgba(244, 144, 34, 0.12);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.calloutInfo {
+  border: 1px solid var(--brand-lilac);
+  background: rgba(214, 186, 232, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.calloutSuccess {
+  border: 1px solid var(--brand-green);
+  background: rgba(72, 102, 48, 0.12);
   border-radius: 8px;
   padding: 10px;
 }
