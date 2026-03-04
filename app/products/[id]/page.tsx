@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type {
   Branch,
   Product,
@@ -318,6 +319,38 @@ export default function ProductDetailPage() {
     }));
   }
 
+
+
+  function getDisabledPriceReason(branch: Branch): string | null {
+    const form = priceForms[branch];
+
+    if (!form.validFrom) {
+      return 'Debes elegir Vigencia desde.';
+    }
+
+    const amount = Number(form.amount);
+    if (!form.amount.trim() || !Number.isFinite(amount) || amount < 0) {
+      return 'Falta priceGrossClp.';
+    }
+
+    return null;
+  }
+
+  function getDisabledManualCostReason(branch: Branch): string | null {
+    const form = costForms[branch];
+
+    if (!form.validFrom) {
+      return 'Debes elegir Vigencia desde.';
+    }
+
+    const amount = Number(form.amount);
+    if (!form.amount.trim() || !Number.isFinite(amount) || amount < 0) {
+      return 'Falta costGrossClp.';
+    }
+
+    return null;
+  }
+
   function onAddPrice(branch: Branch) {
     setPriceError(null);
 
@@ -517,16 +550,6 @@ export default function ProductDetailPage() {
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
               <label>
-                validFrom
-                <br />
-                <input
-                  type="date"
-                  value={priceForms[branch].validFrom}
-                  onChange={(event) => onPriceInput(branch, 'validFrom', event.target.value)}
-                />
-              </label>
-
-              <label>
                 priceGrossClp
                 <br />
                 <input
@@ -539,15 +562,22 @@ export default function ProductDetailPage() {
               </label>
             </div>
 
-            <p>
-              <button className="btnSecondary" type="button" onClick={() => onAddPrice(branch)}>
-                Agregar precio
-              </button>
-            </p>
+            <VersionTimelinePreview
+              title="Nueva versión de precio"
+              branchLabel={branch}
+              existingVersions={pricesByBranch[branch]}
+              newValidFrom={priceForms[branch].validFrom}
+              onValidFromChange={(value) => onPriceInput(branch, 'validFrom', value)}
+              onSave={() => onAddPrice(branch)}
+              disabledSaveReason={getDisabledPriceReason(branch)}
+              saveLabel="Agregar precio"
+            />
 
             <h4>Historial</h4>
             <ul>
-              {pricesByBranch[branch].map((version) => (
+              {[...pricesByBranch[branch]]
+                .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime())
+                .map((version) => (
                 <li key={version.id}>
                   {formatDate(version.validFrom)} → {formatDate(version.validTo)} | CLP{' '}
                   {version.priceGrossClp}
@@ -569,16 +599,6 @@ export default function ProductDetailPage() {
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
               <label>
-                validFrom
-                <br />
-                <input
-                  type="date"
-                  value={costForms[branch].validFrom}
-                  onChange={(event) => onCostInput(branch, 'validFrom', event.target.value)}
-                />
-              </label>
-
-              <label>
                 costGrossClp
                 <br />
                 <input
@@ -591,11 +611,16 @@ export default function ProductDetailPage() {
               </label>
             </div>
 
-            <p>
-              <button className="btnSecondary" type="button" onClick={() => onAddCost(branch)}>
-                Agregar costo
-              </button>
-            </p>
+            <VersionTimelinePreview
+              title="Nueva versión de costo manual"
+              branchLabel={branch}
+              existingVersions={costsByBranch[branch]}
+              newValidFrom={costForms[branch].validFrom}
+              onValidFromChange={(value) => onCostInput(branch, 'validFrom', value)}
+              onSave={() => onAddCost(branch)}
+              disabledSaveReason={getDisabledManualCostReason(branch)}
+              saveLabel="Agregar costo"
+            />
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr auto', alignItems: 'end', maxWidth: 420 }}>
               <label>
@@ -621,7 +646,9 @@ export default function ProductDetailPage() {
 
             <h4>Historial</h4>
             <ul>
-              {costsByBranch[branch].map((version) => (
+              {[...costsByBranch[branch]]
+                .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime())
+                .map((version) => (
                 <li key={version.id}>
                   {formatDate(version.validFrom)} → {formatDate(version.validTo)} | CLP{' '}
                   {version.costGrossClp}
