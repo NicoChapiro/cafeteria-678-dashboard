@@ -651,48 +651,74 @@ export function addItemCostVersion(
       validTo: newVersion.validTo ?? null,
     },
   );
+  const existingByValidFrom = new Map(
+    existingForKey.map((version) => [normalizeToUtcDay(version.validFrom).getTime(), version]),
+  );
+  const incomingDay = normalizeToUtcDay(newVersion.validFrom).getTime();
 
-  const updatedExisting = existingForKey.map((version) => {
-    const match = timeline.find(
-      (timelineVersion) =>
-        timelineVersion.validFrom.getTime() === version.validFrom.getTime(),
-    );
+  const rebuiltForKey = timeline.map((timelineVersion) => {
+    const key = normalizeToUtcDay(timelineVersion.validFrom).getTime();
+    const existing = existingByValidFrom.get(key);
 
-    return match ? { ...version, validTo: match.validTo } : version;
+    if (key === incomingDay) {
+      if (existing) {
+        return {
+          ...existing,
+          packQtyInBase: newVersion.packQtyInBase,
+          packCostGrossClp: newVersion.packCostGrossClp,
+          yieldRateOverride: newVersion.yieldRateOverride ?? null,
+          validFrom: timelineVersion.validFrom,
+          validTo: timelineVersion.validTo,
+        };
+      }
+
+      return {
+        id: buildId('item_cost'),
+        itemId,
+        branch,
+        packQtyInBase: newVersion.packQtyInBase,
+        packCostGrossClp: newVersion.packCostGrossClp,
+        yieldRateOverride: newVersion.yieldRateOverride ?? null,
+        validFrom: timelineVersion.validFrom,
+        validTo: timelineVersion.validTo,
+        createdAt: new Date(),
+      };
+    }
+
+    if (!existing) {
+      throw new Error('Failed to rebuild item cost timeline');
+    }
+
+    return {
+      ...existing,
+      validFrom: timelineVersion.validFrom,
+      validTo: timelineVersion.validTo,
+    };
   });
-
-  const insertedTimeline = timeline.at(-1);
-  if (!insertedTimeline) {
-    throw new Error('Failed to insert new item cost version');
-  }
-
-  const insertedVersion: ItemCostVersion = {
-    id: buildId('item_cost'),
-    itemId,
-    branch,
-    packQtyInBase: newVersion.packQtyInBase,
-    packCostGrossClp: newVersion.packCostGrossClp,
-    yieldRateOverride: newVersion.yieldRateOverride ?? null,
-    validFrom: insertedTimeline.validFrom,
-    validTo: insertedTimeline.validTo,
-    createdAt: new Date(),
-  };
 
   const untouched = data.itemCostVersions.filter(
     (version) => !(version.itemId === itemId && version.branch === branch),
   );
 
-  const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
+  const nextVersions = [...untouched, ...rebuiltForKey];
   writeData({ ...data, itemCostVersions: nextVersions });
+
+  const upsertedVersion = rebuiltForKey.find(
+    (version) => normalizeToUtcDay(version.validFrom).getTime() === incomingDay,
+  );
+
+  if (!upsertedVersion) {
+    throw new Error('Failed to upsert item cost version');
+  }
 
   logAudit({
     entityType: 'item_cost_version',
-    entityId: insertedVersion.id,
+    entityId: upsertedVersion.id,
     action: 'add_version',
-    diffJson: { itemId, branch, version: insertedVersion },
+    diffJson: { itemId, branch, version: upsertedVersion },
   });
 
-  return [...updatedExisting, insertedVersion].sort(
+  return rebuiltForKey.sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
   );
 }
@@ -797,46 +823,70 @@ export function addProductPriceVersion(
       validTo: newVersion.validTo ?? null,
     },
   );
+  const existingByValidFrom = new Map(
+    existingForKey.map((version) => [normalizeToUtcDay(version.validFrom).getTime(), version]),
+  );
+  const incomingDay = normalizeToUtcDay(newVersion.validFrom).getTime();
 
-  const updatedExisting = existingForKey.map((version) => {
-    const match = timeline.find(
-      (timelineVersion) =>
-        timelineVersion.validFrom.getTime() === version.validFrom.getTime(),
-    );
+  const rebuiltForKey = timeline.map((timelineVersion) => {
+    const key = normalizeToUtcDay(timelineVersion.validFrom).getTime();
+    const existing = existingByValidFrom.get(key);
 
-    return match ? { ...version, validTo: match.validTo } : version;
+    if (key === incomingDay) {
+      if (existing) {
+        return {
+          ...existing,
+          priceGrossClp: newVersion.priceGrossClp,
+          validFrom: timelineVersion.validFrom,
+          validTo: timelineVersion.validTo,
+        };
+      }
+
+      return {
+        id: buildId('product_price'),
+        productId,
+        branch,
+        priceGrossClp: newVersion.priceGrossClp,
+        validFrom: timelineVersion.validFrom,
+        validTo: timelineVersion.validTo,
+        createdAt: new Date(),
+      };
+    }
+
+    if (!existing) {
+      throw new Error('Failed to rebuild product price timeline');
+    }
+
+    return {
+      ...existing,
+      validFrom: timelineVersion.validFrom,
+      validTo: timelineVersion.validTo,
+    };
   });
-
-  const insertedTimeline = timeline.at(-1);
-  if (!insertedTimeline) {
-    throw new Error('Failed to insert new product price version');
-  }
-
-  const insertedVersion: ProductPriceVersion = {
-    id: buildId('product_price'),
-    productId,
-    branch,
-    priceGrossClp: newVersion.priceGrossClp,
-    validFrom: insertedTimeline.validFrom,
-    validTo: insertedTimeline.validTo,
-    createdAt: new Date(),
-  };
 
   const untouched = data.productPriceVersions.filter(
     (version) => !(version.productId === productId && version.branch === branch),
   );
 
-  const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
+  const nextVersions = [...untouched, ...rebuiltForKey];
   writeData({ ...data, productPriceVersions: nextVersions });
+
+  const upsertedVersion = rebuiltForKey.find(
+    (version) => normalizeToUtcDay(version.validFrom).getTime() === incomingDay,
+  );
+
+  if (!upsertedVersion) {
+    throw new Error('Failed to upsert product price version');
+  }
 
   logAudit({
     entityType: 'product_price_version',
-    entityId: insertedVersion.id,
+    entityId: upsertedVersion.id,
     action: 'add_version',
-    diffJson: { productId, branch, version: insertedVersion },
+    diffJson: { productId, branch, version: upsertedVersion },
   });
 
-  return [...updatedExisting, insertedVersion].sort(
+  return rebuiltForKey.sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
   );
 }
@@ -879,46 +929,70 @@ export function addProductCostVersion(
       validTo: newVersion.validTo ?? null,
     },
   );
+  const existingByValidFrom = new Map(
+    existingForKey.map((version) => [normalizeToUtcDay(version.validFrom).getTime(), version]),
+  );
+  const incomingDay = normalizeToUtcDay(newVersion.validFrom).getTime();
 
-  const updatedExisting = existingForKey.map((version) => {
-    const match = timeline.find(
-      (timelineVersion) =>
-        timelineVersion.validFrom.getTime() === version.validFrom.getTime(),
-    );
+  const rebuiltForKey = timeline.map((timelineVersion) => {
+    const key = normalizeToUtcDay(timelineVersion.validFrom).getTime();
+    const existing = existingByValidFrom.get(key);
 
-    return match ? { ...version, validTo: match.validTo } : version;
+    if (key === incomingDay) {
+      if (existing) {
+        return {
+          ...existing,
+          costGrossClp: newVersion.costGrossClp,
+          validFrom: timelineVersion.validFrom,
+          validTo: timelineVersion.validTo,
+        };
+      }
+
+      return {
+        id: buildId('product_cost'),
+        productId,
+        branch,
+        costGrossClp: newVersion.costGrossClp,
+        validFrom: timelineVersion.validFrom,
+        validTo: timelineVersion.validTo,
+        createdAt: new Date(),
+      };
+    }
+
+    if (!existing) {
+      throw new Error('Failed to rebuild product cost timeline');
+    }
+
+    return {
+      ...existing,
+      validFrom: timelineVersion.validFrom,
+      validTo: timelineVersion.validTo,
+    };
   });
-
-  const insertedTimeline = timeline.at(-1);
-  if (!insertedTimeline) {
-    throw new Error('Failed to insert new product cost version');
-  }
-
-  const insertedVersion: ProductCostVersion = {
-    id: buildId('product_cost'),
-    productId,
-    branch,
-    costGrossClp: newVersion.costGrossClp,
-    validFrom: insertedTimeline.validFrom,
-    validTo: insertedTimeline.validTo,
-    createdAt: new Date(),
-  };
 
   const untouched = data.productCostVersions.filter(
     (version) => !(version.productId === productId && version.branch === branch),
   );
 
-  const nextVersions = [...untouched, ...updatedExisting, insertedVersion];
+  const nextVersions = [...untouched, ...rebuiltForKey];
   writeData({ ...data, productCostVersions: nextVersions });
+
+  const upsertedVersion = rebuiltForKey.find(
+    (version) => normalizeToUtcDay(version.validFrom).getTime() === incomingDay,
+  );
+
+  if (!upsertedVersion) {
+    throw new Error('Failed to upsert product cost version');
+  }
 
   logAudit({
     entityType: 'product_cost_version',
-    entityId: insertedVersion.id,
+    entityId: upsertedVersion.id,
     action: 'add_version',
-    diffJson: { productId, branch, version: insertedVersion },
+    diffJson: { productId, branch, version: upsertedVersion },
   });
 
-  return [...updatedExisting, insertedVersion].sort(
+  return rebuiltForKey.sort(
     (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
   );
 }

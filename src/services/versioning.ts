@@ -13,6 +13,12 @@ function sameUtcDay(a: Date, b: Date): boolean {
   return normalizeToUtcDay(a).getTime() === normalizeToUtcDay(b).getTime();
 }
 
+function subtractUtcDays(date: Date, days: number): Date {
+  const shifted = new Date(normalizeToUtcDay(date));
+  shifted.setUTCDate(shifted.getUTCDate() - days);
+  return shifted;
+}
+
 function validateExistingConsistency(existingVersions: VersionRecord[]): void {
   const sorted = [...existingVersions]
     .map((version) => ({
@@ -37,6 +43,12 @@ function validateExistingConsistency(existingVersions: VersionRecord[]): void {
     );
   }
 
+  for (const version of sorted) {
+    if (version.validTo && version.validTo < version.validFrom) {
+      throw new Error('existingVersions is invalid: validTo before validFrom');
+    }
+  }
+
   for (let i = 1; i < sorted.length; i += 1) {
     const previous = sorted[i - 1];
     const current = sorted[i];
@@ -48,6 +60,7 @@ function validateExistingConsistency(existingVersions: VersionRecord[]): void {
   }
 }
 
+
 export function closePreviousVersion(
   previous: VersionRecord,
   newValidFrom: Date,
@@ -56,10 +69,8 @@ export function closePreviousVersion(
     return previous;
   }
 
-  const normalizedNewValidFrom = normalizeToUtcDay(newValidFrom);
   const normalizedPreviousValidFrom = normalizeToUtcDay(previous.validFrom);
-  const closedAt = new Date(normalizedNewValidFrom);
-  closedAt.setUTCDate(closedAt.getUTCDate() - 1);
+  const closedAt = subtractUtcDays(newValidFrom, 1);
 
   if (closedAt < normalizedPreviousValidFrom) {
     throw new Error('New valid_from must be after previous valid_from');
@@ -75,6 +86,8 @@ export function validateNoOverlap(
   existingVersions: VersionRecord[],
   newValidFrom: Date,
 ): void {
+  validateExistingConsistency(existingVersions);
+
   const normalizedNewValidFrom = normalizeToUtcDay(newValidFrom);
 
   const hasOverlap = existingVersions.some((version) => {
@@ -83,7 +96,7 @@ export function validateNoOverlap(
       ? normalizeToUtcDay(version.validTo)
       : new Date(8640000000000000);
 
-    return start <= normalizedNewValidFrom && end >= normalizedNewValidFrom;
+    return start <= normalizedNewValidFrom && normalizedNewValidFrom <= end;
   });
 
   if (hasOverlap) {
@@ -102,13 +115,7 @@ export function applyNewVersion(
   validateExistingConsistency(existingVersions);
 
   const normalizedNewValidFrom = normalizeToUtcDay(newVersion.validFrom);
-  const normalizedNewVersion: VersionRecord = {
-    ...newVersion,
-    validFrom: normalizedNewValidFrom,
-    validTo: null,
-  };
-
-  const sorted: VersionRecord[] = [...existingVersions]
+  const normalizedExisting: VersionRecord[] = [...existingVersions]
     .map((version) => ({
       ...version,
       validFrom: normalizeToUtcDay(version.validFrom),
@@ -116,25 +123,47 @@ export function applyNewVersion(
     }))
     .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
 
-  const latest = sorted.at(-1);
-  if (latest && normalizedNewValidFrom <= latest.validFrom) {
-    throw new Error('newValidFrom must be strictly greater than latest validFrom');
-  }
-
-  const hasSameDayDuplicate = sorted.some((version) =>
-    sameUtcDay(version.validFrom, normalizedNewValidFrom),
+  const withoutSameDay = normalizedExisting.filter(
+    (version) => !sameUtcDay(version.validFrom, normalizedNewValidFrom),
   );
-  if (hasSameDayDuplicate) {
-    throw new Error('Duplicate valid_from day is not allowed');
-  }
 
-  if (latest) {
-    sorted[sorted.length - 1] = closePreviousVersion(latest, normalizedNewValidFrom);
-  }
-
-  validateNoOverlap(sorted, normalizedNewValidFrom);
-
-  return [...sorted, normalizedNewVersion].sort(
-    (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
+  const insertionIndex = withoutSameDay.findIndex(
+    (version) => version.validFrom > normalizedNewValidFrom,
   );
+
+  const nextIndex = insertionIndex >= 0 ? insertionIndex : withoutSameDay.length;
+  const previousIndex = nextIndex - 1;
+
+  const next = withoutSameDay[nextIndex] ?? null;
+  const previous = previousIndex >= 0 ? withoutSameDay[previousIndex] : null;
+
+  const insertedValidTo = next ? subtractUtcDays(next.validFrom, 1) : null;
+  if (insertedValidTo && insertedValidTo < normalizedNewValidFrom) {
+    throw new Error('Invalid interval: computed validTo is before validFrom');
+  }
+
+  if (previous) {
+    const previousNextValidTo = subtractUtcDays(normalizedNewValidFrom, 1);
+    if (previousNextValidTo < previous.validFrom) {
+      throw new Error('Invalid interval: previous version would end before it starts');
+    }
+
+    const canShorten = previous.validTo === null || previous.validTo > previousNextValidTo;
+    if (canShorten) {
+      withoutSameDay[previousIndex] = {
+        ...previous,
+        validTo: previousNextValidTo,
+      };
+    }
+  }
+
+  const inserted: VersionRecord = {
+    ...newVersion,
+    validFrom: normalizedNewValidFrom,
+    validTo: insertedValidTo,
+  };
+
+  withoutSameDay.splice(nextIndex, 0, inserted);
+  validateExistingConsistency(withoutSameDay);
+  return withoutSameDay;
 }
