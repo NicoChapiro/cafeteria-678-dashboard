@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type {
@@ -398,6 +399,9 @@ export default function ProductCostingPage() {
                 <p className="muted" style={{ marginTop: 4 }}>
                   {branch} · {asOfDate}
                 </p>
+                <Link href={`/products/${selected.product.id}`} style={{ fontSize: 12, fontWeight: 600 }}>
+                  Ver producto
+                </Link>
               </div>
               <button
                 className="btnSecondary"
@@ -474,7 +478,12 @@ export default function ProductCostingPage() {
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
                   {selected.costing.missingItems.map((entry) => (
-                    <li key={`${entry.id}-${entry.name}`}>{entry.name}</li>
+                    <li key={`${entry.id}-${entry.name}`}>
+                      {entry.name}{' '}
+                      <Link href={`/items/${entry.id}`} style={{ fontSize: 12 }}>
+                        Ir a item
+                      </Link>
+                    </li>
                   ))}
                 </ul>
               ) : null}
