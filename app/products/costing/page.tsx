@@ -357,26 +357,18 @@ export default function ProductCostingPage() {
 
             {hasIssues ? (
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                <span
+                <button
                   className="btnSecondary"
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                   aria-label={`Resolver problemas de ${product.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     setSelectedProductId(product.id);
                   }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setSelectedProductId(product.id);
-                    }
-                  }}
                   style={{ fontSize: 12, padding: '4px 10px' }}
                 >
                   Resolver
-                </span>
+                </button>
               </div>
             ) : null}
           </button>
