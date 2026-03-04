@@ -38,6 +38,12 @@ const sections: Section[] = [
     cta: 'Ir a productos',
   },
   {
+    title: 'Costos & Recetas (Mockup 1)',
+    description: 'Vista de costeo unitario teórico por producto, sucursal y fecha.',
+    href: '/products/costing',
+    cta: 'Ir a costos & recetas',
+  },
+  {
     title: 'Recetas',
     description: 'Recetas productivas y de sub-receta con costeo.',
     href: '/recipes',
