@@ -264,6 +264,8 @@ export default function ProductCostingPage() {
             className="card"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
             onClick={() => setSelectedProductId(product.id)}
+            aria-label={`Abrir detalle de ${product.name}`}
+            aria-haspopup="dialog"
             type="button"
           >
             <h2 className="cardTitle">{product.name}</h2>
@@ -337,7 +339,12 @@ export default function ProductCostingPage() {
                   {branch} · {asOfDate}
                 </p>
               </div>
-              <button className="btnSecondary" onClick={() => setSelectedProductId(null)} type="button">
+              <button
+                className="btnSecondary"
+                onClick={() => setSelectedProductId(null)}
+                aria-label="Cerrar detalle"
+                type="button"
+              >
                 Cerrar
               </button>
             </div>
