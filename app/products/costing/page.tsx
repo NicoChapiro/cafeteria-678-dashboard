@@ -319,6 +319,10 @@ export default function ProductCostingPage() {
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
+          const hasIssues = costing.badges.some((badge) => {
+            const normalized = badge.toLocaleLowerCase('es-CL');
+            return normalized.includes('sin costo') || normalized.startsWith('faltan costos') || normalized.includes('sin precio');
+          });
 
           return (<button
             key={product.id}
@@ -350,6 +354,31 @@ export default function ProductCostingPage() {
             </p>
 
             {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers} /> : null}
+
+            {hasIssues ? (
+              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                <span
+                  className="btnSecondary"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Resolver problemas de ${product.name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedProductId(product.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setSelectedProductId(product.id);
+                    }
+                  }}
+                  style={{ fontSize: 12, padding: '4px 10px' }}
+                >
+                  Resolver
+                </span>
+              </div>
+            ) : null}
           </button>
           );
         })}
