@@ -276,16 +276,16 @@ export default function ProductCostingPage() {
       return;
     }
 
-    const frame = window.requestAnimationFrame(() => {
+    const timer = setTimeout(() => {
       if (drawerIntent === 'missingCosts') {
         missingCostsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {
         kpiRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       setDrawerIntent(null);
-    });
+    }, 0);
 
-    return () => window.cancelAnimationFrame(frame);
+    return () => clearTimeout(timer);
   }, [drawerIntent, selected, selectedProductId]);
 
   return (
@@ -474,23 +474,28 @@ export default function ProductCostingPage() {
 
             <div ref={kpiRef}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
-              <div className="card" style={{ marginBottom: 0 }}>
-                <p className="muted">Precio</p>
-                <strong>{formatClp(selected.costing.priceClp)}</strong>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Precio</p>
+                  <strong>{formatClp(selected.costing.priceClp)}</strong>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Costo</p>
+                  <strong>{formatClp(selected.costing.costClp)}</strong>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Margen</p>
+                  <strong>
+                    {selected.costing.marginClp === null || selected.costing.marginPct === null
+                      ? 'N/D'
+                      : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
+                  </strong>
+                </div>
               </div>
-              <div className="card" style={{ marginBottom: 0 }}>
-                <p className="muted">Costo</p>
-                <strong>{formatClp(selected.costing.costClp)}</strong>
-              </div>
-              <div className="card" style={{ marginBottom: 0 }}>
-                <p className="muted">Margen</p>
-                <strong>
-                  {selected.costing.marginClp === null || selected.costing.marginPct === null
-                    ? 'N/D'
-                    : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
-                </strong>
-              </div>
-              </div>
+              {selected.costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio')) ? (
+                <p className="calloutWarning" style={{ marginTop: 10 }}>
+                  Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
+                </p>
+              ) : null}
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 14px' }}>
