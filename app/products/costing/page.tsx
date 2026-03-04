@@ -272,21 +272,21 @@ export default function ProductCostingPage() {
 
 
   useEffect(() => {
-    if (!selectedProductId || !drawerIntent) {
+    if (!selected || !drawerIntent) {
       return;
     }
 
-    const timer = window.setTimeout(() => {
+    const frame = window.requestAnimationFrame(() => {
       if (drawerIntent === 'missingCosts') {
         missingCostsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {
         kpiRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       setDrawerIntent(null);
-    }, 0);
+    });
 
-    return () => window.clearTimeout(timer);
-  }, [drawerIntent, selectedProductId]);
+    return () => window.cancelAnimationFrame(frame);
+  }, [drawerIntent, selected, selectedProductId]);
 
   return (
     <main>
