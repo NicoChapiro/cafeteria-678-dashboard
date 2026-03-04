@@ -105,6 +105,10 @@ function computeEffectiveItemUnitCost(
   return baseUnitCost / yieldRate;
 }
 
+function roundClp(value: number | null): number | null {
+  return value === null ? null : Math.round(value);
+}
+
 export function computeProductAsOf(context: ProductCostingContext): ProductAsOfResult {
   const {
     product,
@@ -257,15 +261,26 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
           }))
       : [];
 
+  const roundedBreakdown = breakdown.map((line) => ({
+    ...line,
+    lineCostBatchClp: roundClp(line.lineCostBatchClp),
+    lineCostClp: roundClp(line.lineCostClp),
+  }));
+
+  const roundedDrivers = drivers.map((driver) => ({
+    ...driver,
+    lineCostClp: Math.round(driver.lineCostClp),
+  }));
+
   return {
-    priceClp,
-    costClp,
-    marginClp,
+    priceClp: roundClp(priceClp),
+    costClp: roundClp(costClp),
+    marginClp: roundClp(marginClp),
     marginPct,
     badges,
-    drivers,
+    drivers: roundedDrivers,
     missingItems,
-    breakdown,
+    breakdown: roundedBreakdown,
     unsupportedLineTypesFound,
   };
 }
