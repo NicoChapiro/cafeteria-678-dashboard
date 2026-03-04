@@ -286,7 +286,7 @@ export default function ProductCostingPage() {
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [drawerIntent, selected, selectedProductId]);
+  }, [drawerIntent, selected]);
 
   return (
     <main>
