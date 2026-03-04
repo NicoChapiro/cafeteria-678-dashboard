@@ -373,7 +373,7 @@ export default function ProductCostingPage() {
                 <thead>
                   <tr>
                     <th>Item</th>
-                    <th>Qty (base)</th>
+                    <th>Qty (receta/batch)</th>
                     <th>Unidad</th>
                     <th>Costo unitario efectivo</th>
                     <th>Costo línea (por unidad vendible)</th>

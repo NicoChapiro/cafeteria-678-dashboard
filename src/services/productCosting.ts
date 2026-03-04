@@ -130,6 +130,7 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
       costClp = null;
     } else {
       const itemLines = recipeLines.filter((line) => line.lineType === 'item');
+      const wasteRate = getProductWasteRate(product);
       unsupportedLineTypesFound = recipeLines.some((line) => line.lineType === 'recipe');
 
       for (const line of itemLines) {
@@ -188,7 +189,8 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
         }
 
         const lineCostBatchClp = effectiveUnitCostClp * line.qtyInBase;
-        const lineCostClp = lineCostBatchClp / recipe.yieldQty;
+        const lineCostUnitClp = lineCostBatchClp / recipe.yieldQty;
+        const lineCostClp = lineCostUnitClp * (1 + wasteRate);
         breakdown.push({
           itemId: item.id,
           itemName: item.name,
@@ -204,11 +206,12 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
       if (missingItems.length > 0 || unsupportedLineTypesFound) {
         costClp = null;
       } else {
-        const totalCostClp = breakdown.reduce(
-          (acc, line) => acc + (line.lineCostClp ?? 0),
+        const totalBatchCostClp = breakdown.reduce(
+          (acc, line) => acc + (line.lineCostBatchClp ?? 0),
           0,
         );
-        costClp = totalCostClp * (1 + getProductWasteRate(product));
+        const recipeUnitCostClp = totalBatchCostClp / recipe.yieldQty;
+        costClp = recipeUnitCostClp * (1 + wasteRate);
       }
     }
   } else {
