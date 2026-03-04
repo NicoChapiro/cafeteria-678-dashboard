@@ -192,6 +192,21 @@ export default function ProductCostingPage() {
         productComputed.find(({ product }) => product.id === selectedProductId) ??
         null;
 
+  useEffect(() => {
+    if (!selectedProductId) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedProductId(null);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedProductId]);
+
   return (
     <main>
       <h1>Costos &amp; Recetas (Mockup 1)</h1>
@@ -301,6 +316,8 @@ export default function ProductCostingPage() {
 
           <aside
             className="card"
+            role="dialog"
+            aria-modal="true"
             style={{
               position: 'fixed',
               right: 0,
@@ -359,7 +376,7 @@ export default function ProductCostingPage() {
                     <th>Qty (base)</th>
                     <th>Unidad</th>
                     <th>Costo unitario efectivo</th>
-                    <th>Costo línea</th>
+                    <th>Costo línea (por unidad vendible)</th>
                     <th>Status</th>
                   </tr>
                 </thead>

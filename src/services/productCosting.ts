@@ -35,6 +35,7 @@ export type ProductCostBreakdownLine = {
   qtyInBase: number;
   unit: Item['baseUnit'];
   effectiveUnitCostClp: number | null;
+  lineCostBatchClp: number | null;
   lineCostClp: number | null;
   status: 'OK' | 'Falta costo';
 };
@@ -142,6 +143,7 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
             qtyInBase: line.qtyInBase,
             unit: 'unit',
             effectiveUnitCostClp: null,
+            lineCostBatchClp: null,
             lineCostClp: null,
             status: 'Falta costo',
           });
@@ -161,6 +163,7 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
             qtyInBase: line.qtyInBase,
             unit: item.baseUnit,
             effectiveUnitCostClp: null,
+            lineCostBatchClp: null,
             lineCostClp: null,
             status: 'Falta costo',
           });
@@ -177,19 +180,22 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
             qtyInBase: line.qtyInBase,
             unit: item.baseUnit,
             effectiveUnitCostClp: null,
+            lineCostBatchClp: null,
             lineCostClp: null,
             status: 'Falta costo',
           });
           continue;
         }
 
-        const lineCostClp = effectiveUnitCostClp * line.qtyInBase;
+        const lineCostBatchClp = effectiveUnitCostClp * line.qtyInBase;
+        const lineCostClp = lineCostBatchClp / recipe.yieldQty;
         breakdown.push({
           itemId: item.id,
           itemName: item.name,
           qtyInBase: line.qtyInBase,
           unit: item.baseUnit,
           effectiveUnitCostClp,
+          lineCostBatchClp,
           lineCostClp,
           status: 'OK',
         });
@@ -202,7 +208,7 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
           (acc, line) => acc + (line.lineCostClp ?? 0),
           0,
         );
-        costClp = totalCostClp / recipe.yieldQty;
+        costClp = totalCostClp * (1 + getProductWasteRate(product));
       }
     }
   } else {
