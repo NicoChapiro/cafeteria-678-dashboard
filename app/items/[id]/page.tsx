@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type { Branch, Item, ItemCostVersion } from '@/src/domain/types';
 import {
   addItemCostVersion,
@@ -160,6 +161,32 @@ export default function ItemDetailPage() {
     }));
   }
 
+
+
+  function getDisabledSaveReason(branch: Branch): string | null {
+    const form = costForms[branch];
+
+    if (!form.validFrom) {
+      return 'Debes elegir Vigencia desde.';
+    }
+
+    const packQtyInBase = Number(form.packQtyInBase);
+    if (!form.packQtyInBase.trim() || !Number.isFinite(packQtyInBase) || packQtyInBase <= 0) {
+      return 'Falta packQtyInBase.';
+    }
+
+    const packCostGrossClp = Number(form.packCostGrossClp);
+    if (
+      !form.packCostGrossClp.trim()
+      || !Number.isFinite(packCostGrossClp)
+      || packCostGrossClp < 0
+    ) {
+      return 'Falta packCostGrossClp.';
+    }
+
+    return null;
+  }
+
   function onAddCost(branch: Branch) {
     setCostError(null);
 
@@ -272,16 +299,6 @@ export default function ItemDetailPage() {
               </label>
 
               <label>
-                validFrom
-                <br />
-                <input
-                  value={costForms[branch].validFrom}
-                  onChange={(event) => onCostInputChange(branch, 'validFrom', event.target.value)}
-                  type="date"
-                />
-              </label>
-
-              <label>
                 yieldRateOverride (0-1)
                 <br />
                 <input
@@ -297,15 +314,22 @@ export default function ItemDetailPage() {
               </label>
             </div>
 
-            <p>
-              <button type="button" onClick={() => onAddCost(branch)}>
-                Agregar costo
-              </button>
-            </p>
+            <VersionTimelinePreview
+              title="Nueva versión de costo"
+              branchLabel={branch}
+              existingVersions={costsByBranch[branch]}
+              newValidFrom={costForms[branch].validFrom}
+              onValidFromChange={(value) => onCostInputChange(branch, 'validFrom', value)}
+              onSave={() => onAddCost(branch)}
+              disabledSaveReason={getDisabledSaveReason(branch)}
+              saveLabel="Agregar costo"
+            />
 
             <h4>Historial</h4>
             <ul>
-              {costsByBranch[branch].map((version) => (
+              {[...costsByBranch[branch]]
+                .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime())
+                .map((version) => (
                 <li key={version.id}>
                   {formatDate(version.validFrom)} → {formatDate(version.validTo)} | CLP{' '}
                   {version.packCostGrossClp}
