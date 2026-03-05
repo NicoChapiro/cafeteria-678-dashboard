@@ -88,20 +88,20 @@ function getMarginStatus(marginPct: number | null): MarginStatus {
   return { tone: 'ok', display: `OK · ${Math.round(marginPct)}%` };
 }
 
-function isIssueBadge(badge: string): boolean {
-  const normalized = badge.toLocaleLowerCase('es-CL');
-  return normalized.includes('sin costo') || normalized.includes('sin precio') || normalized.startsWith('faltan costos');
-}
-
 function hasMissingPrice(costing: ProductAsOfResult): boolean {
-  return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio'));
+  return costing.priceClp === null;
 }
 
 function hasMissingCosts(costing: ProductAsOfResult): boolean {
-  return costing.badges.some((badge) => {
-    const normalized = badge.toLocaleLowerCase('es-CL');
-    return normalized.includes('sin costo') || normalized.startsWith('faltan costos');
-  });
+  return costing.missingItems.length > 0;
+}
+
+function hasUnsupportedRecipe(costing: ProductAsOfResult): boolean {
+  return costing.unsupportedLineTypesFound;
+}
+
+function hasIssuesCosting(costing: ProductAsOfResult): boolean {
+  return hasMissingPrice(costing) || hasMissingCosts(costing) || hasUnsupportedRecipe(costing);
 }
 
 type DrawerAction = {
@@ -148,23 +148,24 @@ function buildDrawerActions(productId: string, costing: ProductAsOfResult, branc
 }
 
 function getBadgeTone(badge: string): 'warn' | 'info' {
-  if (isIssueBadge(badge)) {
+  const normalized = badge.toLocaleLowerCase('es-CL');
+  const isWarn =
+    normalized.includes('sin costo') ||
+    normalized.includes('sin precio') ||
+    normalized.startsWith('faltan costos');
+
+  if (isWarn) {
     return 'warn';
   }
   return 'info';
 }
 
-function hasBadge(costing: ProductAsOfResult, text: string): boolean {
-  const normalizedText = text.toLocaleLowerCase('es-CL');
-  return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes(normalizedText));
-}
-
 function resolveFixHref(productId: string, costing: ProductAsOfResult): string | null {
-  if (costing.missingItems.length > 0) {
+  if (hasMissingCosts(costing)) {
     return `/items/${costing.missingItems[0].id}`;
   }
 
-  if (hasBadge(costing, 'sin precio') || hasBadge(costing, 'sin costo')) {
+  if (hasMissingPrice(costing) || hasUnsupportedRecipe(costing)) {
     return `/products/${productId}`;
   }
 
@@ -317,7 +318,7 @@ export default function ProductCostingPage() {
       : productComputed;
 
     const filtered = onlyIssues
-      ? searchFiltered.filter(({ costing }) => costing.badges.some(isIssueBadge))
+      ? searchFiltered.filter(({ costing }) => hasIssuesCosting(costing))
       : searchFiltered;
 
     return sortProducts(filtered, sort);
@@ -416,7 +417,8 @@ export default function ProductCostingPage() {
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
-          const hasIssues = costing.badges.some(isIssueBadge);
+          const hasIssues = hasIssuesCosting(costing);
+          const fixHref = hasIssues ? resolveFixHref(product.id, costing) : null;
 
           return (<button
             key={product.id}
