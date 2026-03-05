@@ -159,6 +159,7 @@ function hasBadge(costing: ProductAsOfResult, text: string): boolean {
   return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes(normalizedText));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resolveFixHref(productId: string, costing: ProductAsOfResult): string | null {
   if (costing.missingItems.length > 0) {
     return `/items/${costing.missingItems[0].id}`;
