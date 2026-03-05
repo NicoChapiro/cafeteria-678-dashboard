@@ -183,12 +183,17 @@ export default function ProductCostingPage() {
   const [asOfDate, setAsOfDate] = useState<string>(todayIso());
   const [search, setSearch] = useState<string>('');
   const [sort, setSort] = useState<SortKey>('name');
+  const [onlyIssues, setOnlyIssues] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recipesById, setRecipesById] = useState<Map<string, Recipe>>(new Map());
   const [recipeLinesByRecipeId, setRecipeLinesByRecipeId] = useState<Map<string, RecipeLine[]>>(new Map());
   const [itemsById, setItemsById] = useState<Map<string, Item>>(new Map());
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [drawerIntent, setDrawerIntent] = useState<'missingCosts' | 'missingPrice' | null>(null);
+
+  const missingCostsRef = useRef<HTMLDivElement | null>(null);
+  const kpiRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const loadedProducts = listProducts();
@@ -251,14 +256,18 @@ export default function ProductCostingPage() {
   const filteredSortedProducts = useMemo(() => {
     const normalizedQuery = search.trim().toLocaleLowerCase('es-CL');
 
-    const filtered = normalizedQuery
+    const searchFiltered = normalizedQuery
       ? productComputed.filter(({ product }) =>
           product.name.toLocaleLowerCase('es-CL').includes(normalizedQuery),
         )
       : productComputed;
 
+    const filtered = onlyIssues
+      ? searchFiltered.filter(({ costing }) => costing.badges.some(isIssueBadge))
+      : searchFiltered;
+
     return sortProducts(filtered, sort);
-  }, [productComputed, search, sort]);
+  }, [onlyIssues, productComputed, search, sort]);
 
   const selected =
     selectedProductId === null
@@ -331,6 +340,20 @@ export default function ProductCostingPage() {
               <option value="costClpDesc">Costo CLP desc</option>
             </select>
           </label>
+
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 22 }}>
+            <input
+              type="checkbox"
+              checked={onlyIssues}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setOnlyIssues(checked);
+                setSelectedProductId(null);
+                setDrawerIntent(null);
+              }}
+            />
+            Solo con problemas
+          </label>
         </div>
       </section>
 
@@ -347,7 +370,10 @@ export default function ProductCostingPage() {
             key={product.id}
             className="card"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
-            onClick={() => setSelectedProductId(product.id)}
+            onClick={() => {
+              setDrawerIntent(null);
+              setSelectedProductId(product.id);
+            }}
             aria-label={`Abrir detalle de ${product.name}`}
             aria-haspopup="dialog"
             type="button"
@@ -399,7 +425,10 @@ export default function ProductCostingPage() {
       {selected ? (
         <>
           <div
-            onClick={() => setSelectedProductId(null)}
+            onClick={() => {
+              setDrawerIntent(null);
+              setSelectedProductId(null);
+            }}
             style={{
               position: 'fixed',
               inset: 0,
@@ -442,7 +471,10 @@ export default function ProductCostingPage() {
               </div>
               <button
                 className="btnSecondary"
-                onClick={() => setSelectedProductId(null)}
+                onClick={() => {
+                  setSelectedProductId(null);
+                  setDrawerIntent(null);
+                }}
                 aria-label="Cerrar detalle"
                 type="button"
               >
@@ -517,7 +549,7 @@ export default function ProductCostingPage() {
               </table>
             </div>
 
-            <div style={{ marginTop: 12 }}>
+            <div ref={missingCostsRef} style={{ marginTop: 12 }}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
