@@ -88,9 +88,67 @@ function getMarginStatus(marginPct: number | null): MarginStatus {
   return { tone: 'ok', display: `OK · ${Math.round(marginPct)}%` };
 }
 
-function getBadgeTone(badge: string): 'warn' | 'info' {
+function isIssueBadge(badge: string): boolean {
   const normalized = badge.toLocaleLowerCase('es-CL');
-  if (normalized.includes('sin costo') || normalized.includes('faltan costos') || normalized.includes('sin precio')) {
+  return normalized.includes('sin costo') || normalized.includes('sin precio') || normalized.startsWith('faltan costos');
+}
+
+function hasMissingPrice(costing: ProductAsOfResult): boolean {
+  return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio'));
+}
+
+function hasMissingCosts(costing: ProductAsOfResult): boolean {
+  return costing.badges.some((badge) => {
+    const normalized = badge.toLocaleLowerCase('es-CL');
+    return normalized.includes('sin costo') || normalized.startsWith('faltan costos');
+  });
+}
+
+type DrawerAction = {
+  label: string;
+  href: string;
+  tone: 'warn' | 'info';
+  description?: string;
+};
+
+function buildDrawerActions(productId: string, costing: ProductAsOfResult, branch: Branch, asOfDate: string): DrawerAction[] {
+  const actions: DrawerAction[] = [];
+
+  if (hasMissingPrice(costing)) {
+    actions.push({
+      label: 'Definir precio',
+      href: `/products/${productId}`,
+      tone: 'warn',
+      description: `Falta precio vigente para ${branch} al ${asOfDate}.`,
+    });
+  }
+
+  if (hasMissingCosts(costing)) {
+    const firstMissing = costing.missingItems[0];
+    actions.push({
+      label: firstMissing ? 'Completar costo de item' : 'Revisar costo',
+      href: firstMissing ? `/items/${firstMissing.id}` : `/products/${productId}`,
+      tone: 'warn',
+      description: firstMissing
+        ? `Primer item sin costo: ${firstMissing.name}.`
+        : 'Faltan costos para calcular el costo unitario.',
+    });
+  }
+
+  if (actions.length === 0) {
+    actions.push({
+      label: 'Ver producto',
+      href: `/products/${productId}`,
+      tone: 'info',
+      description: 'Sin acciones pendientes. Puedes revisar la ficha del producto.',
+    });
+  }
+
+  return actions;
+}
+
+function getBadgeTone(badge: string): 'warn' | 'info' {
+  if (isIssueBadge(badge)) {
     return 'warn';
   }
   return 'info';
@@ -190,10 +248,6 @@ export default function ProductCostingPage() {
   const [recipeLinesByRecipeId, setRecipeLinesByRecipeId] = useState<Map<string, RecipeLine[]>>(new Map());
   const [itemsById, setItemsById] = useState<Map<string, Item>>(new Map());
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [drawerIntent, setDrawerIntent] = useState<'missingCosts' | 'missingPrice' | null>(null);
-
-  const missingCostsRef = useRef<HTMLDivElement | null>(null);
-  const kpiRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const loadedProducts = listProducts();
@@ -276,6 +330,9 @@ export default function ProductCostingPage() {
         productComputed.find(({ product }) => product.id === selectedProductId) ??
         null;
   const selectedMarginStatus = selected ? getMarginStatus(selected.costing.marginPct) : null;
+  const drawerActions = selected
+    ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
+    : [];
 
   useEffect(() => {
     if (!selectedProductId) {
@@ -349,7 +406,6 @@ export default function ProductCostingPage() {
                 const checked = event.target.checked;
                 setOnlyIssues(checked);
                 setSelectedProductId(null);
-                setDrawerIntent(null);
               }}
             />
             Solo con problemas
@@ -360,18 +416,13 @@ export default function ProductCostingPage() {
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
-          const hasIssues = costing.badges.some((badge) => {
-            const normalized = badge.toLocaleLowerCase('es-CL');
-            return normalized.includes('sin costo') || normalized.startsWith('faltan costos') || normalized.includes('sin precio');
-          });
-          const fixHref = hasIssues ? resolveFixHref(product.id, costing) : null;
+          const hasIssues = costing.badges.some(isIssueBadge);
 
           return (<button
             key={product.id}
             className="card"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
             onClick={() => {
-              setDrawerIntent(null);
               setSelectedProductId(product.id);
             }}
             aria-label={`Abrir detalle de ${product.name}`}
@@ -406,7 +457,11 @@ export default function ProductCostingPage() {
                   href={fixHref}
                   className="btnSecondary"
                   aria-label={`Resolver problemas de ${product.name}`}
-                  onClick={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSelectedProductId(product.id); // abre drawer
+                  }}
                   style={{ fontSize: 12, padding: '4px 10px' }}
                 >
                   Resolver
@@ -426,7 +481,6 @@ export default function ProductCostingPage() {
         <>
           <div
             onClick={() => {
-              setDrawerIntent(null);
               setSelectedProductId(null);
             }}
             style={{
@@ -473,14 +527,35 @@ export default function ProductCostingPage() {
                 className="btnSecondary"
                 onClick={() => {
                   setSelectedProductId(null);
-                  setDrawerIntent(null);
-                }}
+                  }}
                 aria-label="Cerrar detalle"
                 type="button"
               >
                 Cerrar
               </button>
             </div>
+
+            <section className="card" style={{ marginTop: 12, marginBottom: 0 }}>
+              <h3 style={{ marginTop: 0 }}>Acciones</h3>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {drawerActions.map((action) => (
+                  <div key={`${action.href}-${action.label}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <strong>{action.label}</strong>
+                        <span className={`badge badge--${action.tone}`}>{action.tone === 'warn' ? 'Requiere atención' : 'Info'}</span>
+                      </div>
+                      {action.description ? (
+                        <p className="muted" style={{ margin: '6px 0 0' }}>{action.description}</p>
+                      ) : null}
+                    </div>
+                    <Link className="btnSecondary" href={action.href} style={{ whiteSpace: 'nowrap' }}>
+                      Ir
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
 
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
@@ -501,7 +576,7 @@ export default function ProductCostingPage() {
                   </strong>
                 </div>
               </div>
-              {selected.costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio')) ? (
+              {hasMissingPrice(selected.costing) ? (
                 <p className="calloutWarning" style={{ marginTop: 10 }}>
                   Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
                 </p>
@@ -549,7 +624,7 @@ export default function ProductCostingPage() {
               </table>
             </div>
 
-            <div ref={missingCostsRef} style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 12 }}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
