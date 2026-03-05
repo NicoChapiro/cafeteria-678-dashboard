@@ -154,6 +154,23 @@ function getBadgeTone(badge: string): 'warn' | 'info' {
   return 'info';
 }
 
+function hasBadge(costing: ProductAsOfResult, text: string): boolean {
+  const normalizedText = text.toLocaleLowerCase('es-CL');
+  return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes(normalizedText));
+}
+
+function resolveFixHref(productId: string, costing: ProductAsOfResult): string | null {
+  if (costing.missingItems.length > 0) {
+    return `/items/${costing.missingItems[0].id}`;
+  }
+
+  if (hasBadge(costing, 'sin precio') || hasBadge(costing, 'sin costo')) {
+    return `/products/${productId}`;
+  }
+
+  return null;
+}
+
 function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
   const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
 
@@ -434,11 +451,11 @@ export default function ProductCostingPage() {
 
             {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers} /> : null}
 
-            {hasIssues ? (
+            {hasIssues && fixHref ? (
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                <button
+                <Link
+                  href={fixHref}
                   className="btnSecondary"
-                  type="button"
                   aria-label={`Resolver problemas de ${product.name}`}
                   onClick={(event) => {
                     event.preventDefault();
@@ -448,7 +465,7 @@ export default function ProductCostingPage() {
                   style={{ fontSize: 12, padding: '4px 10px' }}
                 >
                   Resolver
-                </button>
+                </Link>
               </div>
             ) : null}
           </button>
