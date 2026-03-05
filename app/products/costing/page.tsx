@@ -88,9 +88,67 @@ function getMarginStatus(marginPct: number | null): MarginStatus {
   return { tone: 'ok', display: `OK · ${Math.round(marginPct)}%` };
 }
 
-function getBadgeTone(badge: string): 'warn' | 'info' {
+function isIssueBadge(badge: string): boolean {
   const normalized = badge.toLocaleLowerCase('es-CL');
-  if (normalized.includes('sin costo') || normalized.includes('faltan costos') || normalized.includes('sin precio')) {
+  return normalized.includes('sin costo') || normalized.includes('sin precio') || normalized.startsWith('faltan costos');
+}
+
+function hasMissingPrice(costing: ProductAsOfResult): boolean {
+  return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio'));
+}
+
+function hasMissingCosts(costing: ProductAsOfResult): boolean {
+  return costing.badges.some((badge) => {
+    const normalized = badge.toLocaleLowerCase('es-CL');
+    return normalized.includes('sin costo') || normalized.startsWith('faltan costos');
+  });
+}
+
+type DrawerAction = {
+  label: string;
+  href: string;
+  tone: 'warn' | 'info';
+  description?: string;
+};
+
+function buildDrawerActions(productId: string, costing: ProductAsOfResult, branch: Branch, asOfDate: string): DrawerAction[] {
+  const actions: DrawerAction[] = [];
+
+  if (hasMissingPrice(costing)) {
+    actions.push({
+      label: 'Definir precio',
+      href: `/products/${productId}`,
+      tone: 'warn',
+      description: `Falta precio vigente para ${branch} al ${asOfDate}.`,
+    });
+  }
+
+  if (hasMissingCosts(costing)) {
+    const firstMissing = costing.missingItems[0];
+    actions.push({
+      label: firstMissing ? 'Completar costo de item' : 'Revisar costo',
+      href: firstMissing ? `/items/${firstMissing.id}` : `/products/${productId}`,
+      tone: 'warn',
+      description: firstMissing
+        ? `Primer item sin costo: ${firstMissing.name}.`
+        : 'Faltan costos para calcular el costo unitario.',
+    });
+  }
+
+  if (actions.length === 0) {
+    actions.push({
+      label: 'Ver producto',
+      href: `/products/${productId}`,
+      tone: 'info',
+      description: 'Sin acciones pendientes. Puedes revisar la ficha del producto.',
+    });
+  }
+
+  return actions;
+}
+
+function getBadgeTone(badge: string): 'warn' | 'info' {
+  if (isIssueBadge(badge)) {
     return 'warn';
   }
   return 'info';
@@ -166,6 +224,7 @@ export default function ProductCostingPage() {
   const [asOfDate, setAsOfDate] = useState<string>(todayIso());
   const [search, setSearch] = useState<string>('');
   const [sort, setSort] = useState<SortKey>('name');
+  const [onlyIssues, setOnlyIssues] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recipesById, setRecipesById] = useState<Map<string, Recipe>>(new Map());
@@ -238,14 +297,18 @@ export default function ProductCostingPage() {
   const filteredSortedProducts = useMemo(() => {
     const normalizedQuery = search.trim().toLocaleLowerCase('es-CL');
 
-    const filtered = normalizedQuery
+    const searchFiltered = normalizedQuery
       ? productComputed.filter(({ product }) =>
           product.name.toLocaleLowerCase('es-CL').includes(normalizedQuery),
         )
       : productComputed;
 
+    const filtered = onlyIssues
+      ? searchFiltered.filter(({ costing }) => costing.badges.some(isIssueBadge))
+      : searchFiltered;
+
     return sortProducts(filtered, sort);
-  }, [productComputed, search, sort]);
+  }, [onlyIssues, productComputed, search, sort]);
 
   const selected =
     selectedProductId === null
@@ -254,6 +317,9 @@ export default function ProductCostingPage() {
         productComputed.find(({ product }) => product.id === selectedProductId) ??
         null;
   const selectedMarginStatus = selected ? getMarginStatus(selected.costing.marginPct) : null;
+  const drawerActions = selected
+    ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
+    : [];
 
   useEffect(() => {
     if (!selectedProductId) {
@@ -335,16 +401,27 @@ export default function ProductCostingPage() {
               <option value="costClpDesc">Costo CLP desc</option>
             </select>
           </label>
+
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 22 }}>
+            <input
+              type="checkbox"
+              checked={onlyIssues}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setOnlyIssues(checked);
+                setSelectedProductId(null);
+                setDrawerIntent(null);
+              }}
+            />
+            Solo con problemas
+          </label>
         </div>
       </section>
 
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
-          const hasIssues = costing.badges.some((badge) => {
-            const normalized = badge.toLocaleLowerCase('es-CL');
-            return normalized.includes('sin costo') || normalized.startsWith('faltan costos') || normalized.includes('sin precio');
-          });
+          const hasIssues = costing.badges.some(isIssueBadge);
 
           return (<button
             key={product.id}
@@ -388,13 +465,9 @@ export default function ProductCostingPage() {
                   aria-label={`Resolver problemas de ${product.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    const hasMissingCosts = costing.badges.some((badge) => {
-                      const normalized = badge.toLocaleLowerCase('es-CL');
-                      return normalized.includes('sin costo') || normalized.startsWith('faltan costos');
-                    });
-                    const hasMissingPrice = costing.badges.some((badge) =>
-                      badge.toLocaleLowerCase('es-CL').includes('sin precio'));
-                    setDrawerIntent(hasMissingCosts ? 'missingCosts' : hasMissingPrice ? 'missingPrice' : null);
+                    const missingCosts = hasMissingCosts(costing);
+                    const missingPrice = hasMissingPrice(costing);
+                    setDrawerIntent(missingCosts ? 'missingCosts' : missingPrice ? 'missingPrice' : null);
                     setSelectedProductId(product.id);
                   }}
                   style={{ fontSize: 12, padding: '4px 10px' }}
@@ -462,8 +535,8 @@ export default function ProductCostingPage() {
               <button
                 className="btnSecondary"
                 onClick={() => {
-                  setDrawerIntent(null);
                   setSelectedProductId(null);
+                  setDrawerIntent(null);
                 }}
                 aria-label="Cerrar detalle"
                 type="button"
@@ -471,6 +544,28 @@ export default function ProductCostingPage() {
                 Cerrar
               </button>
             </div>
+
+            <section className="card" style={{ marginTop: 12, marginBottom: 0 }}>
+              <h3 style={{ marginTop: 0 }}>Acciones</h3>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {drawerActions.map((action) => (
+                  <div key={`${action.href}-${action.label}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <strong>{action.label}</strong>
+                        <span className={`badge badge--${action.tone}`}>{action.tone === 'warn' ? 'Requiere atención' : 'Info'}</span>
+                      </div>
+                      {action.description ? (
+                        <p className="muted" style={{ margin: '6px 0 0' }}>{action.description}</p>
+                      ) : null}
+                    </div>
+                    <Link className="btnSecondary" href={action.href} style={{ whiteSpace: 'nowrap' }}>
+                      Ir
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
 
             <div ref={kpiRef}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
@@ -491,7 +586,7 @@ export default function ProductCostingPage() {
                   </strong>
                 </div>
               </div>
-              {selected.costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio')) ? (
+              {hasMissingPrice(selected.costing) ? (
                 <p className="calloutWarning" style={{ marginTop: 10 }}>
                   Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
                 </p>
