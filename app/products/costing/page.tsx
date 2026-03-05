@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import type {
@@ -33,6 +34,13 @@ type ProductWithCosting = {
 
 type SortKey = 'name' | 'marginPctAsc' | 'marginClpAsc' | 'costClpDesc';
 
+type MarginStatusTone = 'ok' | 'attention' | 'critical' | 'na';
+
+type MarginStatus = {
+  tone: MarginStatusTone;
+  display: string;
+};
+
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
 
 function todayIso(): string {
@@ -62,6 +70,73 @@ function formatPct(value: number | null): string {
   }
 
   return `${value.toFixed(1)}%`;
+}
+
+function getMarginStatus(marginPct: number | null): MarginStatus {
+  if (marginPct === null) {
+    return { tone: 'na', display: 'N/D' };
+  }
+
+  if (marginPct < 20) {
+    return { tone: 'critical', display: `Crítico · ${Math.round(marginPct)}%` };
+  }
+
+  if (marginPct < 35) {
+    return { tone: 'attention', display: `Atención · ${Math.round(marginPct)}%` };
+  }
+
+  return { tone: 'ok', display: `OK · ${Math.round(marginPct)}%` };
+}
+
+function getBadgeTone(badge: string): 'warn' | 'info' {
+  const normalized = badge.toLocaleLowerCase('es-CL');
+  if (normalized.includes('sin costo') || normalized.includes('faltan costos') || normalized.includes('sin precio')) {
+    return 'warn';
+  }
+  return 'info';
+}
+
+function hasBadge(costing: ProductAsOfResult, text: string): boolean {
+  const normalizedText = text.toLocaleLowerCase('es-CL');
+  return costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes(normalizedText));
+}
+
+function resolveFixHref(productId: string, costing: ProductAsOfResult): string | null {
+  if (costing.missingItems.length > 0) {
+    return `/items/${costing.missingItems[0].id}`;
+  }
+
+  if (hasBadge(costing, 'sin precio') || hasBadge(costing, 'sin costo')) {
+    return `/products/${productId}`;
+  }
+
+  return null;
+}
+
+function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
+  const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <strong>Top 5 drivers</strong>
+      <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+        {drivers.map((driver) => {
+          const widthPct = maxLineCost > 0 ? (driver.lineCostClp / maxLineCost) * 100 : 0;
+          return (
+            <div key={`${driver.itemId}-${driver.itemName}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                <span>{driver.itemName}</span>
+                <span className="muted" style={{ fontWeight: 600 }}>{formatClp(driver.lineCostClp)}</span>
+              </div>
+              <div className="driverBarTrack" role="presentation">
+                <div className="driverBarFill" style={{ width: `${Math.max(widthPct, 3)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function sortProducts(items: ProductWithCosting[], sort: SortKey): ProductWithCosting[] {
@@ -191,6 +266,7 @@ export default function ProductCostingPage() {
       : filteredSortedProducts.find(({ product }) => product.id === selectedProductId) ??
         productComputed.find(({ product }) => product.id === selectedProductId) ??
         null;
+  const selectedMarginStatus = selected ? getMarginStatus(selected.costing.marginPct) : null;
 
   useEffect(() => {
     if (!selectedProductId) {
@@ -206,6 +282,7 @@ export default function ProductCostingPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectedProductId]);
+
 
   return (
     <main>
@@ -258,8 +335,15 @@ export default function ProductCostingPage() {
       </section>
 
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-        {filteredSortedProducts.map(({ product, costing }) => (
-          <button
+        {filteredSortedProducts.map(({ product, costing }) => {
+          const marginStatus = getMarginStatus(costing.marginPct);
+          const hasIssues = costing.badges.some((badge) => {
+            const normalized = badge.toLocaleLowerCase('es-CL');
+            return normalized.includes('sin costo') || normalized.startsWith('faltan costos') || normalized.includes('sin precio');
+          });
+          const fixHref = hasIssues ? resolveFixHref(product.id, costing) : null;
+
+          return (<button
             key={product.id}
             className="card"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
@@ -268,11 +352,14 @@ export default function ProductCostingPage() {
             aria-haspopup="dialog"
             type="button"
           >
-            <h2 className="cardTitle">{product.name}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+              <h2 className="cardTitle" style={{ marginBottom: 10 }}>{product.name}</h2>
+              <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
+            </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
               {costing.badges.map((badge) => (
-                <span key={badge} className="badge">{badge}</span>
+                <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
               ))}
             </div>
 
@@ -285,18 +372,24 @@ export default function ProductCostingPage() {
                 : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
             </p>
 
-            {costing.drivers.length > 0 ? (
-              <div style={{ marginTop: 10 }}>
-                <strong>Top 5 drivers</strong>
-                <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
-                  {costing.drivers.map((driver) => (
-                    <li key={driver.itemId}>{driver.itemName}: {formatClp(driver.lineCostClp)}</li>
-                  ))}
-                </ul>
+            {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers} /> : null}
+
+            {hasIssues && fixHref ? (
+              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                <Link
+                  href={fixHref}
+                  className="btnSecondary"
+                  aria-label={`Resolver problemas de ${product.name}`}
+                  onClick={(event) => event.stopPropagation()}
+                  style={{ fontSize: 12, padding: '4px 10px' }}
+                >
+                  Resolver
+                </Link>
               </div>
             ) : null}
           </button>
-        ))}
+          );
+        })}
       </section>
 
       {filteredSortedProducts.length === 0 ? (
@@ -334,10 +427,18 @@ export default function ProductCostingPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
               <div>
-                <h2 style={{ margin: 0 }}>{selected.product.name}</h2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                  <h2 style={{ margin: 0 }}>{selected.product.name}</h2>
+                  {selectedMarginStatus ? (
+                    <span className={`marginPill marginPill--${selectedMarginStatus.tone}`}>{selectedMarginStatus.display}</span>
+                  ) : null}
+                </div>
                 <p className="muted" style={{ marginTop: 4 }}>
                   {branch} · {asOfDate}
                 </p>
+                <Link href={`/products/${selected.product.id}`} style={{ fontSize: 12, fontWeight: 600 }}>
+                  Ver producto
+                </Link>
               </div>
               <button
                 className="btnSecondary"
@@ -349,30 +450,39 @@ export default function ProductCostingPage() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
-              <div className="card" style={{ marginBottom: 0 }}>
-                <p className="muted">Precio</p>
-                <strong>{formatClp(selected.costing.priceClp)}</strong>
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Precio</p>
+                  <strong>{formatClp(selected.costing.priceClp)}</strong>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Costo</p>
+                  <strong>{formatClp(selected.costing.costClp)}</strong>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Margen</p>
+                  <strong>
+                    {selected.costing.marginClp === null || selected.costing.marginPct === null
+                      ? 'N/D'
+                      : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
+                  </strong>
+                </div>
               </div>
-              <div className="card" style={{ marginBottom: 0 }}>
-                <p className="muted">Costo</p>
-                <strong>{formatClp(selected.costing.costClp)}</strong>
-              </div>
-              <div className="card" style={{ marginBottom: 0 }}>
-                <p className="muted">Margen</p>
-                <strong>
-                  {selected.costing.marginClp === null || selected.costing.marginPct === null
-                    ? 'N/D'
-                    : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
-                </strong>
-              </div>
+              {selected.costing.badges.some((badge) => badge.toLocaleLowerCase('es-CL').includes('sin precio')) ? (
+                <p className="calloutWarning" style={{ marginTop: 10 }}>
+                  Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
+                </p>
+              ) : null}
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 14px' }}>
               {selected.costing.badges.map((badge) => (
-                <span key={badge} className="badge">{badge}</span>
+                <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
               ))}
             </div>
+
+            {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} /> : null}
 
             <h3 style={{ marginTop: 0 }}>Desglose de receta (items)</h3>
             <div className="tableWrap">
@@ -389,7 +499,7 @@ export default function ProductCostingPage() {
                 </thead>
                 <tbody>
                   {selected.costing.breakdown.map((line) => (
-                    <tr key={`${line.itemId}-${line.itemName}`}>
+                    <tr key={`${line.itemId}-${line.itemName}`} className={line.status === 'Falta costo' ? 'tableRowMissing' : undefined}>
                       <td>{line.itemName}</td>
                       <td>{line.qtyInBase}</td>
                       <td>{line.unit}</td>
@@ -412,7 +522,12 @@ export default function ProductCostingPage() {
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
                   {selected.costing.missingItems.map((entry) => (
-                    <li key={`${entry.id}-${entry.name}`}>{entry.name}</li>
+                    <li key={`${entry.id}-${entry.name}`}>
+                      {entry.name}{' '}
+                      <Link href={`/items/${entry.id}`} style={{ fontSize: 12 }}>
+                        Ir a item
+                      </Link>
+                    </li>
                   ))}
                 </ul>
               ) : null}
