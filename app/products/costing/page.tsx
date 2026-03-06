@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
   Branch,
@@ -160,17 +160,6 @@ function getBadgeTone(badge: string): 'warn' | 'info' {
   return 'info';
 }
 
-function resolveFixHref(productId: string, costing: ProductAsOfResult): string | null {
-  if (hasMissingCosts(costing)) {
-    return `/items/${costing.missingItems[0].id}`;
-  }
-
-  if (hasMissingPrice(costing) || hasUnsupportedRecipe(costing)) {
-    return `/products/${productId}`;
-  }
-
-  return null;
-}
 
 function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
   const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
@@ -249,6 +238,28 @@ export default function ProductCostingPage() {
   const [recipeLinesByRecipeId, setRecipeLinesByRecipeId] = useState<Map<string, RecipeLine[]>>(new Map());
   const [itemsById, setItemsById] = useState<Map<string, Item>>(new Map());
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  const restoreLastFocus = useCallback(() => {
+    const lastFocusedElement = lastFocusedElementRef.current;
+    if (lastFocusedElement && document.contains(lastFocusedElement)) {
+      lastFocusedElement.focus();
+    }
+    lastFocusedElementRef.current = null;
+  }, []);
+
+  const openDrawer = useCallback((productId: string) => {
+    const activeElement = document.activeElement;
+    lastFocusedElementRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+    setSelectedProductId(productId);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setSelectedProductId(null);
+    restoreLastFocus();
+  }, [restoreLastFocus]);
 
   useEffect(() => {
     const loadedProducts = listProducts();
@@ -340,15 +351,59 @@ export default function ProductCostingPage() {
       return;
     }
 
+    drawerCloseButtonRef.current?.focus();
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setSelectedProductId(null);
+        event.preventDefault();
+        closeDrawer();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !drawerRef.current) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute('disabled') && !element.getAttribute('aria-hidden'));
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (!activeElement || !drawerRef.current.contains(activeElement)) {
+        event.preventDefault();
+        if (event.shiftKey) {
+          lastElement.focus();
+        } else {
+          firstElement.focus();
+        }
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedProductId]);
+  }, [closeDrawer, selectedProductId]);
 
 
   return (
@@ -418,14 +473,13 @@ export default function ProductCostingPage() {
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
-          const fixHref = hasIssues ? resolveFixHref(product.id, costing) : null;
 
           return (<button
             key={product.id}
             className="card"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
             onClick={() => {
-              setSelectedProductId(product.id);
+              openDrawer(product.id);
             }}
             aria-label={`Abrir detalle de ${product.name}`}
             aria-haspopup="dialog"
@@ -453,21 +507,20 @@ export default function ProductCostingPage() {
 
             {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers} /> : null}
 
-            {hasIssues && fixHref ? (
+            {hasIssues ? (
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                <Link
-                  href={fixHref}
+                <button
                   className="btnSecondary"
                   aria-label={`Resolver problemas de ${product.name}`}
                   onClick={(event) => {
-                    event.preventDefault();
                     event.stopPropagation();
-                    setSelectedProductId(product.id); // abre drawer
+                    openDrawer(product.id);
                   }}
                   style={{ fontSize: 12, padding: '4px 10px' }}
+                  type="button"
                 >
                   Resolver
-                </Link>
+                </button>
               </div>
             ) : null}
           </button>
@@ -483,7 +536,7 @@ export default function ProductCostingPage() {
         <>
           <div
             onClick={() => {
-              setSelectedProductId(null);
+              closeDrawer();
             }}
             style={{
               position: 'fixed',
@@ -498,6 +551,7 @@ export default function ProductCostingPage() {
             className="card"
             role="dialog"
             aria-modal="true"
+            ref={drawerRef}
             style={{
               position: 'fixed',
               right: 0,
@@ -528,10 +582,11 @@ export default function ProductCostingPage() {
               <button
                 className="btnSecondary"
                 onClick={() => {
-                  setSelectedProductId(null);
+                  closeDrawer();
                   }}
                 aria-label="Cerrar detalle"
                 type="button"
+                ref={drawerCloseButtonRef}
               >
                 Cerrar
               </button>
