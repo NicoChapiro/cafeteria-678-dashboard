@@ -101,7 +101,12 @@ function hasMissingPrice(costing: ProductAsOfResult): boolean {
 }
 
 function hasMissingCosts(costing: ProductAsOfResult): boolean {
-  return costing.missingItems.length > 0;
+  // "Sin costo" aplica tanto a:
+  // - productos sin receta sin costo manual vigente
+  // - recetas inválidas (yield 0 / receta faltante)
+  // - recetas con ítems sin costo (missingItems > 0)
+  // Sub-recetas se tratan aparte como issueType=unsupportedRecipe.
+  return costing.costClp === null && !costing.unsupportedLineTypesFound;
 }
 
 function hasUnsupportedRecipe(costing: ProductAsOfResult): boolean {
