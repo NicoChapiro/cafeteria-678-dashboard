@@ -335,6 +335,18 @@ export default function ProductCostingPage() {
     return sortProducts(filtered, sort);
   }, [onlyIssues, productComputed, search, sort]);
 
+  const issueCount = useMemo(() => {
+    return productComputed.reduce((acc, entry) => {
+      return acc + (hasIssuesCosting(entry.costing) ? 1 : 0);
+    }, 0);
+  }, [productComputed]);
+
+  const visibleIssueCount = useMemo(() => {
+    return filteredSortedProducts.reduce((acc, entry) => {
+      return acc + (hasIssuesCosting(entry.costing) ? 1 : 0);
+    }, 0);
+  }, [filteredSortedProducts]);
+
   const selected =
     selectedProductId === null
       ? null
@@ -466,6 +478,20 @@ export default function ProductCostingPage() {
             />
             Solo con problemas
           </label>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'baseline' }}>
+          <p className="muted" style={{ margin: 0 }}>
+            Mostrando <strong>{filteredSortedProducts.length}</strong> de{' '}
+            <strong>{productComputed.length}</strong> productos.
+          </p>
+          <p className="muted" style={{ margin: 0 }}>
+            Con problemas:{' '}
+            <strong>{onlyIssues ? visibleIssueCount : issueCount}</strong>
+            {onlyIssues ? ' (en vista)' : ' (total)'}
+          </p>
         </div>
       </section>
 
