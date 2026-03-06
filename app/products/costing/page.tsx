@@ -43,6 +43,12 @@ type MarginStatus = {
   display: string;
 };
 
+const SORT_KEYS: SortKey[] = ['name', 'marginPctAsc', 'marginClpAsc', 'costClpDesc'];
+
+function isSortKey(value: string): value is SortKey {
+  return SORT_KEYS.includes(value as SortKey);
+}
+
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
 
 function todayIso(): string {
@@ -235,6 +241,7 @@ export default function ProductCostingPage() {
   const [sort, setSort] = useState<SortKey>('name');
   const [onlyIssues, setOnlyIssues] = useState(false);
   const [issueType, setIssueType] = useState<IssueType>('any');
+  const [isUrlStateReady, setIsUrlStateReady] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recipesById, setRecipesById] = useState<Map<string, Recipe>>(new Map());
@@ -263,6 +270,70 @@ export default function ProductCostingPage() {
     setSelectedProductId(null);
     restoreLastFocus();
   }, [restoreLastFocus]);
+
+  // URL -> State (solo al cargar)
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+
+    const branchParam = params.get('branch');
+    if (branchParam && BRANCHES.includes(branchParam as Branch)) {
+      setBranch(branchParam as Branch);
+    }
+
+    const asOfParam = params.get('asOf');
+    if (asOfParam && /^\d{4}-\d{2}-\d{2}$/.test(asOfParam)) {
+      setAsOfDate(asOfParam);
+    }
+
+    const qParam = params.get('q');
+    if (qParam) {
+      setSearch(qParam);
+    }
+
+    const sortParam = params.get('sort');
+    if (sortParam && isSortKey(sortParam)) {
+      setSort(sortParam);
+    }
+
+    const issuesParam = params.get('issues');
+    if (issuesParam === '1') {
+      setOnlyIssues(true);
+    }
+
+    setIsUrlStateReady(true);
+  }, []);
+
+  // State -> URL (cuando el usuario cambia filtros)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isUrlStateReady) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set('branch', branch);
+    params.set('asOf', asOfDate);
+
+    const trimmed = search.trim();
+    if (trimmed) {
+      params.set('q', trimmed);
+    }
+
+    if (sort !== 'name') {
+      params.set('sort', sort);
+    }
+
+    if (onlyIssues) {
+      params.set('issues', '1');
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(null, '', nextUrl);
+  }, [asOfDate, branch, isUrlStateReady, onlyIssues, search, sort]);
 
   useEffect(() => {
     const loadedProducts = listProducts();
