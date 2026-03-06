@@ -34,6 +34,8 @@ type ProductWithCosting = {
 
 type SortKey = 'name' | 'marginPctAsc' | 'marginClpAsc' | 'costClpDesc';
 
+type IssueType = 'any' | 'missingPrice' | 'missingCosts' | 'unsupportedRecipe';
+
 type MarginStatusTone = 'ok' | 'attention' | 'critical' | 'na';
 
 type MarginStatus = {
@@ -238,6 +240,7 @@ export default function ProductCostingPage() {
   const [search, setSearch] = useState<string>('');
   const [sort, setSort] = useState<SortKey>('name');
   const [onlyIssues, setOnlyIssues] = useState(false);
+  const [issueType, setIssueType] = useState<IssueType>('any');
   const [isUrlStateReady, setIsUrlStateReady] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -400,23 +403,34 @@ export default function ProductCostingPage() {
       : productComputed;
 
     const filtered = onlyIssues
-      ? searchFiltered.filter(({ costing }) => hasIssuesCosting(costing))
+      ? searchFiltered.filter(({ costing }) => {
+          if (issueType === 'missingPrice') return hasMissingPrice(costing);
+          if (issueType === 'missingCosts') return hasMissingCosts(costing);
+          if (issueType === 'unsupportedRecipe') return hasUnsupportedRecipe(costing);
+          return hasIssuesCosting(costing);
+        })
       : searchFiltered;
 
     return sortProducts(filtered, sort);
-  }, [onlyIssues, productComputed, search, sort]);
+  }, [issueType, onlyIssues, productComputed, search, sort]);
 
-  const issueCount = useMemo(() => {
-    return productComputed.reduce((acc, entry) => {
-      return acc + (hasIssuesCosting(entry.costing) ? 1 : 0);
-    }, 0);
+  const issueStats = useMemo(() => {
+    let total = 0;
+    let issues = 0;
+    let missingPrice = 0;
+    let missingCosts = 0;
+    let unsupportedRecipe = 0;
+
+    for (const entry of productComputed) {
+      total += 1;
+      if (hasIssuesCosting(entry.costing)) issues += 1;
+      if (hasMissingPrice(entry.costing)) missingPrice += 1;
+      if (hasMissingCosts(entry.costing)) missingCosts += 1;
+      if (hasUnsupportedRecipe(entry.costing)) unsupportedRecipe += 1;
+    }
+
+    return { total, issues, missingPrice, missingCosts, unsupportedRecipe };
   }, [productComputed]);
-
-  const visibleIssueCount = useMemo(() => {
-    return filteredSortedProducts.reduce((acc, entry) => {
-      return acc + (hasIssuesCosting(entry.costing) ? 1 : 0);
-    }, 0);
-  }, [filteredSortedProducts]);
 
   const selected =
     selectedProductId === null
@@ -544,6 +558,7 @@ export default function ProductCostingPage() {
               onChange={(event) => {
                 const checked = event.target.checked;
                 setOnlyIssues(checked);
+                setIssueType('any');
                 setSelectedProductId(null);
               }}
             />
@@ -553,16 +568,85 @@ export default function ProductCostingPage() {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'baseline' }}>
-          <p className="muted" style={{ margin: 0 }}>
-            Mostrando <strong>{filteredSortedProducts.length}</strong> de{' '}
-            <strong>{productComputed.length}</strong> productos.
-          </p>
-          <p className="muted" style={{ margin: 0 }}>
-            Con problemas:{' '}
-            <strong>{onlyIssues ? visibleIssueCount : issueCount}</strong>
-            {onlyIssues ? ' (en vista)' : ' (total)'}
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <strong>Resumen</strong>
+            <p className="muted" style={{ margin: '4px 0 0' }}>
+              Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button
+              type="button"
+              className="btnSecondary"
+              aria-pressed={!onlyIssues}
+              onClick={() => {
+                setOnlyIssues(false);
+                setIssueType('any');
+                setSelectedProductId(null);
+              }}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Todos <span className="badge badge--info" style={{ marginLeft: 8 }}>{issueStats.total}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btnSecondary"
+              aria-pressed={onlyIssues && issueType === 'any'}
+              onClick={() => {
+                setOnlyIssues(true);
+                setIssueType('any');
+                setSelectedProductId(null);
+              }}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Problemas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.issues}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btnSecondary"
+              aria-pressed={onlyIssues && issueType === 'missingPrice'}
+              onClick={() => {
+                setOnlyIssues(true);
+                setIssueType('missingPrice');
+                setSelectedProductId(null);
+              }}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Sin precio <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingPrice}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btnSecondary"
+              aria-pressed={onlyIssues && issueType === 'missingCosts'}
+              onClick={() => {
+                setOnlyIssues(true);
+                setIssueType('missingCosts');
+                setSelectedProductId(null);
+              }}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btnSecondary"
+              aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}
+              onClick={() => {
+                setOnlyIssues(true);
+                setIssueType('unsupportedRecipe');
+                setSelectedProductId(null);
+              }}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Sub-recetas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.unsupportedRecipe}</span>
+            </button>
+          </div>
         </div>
       </section>
 
