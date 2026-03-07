@@ -96,24 +96,28 @@ function getMarginStatus(marginPct: number | null): MarginStatus {
   return { tone: 'ok', display: `OK · ${Math.round(marginPct)}%` };
 }
 
+function badgeIncludes(costing: ProductAsOfResult, fragment: string): boolean {
+  const normalizedFragment = fragment.toLocaleLowerCase('es-CL');
+  return costing.badges.some((badge) =>
+    badge.toLocaleLowerCase('es-CL').includes(normalizedFragment),
+  );
+}
+
 function hasMissingPrice(costing: ProductAsOfResult): boolean {
-  return costing.priceClp === null;
+  // Robust: si el badge existe, lo consideramos aunque el campo numérico venga “inconsistente”.
+  return costing.priceClp === null || badgeIncludes(costing, 'sin precio');
 }
 
 function hasMissingCosts(costing: ProductAsOfResult): boolean {
-  // "Sin costo" aplica tanto a:
-  // - productos sin receta sin costo manual vigente
-  // - recetas inválidas (yield 0 / receta faltante)
-  // - recetas con ítems sin costo (missingItems > 0)
-  // Sub-recetas se tratan aparte como issueType=unsupportedRecipe.
-  return costing.costClp === null && !costing.unsupportedLineTypesFound;
   // "Sin costo" real = costClp === null (incluye productos sin receta y sin costo manual).
   // Ojo: mantenemos "Sub-recetas" como bucket aparte, por eso excluimos unsupported aquí.
-  return costing.costClp === null && !hasUnsupportedRecipe(costing);
+  const hasCostBadge =
+    badgeIncludes(costing, 'sin costo') || badgeIncludes(costing, 'faltan costos');
+  return (costing.costClp === null || hasCostBadge) && !hasUnsupportedRecipe(costing);
 }
 
 function hasUnsupportedRecipe(costing: ProductAsOfResult): boolean {
-  return costing.unsupportedLineTypesFound;
+  return costing.unsupportedLineTypesFound || badgeIncludes(costing, 'sub-receta');
 }
 
 function hasIssuesCosting(costing: ProductAsOfResult): boolean {
