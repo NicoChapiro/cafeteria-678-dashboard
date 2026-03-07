@@ -483,6 +483,14 @@ export default function ProductCostingPage() {
       ? `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.unsupportedRecipe} sub-recetas`
       : 'Sin problemas detectados para esta sucursal y fecha.';
 
+  const activeIssueLabel =
+    !onlyIssues ? 'Todos los productos' :
+    issueType === 'any' ? 'Todos los problemas' :
+    issueType === 'missingPrice' ? 'Solo sin precio' :
+    issueType === 'missingCosts' ? 'Solo sin costo' :
+    issueType === 'missingCostItems' ? 'Solo faltan costos' :
+    'Solo sub-recetas';
+
   const selected =
     selectedProductId === null
       ? null
@@ -640,6 +648,9 @@ export default function ProductCostingPage() {
               <p className="muted" style={{ margin: '4px 0 0' }}>
                 {issuesSummaryText}
               </p>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Vista actual: {activeIssueLabel}
+              </p>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -661,6 +672,7 @@ export default function ProductCostingPage() {
                 type="button"
                 className="btnSecondary"
                 aria-pressed={onlyIssues && issueType === 'any'}
+                disabled={issueStats.issues === 0}
                 onClick={() => {
                   setOnlyIssues(true);
                   setIssueType('any');
@@ -675,6 +687,7 @@ export default function ProductCostingPage() {
                 type="button"
                 className="btnSecondary"
                 aria-pressed={onlyIssues && issueType === 'missingPrice'}
+                disabled={issueStats.missingPrice === 0}
                 onClick={() => {
                   setOnlyIssues(true);
                   setIssueType('missingPrice');
@@ -689,6 +702,7 @@ export default function ProductCostingPage() {
                 type="button"
                 className="btnSecondary"
                 aria-pressed={onlyIssues && issueType === 'missingCosts'}
+                disabled={issueStats.missingCosts === 0}
                 onClick={() => {
                   setOnlyIssues(true);
                   setIssueType('missingCosts');
@@ -703,6 +717,7 @@ export default function ProductCostingPage() {
                 type="button"
                 className="btnSecondary"
                 aria-pressed={onlyIssues && issueType === 'missingCostItems'}
+                disabled={issueStats.missingCostItems === 0}
                 onClick={() => {
                   setOnlyIssues(true);
                   setIssueType('missingCostItems');
@@ -717,6 +732,7 @@ export default function ProductCostingPage() {
                 type="button"
                 className="btnSecondary"
                 aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}
+                disabled={issueStats.unsupportedRecipe === 0}
                 onClick={() => {
                   setOnlyIssues(true);
                   setIssueType('unsupportedRecipe');
