@@ -276,6 +276,7 @@ export default function ProductCostingPage() {
   const [sort, setSort] = useState<SortKey>('name');
   const [onlyIssues, setOnlyIssues] = useState(false);
   const [issueType, setIssueType] = useState<IssueType>('any');
+  const [copiedView, setCopiedView] = useState(false);
   const [isUrlStateReady, setIsUrlStateReady] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -315,6 +316,22 @@ export default function ProductCostingPage() {
     setIssueType('any');
     setSelectedProductId(null);
   }, []);
+
+  const copyCurrentView = async () => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedView(true);
+      window.setTimeout(() => {
+        setCopiedView(false);
+      }, 1600);
+    } catch (error) {
+      console.warn('No se pudo copiar la vista actual.', error);
+    }
+  };
 
   // URL -> State (solo al cargar)
   useEffect(() => {
@@ -681,6 +698,18 @@ export default function ProductCostingPage() {
                 style={{ fontSize: 12, padding: '4px 10px' }}
               >
                 Limpiar filtros
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                onClick={() => {
+                  void copyCurrentView();
+                }}
+                disabled={copiedView}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                {copiedView ? 'Copiado' : 'Copiar vista'}
               </button>
 
               <button
