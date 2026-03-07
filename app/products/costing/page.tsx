@@ -203,6 +203,41 @@ function getBadgeTone(badge: string): 'warn' | 'info' {
   return 'info';
 }
 
+function getFilterButtonStyle(isActive: boolean, isDisabled: boolean) {
+  const baseStyle = {
+    fontSize: 12,
+    padding: '4px 10px',
+  };
+
+  if (isDisabled) {
+    return {
+      ...baseStyle,
+      opacity: 0.62,
+      borderColor: 'rgba(214, 186, 232, 0.8)',
+      background: 'rgba(214, 186, 232, 0.12)',
+      color: 'var(--muted)',
+    };
+  }
+
+  if (isActive) {
+    return {
+      ...baseStyle,
+      borderColor: 'var(--brand-green)',
+      background: 'rgba(72, 102, 48, 0.16)',
+      color: 'var(--brand-green)',
+      boxShadow: 'inset 0 0 0 1px rgba(72, 102, 48, 0.28)',
+      fontWeight: 700,
+    };
+  }
+
+  return {
+    ...baseStyle,
+    borderColor: 'var(--brand-lilac)',
+    background: 'transparent',
+    color: 'var(--brand-green)',
+  };
+}
+
 
 function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
   const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
@@ -735,7 +770,7 @@ export default function ProductCostingPage() {
                   setIssueType('any');
                   setSelectedProductId(null);
                 }}
-                style={{ fontSize: 12, padding: '4px 10px' }}
+                style={getFilterButtonStyle(!onlyIssues, false)}
               >
                 Todos <span className="badge badge--info" style={{ marginLeft: 8 }}>{issueStats.total}</span>
               </button>
@@ -750,7 +785,7 @@ export default function ProductCostingPage() {
                   setIssueType('any');
                   setSelectedProductId(null);
                 }}
-                style={{ fontSize: 12, padding: '4px 10px' }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'any', issueStats.issues === 0)}
               >
                 Problemas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.issues}</span>
               </button>
@@ -765,7 +800,7 @@ export default function ProductCostingPage() {
                   setIssueType('missingPrice');
                   setSelectedProductId(null);
                 }}
-                style={{ fontSize: 12, padding: '4px 10px' }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'missingPrice', issueStats.missingPrice === 0)}
               >
                 Sin precio <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingPrice}</span>
               </button>
@@ -780,7 +815,7 @@ export default function ProductCostingPage() {
                   setIssueType('missingCosts');
                   setSelectedProductId(null);
                 }}
-                style={{ fontSize: 12, padding: '4px 10px' }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'missingCosts', issueStats.missingCosts === 0)}
               >
                 Sin costo <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
               </button>
@@ -795,7 +830,7 @@ export default function ProductCostingPage() {
                   setIssueType('missingCostItems');
                   setSelectedProductId(null);
                 }}
-                style={{ fontSize: 12, padding: '4px 10px' }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'missingCostItems', issueStats.missingCostItems === 0)}
               >
                 Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCostItems}</span>
               </button>
@@ -810,7 +845,7 @@ export default function ProductCostingPage() {
                   setIssueType('unsupportedRecipe');
                   setSelectedProductId(null);
                 }}
-                style={{ fontSize: 12, padding: '4px 10px' }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'unsupportedRecipe', issueStats.unsupportedRecipe === 0)}
               >
                 Sub-recetas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.unsupportedRecipe}</span>
               </button>
