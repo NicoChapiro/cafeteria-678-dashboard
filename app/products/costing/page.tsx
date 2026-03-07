@@ -518,6 +518,14 @@ export default function ProductCostingPage() {
     issueType === 'missingCostItems' ? 'Solo faltan costos' :
     'Solo sub-recetas';
 
+  const activeIssueActionText =
+    !onlyIssues ? 'Revisión general' :
+    issueType === 'any' ? 'Resolver problemas detectados' :
+    issueType === 'missingPrice' ? 'Definir precios faltantes' :
+    issueType === 'missingCosts' ? 'Completar costos faltantes' :
+    issueType === 'missingCostItems' ? 'Completar costos de insumos/ítems' :
+    'Revisar sub-recetas no soportadas';
+
   const isBaseState =
     branch === 'Santiago' &&
     asOfDate === todayIso() &&
@@ -686,6 +694,12 @@ export default function ProductCostingPage() {
               </p>
               <p className="muted" style={{ margin: '4px 0 0' }}>
                 Vista actual: {activeIssueLabel}
+              </p>
+              <p style={{ margin: '4px 0 0', fontWeight: 600 }}>
+                Impacto actual: {filteredSortedProducts.length} productos {onlyIssues ? 'por resolver' : 'en vista'}
+              </p>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Acción sugerida: {activeIssueActionText}
               </p>
             </div>
 
