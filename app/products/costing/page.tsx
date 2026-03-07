@@ -44,9 +44,14 @@ type MarginStatus = {
 };
 
 const SORT_KEYS: SortKey[] = ['name', 'marginPctAsc', 'marginClpAsc', 'costClpDesc'];
+const ISSUE_TYPES: IssueType[] = ['any', 'missingPrice', 'missingCosts', 'missingCostItems', 'unsupportedRecipe'];
 
 function isSortKey(value: string): value is SortKey {
   return SORT_KEYS.includes(value as SortKey);
+}
+
+function isIssueType(value: string): value is IssueType {
+  return ISSUE_TYPES.includes(value as IssueType);
 }
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
@@ -334,6 +339,11 @@ export default function ProductCostingPage() {
       setOnlyIssues(true);
     }
 
+    const issueTypeParam = params.get('issueType');
+    if (issueTypeParam && isIssueType(issueTypeParam)) {
+      setIssueType(issueTypeParam as IssueType);
+    }
+
     setIsUrlStateReady(true);
   }, []);
 
@@ -358,12 +368,15 @@ export default function ProductCostingPage() {
 
     if (onlyIssues) {
       params.set('issues', '1');
+      if (issueType !== 'any') {
+        params.set('issueType', issueType);
+      }
     }
 
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState(null, '', nextUrl);
-  }, [asOfDate, branch, isUrlStateReady, onlyIssues, search, sort]);
+  }, [asOfDate, branch, isUrlStateReady, issueType, onlyIssues, search, sort]);
 
   useEffect(() => {
     const loadedProducts = listProducts();
