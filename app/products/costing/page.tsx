@@ -654,13 +654,13 @@ export default function ProductCostingPage() {
           top: 0,
           zIndex: 30,
           paddingTop: 8,
-          paddingBottom: 8,
+          paddingBottom: 4,
           background: 'var(--ui-bg, #f8fafc)',
           boxShadow: '0 8px 20px rgba(15, 23, 42, 0.06)',
         }}
       >
-        <section className="card" style={{ marginBottom: 0 }}>
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        <section className="card" style={{ marginBottom: 0, paddingTop: 12, paddingBottom: 10 }}>
+          <div className="costingFiltersGrid">
             <label>
               Sucursal
               <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
@@ -700,7 +700,7 @@ export default function ProductCostingPage() {
               </select>
             </label>
 
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 22 }}>
+            <label className="costingOnlyIssuesField">
               <input
                 type="checkbox"
                 checked={onlyIssues}
@@ -720,18 +720,19 @@ export default function ProductCostingPage() {
       </div>
 
       <section className="card" style={{ marginTop: 8, marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+        <div className="costingSummaryLayout">
+          <div style={{ minWidth: 0 }}>
             <strong>Resumen</strong>
             <p className="muted" style={{ margin: '4px 0 0' }}>
               Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
             </p>
             <div
+              className="costingSummaryMiniBlocks"
               style={{
                 display: 'grid',
-                gap: 8,
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                marginTop: 8,
+                gap: 6,
+                gridTemplateColumns: 'repeat(2, minmax(180px, 1fr))',
+                marginTop: 6,
               }}
             >
               <div>
@@ -755,8 +756,8 @@ export default function ProductCostingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: 8, justifyItems: 'end', flex: '0 1 520px' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+          <div className="costingSummaryActionsArea">
+            <div className="costingSummaryActionsRow">
               <button
                 type="button"
                 className="btnSecondary"
@@ -780,7 +781,7 @@ export default function ProductCostingPage() {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+            <div className="costingSummaryChipsRow">
               <button
                 type="button"
                 className="btnSecondary"
@@ -873,6 +874,70 @@ export default function ProductCostingPage() {
           </div>
         </div>
       </section>
+
+      <style jsx>{`
+        .costingFiltersGrid {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          align-items: end;
+        }
+
+        .costingOnlyIssuesField {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          min-height: 38px;
+        }
+
+        .costingSummaryLayout {
+          display: grid;
+          gap: 16px;
+          align-items: start;
+          grid-template-columns: 1fr;
+        }
+
+        .costingSummaryMiniBlocks {
+          grid-template-columns: 1fr !important;
+        }
+
+        .costingSummaryActionsArea {
+          display: grid;
+          gap: 8px;
+          justify-items: start;
+        }
+
+        .costingSummaryActionsRow,
+        .costingSummaryChipsRow {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: flex-start;
+        }
+
+        @media (min-width: 1024px) {
+          .costingFiltersGrid {
+            grid-template-columns: 1.1fr 1fr 1.2fr 1fr auto;
+          }
+
+          .costingSummaryLayout {
+            grid-template-columns: minmax(320px, 1.1fr) minmax(420px, 0.9fr);
+          }
+
+          .costingSummaryMiniBlocks {
+            grid-template-columns: repeat(2, minmax(180px, 1fr)) !important;
+          }
+
+          .costingSummaryActionsArea {
+            justify-items: end;
+          }
+
+          .costingSummaryActionsRow,
+          .costingSummaryChipsRow {
+            justify-content: flex-end;
+          }
+        }
+      `}</style>
 
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
