@@ -34,7 +34,7 @@ type ProductWithCosting = {
 
 type SortKey = 'name' | 'marginPctAsc' | 'marginClpAsc' | 'costClpDesc';
 
-type IssueType = 'any' | 'missingPrice' | 'missingCosts' | 'unsupportedRecipe';
+type IssueType = 'any' | 'missingPrice' | 'missingCosts' | 'missingCostItems' | 'unsupportedRecipe';
 
 type MarginStatusTone = 'ok' | 'attention' | 'critical' | 'na';
 
@@ -111,9 +111,11 @@ function hasMissingPrice(costing: ProductAsOfResult): boolean {
 function hasMissingCosts(costing: ProductAsOfResult): boolean {
   // "Sin costo" real = costClp === null (incluye productos sin receta y sin costo manual).
   // Ojo: mantenemos "Sub-recetas" como bucket aparte, por eso excluimos unsupported aquí.
-  const hasCostBadge =
-    badgeIncludes(costing, 'sin costo') || badgeIncludes(costing, 'faltan costos');
-  return (costing.costClp === null || hasCostBadge) && !hasUnsupportedRecipe(costing);
+  return costing.costClp === null && !hasUnsupportedRecipe(costing);
+}
+
+function hasMissingCostItems(costing: ProductAsOfResult): boolean {
+  return costing.missingItems.length > 0;
 }
 
 function hasUnsupportedRecipe(costing: ProductAsOfResult): boolean {
@@ -145,13 +147,20 @@ function buildDrawerActions(productId: string, costing: ProductAsOfResult, branc
 
   if (hasMissingCosts(costing)) {
     const firstMissing = costing.missingItems[0];
+    const isNoRecipe = costing.badges.includes('Sin receta');
     actions.push({
-      label: firstMissing ? 'Completar costo de item' : 'Revisar costo',
+      label: firstMissing
+        ? 'Completar costo de item'
+        : isNoRecipe
+          ? 'Definir costo manual'
+          : 'Revisar receta',
       href: firstMissing ? `/items/${firstMissing.id}` : `/products/${productId}`,
       tone: 'warn',
       description: firstMissing
         ? `Primer item sin costo: ${firstMissing.name}.`
-        : 'Faltan costos para calcular el costo unitario.',
+        : isNoRecipe
+          ? `Producto sin receta: falta un costo manual vigente para ${branch} al ${asOfDate}.`
+          : 'No se pudo calcular el costo de la receta. Revisa receta/yield e insumos.',
     });
   }
 
@@ -424,9 +433,10 @@ export default function ProductCostingPage() {
       : productComputed;
 
     const filtered = onlyIssues
-      ? searchFiltered.filter(({ costing }) => {
+        ? searchFiltered.filter(({ costing }) => {
           if (issueType === 'missingPrice') return hasMissingPrice(costing);
           if (issueType === 'missingCosts') return hasMissingCosts(costing);
+          if (issueType === 'missingCostItems') return hasMissingCostItems(costing);
           if (issueType === 'unsupportedRecipe') return hasUnsupportedRecipe(costing);
           return hasIssuesCosting(costing);
         })
@@ -440,6 +450,7 @@ export default function ProductCostingPage() {
     let issues = 0;
     let missingPrice = 0;
     let missingCosts = 0;
+    let missingCostItems = 0;
     let unsupportedRecipe = 0;
 
     for (const entry of productComputed) {
@@ -447,10 +458,11 @@ export default function ProductCostingPage() {
       if (hasIssuesCosting(entry.costing)) issues += 1;
       if (hasMissingPrice(entry.costing)) missingPrice += 1;
       if (hasMissingCosts(entry.costing)) missingCosts += 1;
+      if (hasMissingCostItems(entry.costing)) missingCostItems += 1;
       if (hasUnsupportedRecipe(entry.costing)) unsupportedRecipe += 1;
     }
 
-    return { total, issues, missingPrice, missingCosts, unsupportedRecipe };
+    return { total, issues, missingPrice, missingCosts, missingCostItems, unsupportedRecipe };
   }, [productComputed]);
 
   const selected =
@@ -651,7 +663,21 @@ export default function ProductCostingPage() {
               }}
               style={{ fontSize: 12, padding: '4px 10px' }}
             >
-              Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
+              Sin costo <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btnSecondary"
+              aria-pressed={onlyIssues && issueType === 'missingCostItems'}
+              onClick={() => {
+                setOnlyIssues(true);
+                setIssueType('missingCostItems');
+                setSelectedProductId(null);
+              }}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCostItems}</span>
             </button>
 
             <button
