@@ -251,8 +251,8 @@ function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
           return (
             <div key={`${driver.itemId}-${driver.itemName}`}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                <span>{driver.itemName}</span>
-                <span className="muted" style={{ fontWeight: 600 }}>{formatClp(driver.lineCostClp)}</span>
+                <span style={{ fontSize: 12 }}>{driver.itemName}</span>
+                <span className="muted" style={{ fontWeight: 600, fontSize: 12 }}>{formatClp(driver.lineCostClp)}</span>
               </div>
               <div className="driverBarTrack" role="presentation">
                 <div className="driverBarFill" style={{ width: `${Math.max(widthPct, 3)}%` }} />
@@ -943,6 +943,8 @@ export default function ProductCostingPage() {
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
+          const compactMetricStyle = { margin: '4px 0', fontSize: 14, lineHeight: 1.3 };
+          const compactSectionGap = 10;
 
           return (<button
             key={product.id}
@@ -960,7 +962,7 @@ export default function ProductCostingPage() {
               <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
               {costing.badges.map((badge) => (
                 <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
               ))}
