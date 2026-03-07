@@ -107,6 +107,9 @@ function hasMissingCosts(costing: ProductAsOfResult): boolean {
   // - recetas con ítems sin costo (missingItems > 0)
   // Sub-recetas se tratan aparte como issueType=unsupportedRecipe.
   return costing.costClp === null && !costing.unsupportedLineTypesFound;
+  // "Sin costo" real = costClp === null (incluye productos sin receta y sin costo manual).
+  // Ojo: mantenemos "Sub-recetas" como bucket aparte, por eso excluimos unsupported aquí.
+  return costing.costClp === null && !hasUnsupportedRecipe(costing);
 }
 
 function hasUnsupportedRecipe(costing: ProductAsOfResult): boolean {
@@ -145,6 +148,15 @@ function buildDrawerActions(productId: string, costing: ProductAsOfResult, branc
       description: firstMissing
         ? `Primer item sin costo: ${firstMissing.name}.`
         : 'Faltan costos para calcular el costo unitario.',
+    });
+  }
+
+  if (hasUnsupportedRecipe(costing)) {
+    actions.push({
+      label: 'Revisar sub-recetas',
+      href: `/products/${productId}`,
+      tone: 'warn',
+      description: 'La receta incluye sub-recetas. Mockup 1 V1 no soporta lineType=recipe y el costo queda en N/D.',
     });
   }
 
@@ -880,6 +892,13 @@ export default function ProductCostingPage() {
                     </li>
                   ))}
                 </ul>
+              ) : null}
+              {selected.costing.costClp === null &&
+              selected.costing.missingItems.length === 0 &&
+              !selected.costing.unsupportedLineTypesFound ? (
+                <p className="calloutWarning" style={{ marginTop: 10 }}>
+                  Este producto no tiene costos configurados (ni receta costead(a), ni costo manual). Revisa la ficha del producto para definirlos.
+                </p>
               ) : null}
               {selected.costing.unsupportedLineTypesFound ? (
                 <p className="alert" style={{ marginTop: 10 }}>
