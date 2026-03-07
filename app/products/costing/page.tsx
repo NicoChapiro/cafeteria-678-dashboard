@@ -561,163 +561,175 @@ export default function ProductCostingPage() {
         Costeo unitario teórico por producto para una sucursal y fecha, sin ventas ni sub-recetas.
       </p>
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <label>
-            Sucursal
-            <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
-              {BRANCHES.map((candidate) => (
-                <option key={candidate} value={candidate}>{candidate}</option>
-              ))}
-            </select>
-          </label>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
+          paddingTop: 8,
+          paddingBottom: 8,
+          background: 'var(--ui-bg, #f8fafc)',
+          boxShadow: '0 8px 20px rgba(15, 23, 42, 0.06)',
+        }}
+      >
+        <section className="card" style={{ marginBottom: 8 }}>
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+            <label>
+              Sucursal
+              <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
+                {BRANCHES.map((candidate) => (
+                  <option key={candidate} value={candidate}>{candidate}</option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Fecha (as-of)
-            <input
-              className="input"
-              type="date"
-              value={asOfDate}
-              onChange={(event) => setAsOfDate(event.target.value)}
-            />
-          </label>
+            <label>
+              Fecha (as-of)
+              <input
+                className="input"
+                type="date"
+                value={asOfDate}
+                onChange={(event) => setAsOfDate(event.target.value)}
+              />
+            </label>
 
-          <label>
-            Buscar producto
-            <input
-              className="input"
-              placeholder="Ej. Cappuccino"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
+            <label>
+              Buscar producto
+              <input
+                className="input"
+                placeholder="Ej. Cappuccino"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
 
-          <label>
-            Ordenar por
-            <select className="select" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
-              <option value="name">Nombre A-Z</option>
-              <option value="marginPctAsc">Margen % asc</option>
-              <option value="marginClpAsc">Margen CLP asc</option>
-              <option value="costClpDesc">Costo CLP desc</option>
-            </select>
-          </label>
+            <label>
+              Ordenar por
+              <select className="select" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
+                <option value="name">Nombre A-Z</option>
+                <option value="marginPctAsc">Margen % asc</option>
+                <option value="marginClpAsc">Margen CLP asc</option>
+                <option value="costClpDesc">Costo CLP desc</option>
+              </select>
+            </label>
 
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 22 }}>
-            <input
-              type="checkbox"
-              checked={onlyIssues}
-              disabled={issueStats.issues === 0}
-              onChange={(event) => {
-                const checked = event.target.checked;
-                setOnlyIssues(checked);
-                setIssueType('any');
-                setSelectedProductId(null);
-              }}
-            />
-            Solo con problemas
-          </label>
-        </div>
-      </section>
-
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <strong>Resumen</strong>
-            <p className="muted" style={{ margin: '4px 0 0' }}>
-              Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
-            </p>
-            <p className="muted" style={{ margin: '4px 0 0' }}>
-              {issuesSummaryText}
-            </p>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 22 }}>
+              <input
+                type="checkbox"
+                checked={onlyIssues}
+                disabled={issueStats.issues === 0}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setOnlyIssues(checked);
+                  setIssueType('any');
+                  setSelectedProductId(null);
+                }}
+              />
+              Solo con problemas
+            </label>
           </div>
+        </section>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button
-              type="button"
-              className="btnSecondary"
-              aria-pressed={!onlyIssues}
-              onClick={() => {
-                setOnlyIssues(false);
-                setIssueType('any');
-                setSelectedProductId(null);
-              }}
-              style={{ fontSize: 12, padding: '4px 10px' }}
-            >
-              Todos <span className="badge badge--info" style={{ marginLeft: 8 }}>{issueStats.total}</span>
-            </button>
+        <section className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <strong>Resumen</strong>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
+              </p>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                {issuesSummaryText}
+              </p>
+            </div>
 
-            <button
-              type="button"
-              className="btnSecondary"
-              aria-pressed={onlyIssues && issueType === 'any'}
-              onClick={() => {
-                setOnlyIssues(true);
-                setIssueType('any');
-                setSelectedProductId(null);
-              }}
-              style={{ fontSize: 12, padding: '4px 10px' }}
-            >
-              Problemas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.issues}</span>
-            </button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={!onlyIssues}
+                onClick={() => {
+                  setOnlyIssues(false);
+                  setIssueType('any');
+                  setSelectedProductId(null);
+                }}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Todos <span className="badge badge--info" style={{ marginLeft: 8 }}>{issueStats.total}</span>
+              </button>
 
-            <button
-              type="button"
-              className="btnSecondary"
-              aria-pressed={onlyIssues && issueType === 'missingPrice'}
-              onClick={() => {
-                setOnlyIssues(true);
-                setIssueType('missingPrice');
-                setSelectedProductId(null);
-              }}
-              style={{ fontSize: 12, padding: '4px 10px' }}
-            >
-              Sin precio <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingPrice}</span>
-            </button>
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'any'}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('any');
+                  setSelectedProductId(null);
+                }}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Problemas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.issues}</span>
+              </button>
 
-            <button
-              type="button"
-              className="btnSecondary"
-              aria-pressed={onlyIssues && issueType === 'missingCosts'}
-              onClick={() => {
-                setOnlyIssues(true);
-                setIssueType('missingCosts');
-                setSelectedProductId(null);
-              }}
-              style={{ fontSize: 12, padding: '4px 10px' }}
-            >
-              Sin costo <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
-            </button>
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'missingPrice'}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('missingPrice');
+                  setSelectedProductId(null);
+                }}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Sin precio <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingPrice}</span>
+              </button>
 
-            <button
-              type="button"
-              className="btnSecondary"
-              aria-pressed={onlyIssues && issueType === 'missingCostItems'}
-              onClick={() => {
-                setOnlyIssues(true);
-                setIssueType('missingCostItems');
-                setSelectedProductId(null);
-              }}
-              style={{ fontSize: 12, padding: '4px 10px' }}
-            >
-              Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCostItems}</span>
-            </button>
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'missingCosts'}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('missingCosts');
+                  setSelectedProductId(null);
+                }}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Sin costo <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
+              </button>
 
-            <button
-              type="button"
-              className="btnSecondary"
-              aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}
-              onClick={() => {
-                setOnlyIssues(true);
-                setIssueType('unsupportedRecipe');
-                setSelectedProductId(null);
-              }}
-              style={{ fontSize: 12, padding: '4px 10px' }}
-            >
-              Sub-recetas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.unsupportedRecipe}</span>
-            </button>
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'missingCostItems'}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('missingCostItems');
+                  setSelectedProductId(null);
+                }}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCostItems}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('unsupportedRecipe');
+                  setSelectedProductId(null);
+                }}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Sub-recetas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.unsupportedRecipe}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
