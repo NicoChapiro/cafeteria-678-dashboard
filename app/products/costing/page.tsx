@@ -101,6 +101,12 @@ function hasMissingPrice(costing: ProductAsOfResult): boolean {
 }
 
 function hasMissingCosts(costing: ProductAsOfResult): boolean {
+  // "Sin costo" aplica tanto a:
+  // - productos sin receta sin costo manual vigente
+  // - recetas inválidas (yield 0 / receta faltante)
+  // - recetas con ítems sin costo (missingItems > 0)
+  // Sub-recetas se tratan aparte como issueType=unsupportedRecipe.
+  return costing.costClp === null && !costing.unsupportedLineTypesFound;
   // "Sin costo" real = costClp === null (incluye productos sin receta y sin costo manual).
   // Ojo: mantenemos "Sub-recetas" como bucket aparte, por eso excluimos unsupported aquí.
   return costing.costClp === null && !hasUnsupportedRecipe(costing);
