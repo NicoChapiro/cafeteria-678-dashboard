@@ -659,7 +659,7 @@ export default function ProductCostingPage() {
           boxShadow: '0 8px 20px rgba(15, 23, 42, 0.06)',
         }}
       >
-        <section className="card" style={{ marginBottom: 8 }}>
+        <section className="card" style={{ marginBottom: 0 }}>
           <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
             <label>
               Sucursal
@@ -717,161 +717,162 @@ export default function ProductCostingPage() {
           </div>
         </section>
 
-        <section className="card" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ flex: '1 1 320px', minWidth: 0 }}>
-              <strong>Resumen</strong>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
-                Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
-              </p>
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 8,
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  marginTop: 8,
-                }}
-              >
-                <div>
-                  <p className="muted" style={{ margin: 0, fontSize: 12 }}>Vista</p>
-                  <p style={{ margin: '2px 0 0', fontWeight: 600 }}>{activeIssueLabel}</p>
-                </div>
-                <div>
-                  <p className="muted" style={{ margin: 0, fontSize: 12 }}>Impacto</p>
-                  <p style={{ margin: '2px 0 0', fontWeight: 600 }}>
-                    {filteredSortedProducts.length} {onlyIssues ? 'por resolver' : 'en vista'}
-                  </p>
-                </div>
-                <div>
-                  <p className="muted" style={{ margin: 0, fontSize: 12 }}>Issues</p>
-                  <p className="muted" style={{ margin: '2px 0 0' }}>{issuesSummaryText}</p>
-                </div>
-                <div>
-                  <p className="muted" style={{ margin: 0, fontSize: 12 }}>Acción</p>
-                  <p className="muted" style={{ margin: '2px 0 0' }}>{activeIssueActionText}</p>
-                </div>
+      </div>
+
+      <section className="card" style={{ marginTop: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <strong>Resumen</strong>
+            <p className="muted" style={{ margin: '4px 0 0' }}>
+              Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gap: 8,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                marginTop: 8,
+              }}
+            >
+              <div>
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Vista</p>
+                <p style={{ margin: '2px 0 0', fontWeight: 600 }}>{activeIssueLabel}</p>
               </div>
-            </div>
-
-            <div style={{ display: 'grid', gap: 8, justifyItems: 'end', flex: '0 1 520px' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  onClick={resetFilters}
-                  disabled={isBaseState}
-                  style={{ fontSize: 12, padding: '4px 10px' }}
-                >
-                  Limpiar filtros
-                </button>
-
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  onClick={() => {
-                    void copyCurrentView();
-                  }}
-                  disabled={copiedView}
-                  style={{ fontSize: 12, padding: '4px 10px' }}
-                >
-                  {copiedView ? 'Copiado' : 'Copiar vista'}
-                </button>
+              <div>
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Impacto</p>
+                <p style={{ margin: '2px 0 0', fontWeight: 600 }}>
+                  {filteredSortedProducts.length} {onlyIssues ? 'por resolver' : 'en vista'}
+                </p>
               </div>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  aria-pressed={!onlyIssues}
-                  onClick={() => {
-                    setOnlyIssues(false);
-                    setIssueType('any');
-                    setSelectedProductId(null);
-                  }}
-                  style={getFilterButtonStyle(!onlyIssues, false)}
-                >
-                  Todos <span className="badge badge--info" style={{ marginLeft: 8 }}>{issueStats.total}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  aria-pressed={onlyIssues && issueType === 'any'}
-                  disabled={issueStats.issues === 0}
-                  onClick={() => {
-                    setOnlyIssues(true);
-                    setIssueType('any');
-                    setSelectedProductId(null);
-                  }}
-                  style={getFilterButtonStyle(onlyIssues && issueType === 'any', issueStats.issues === 0)}
-                >
-                  Problemas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.issues}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  aria-pressed={onlyIssues && issueType === 'missingPrice'}
-                  disabled={issueStats.missingPrice === 0}
-                  onClick={() => {
-                    setOnlyIssues(true);
-                    setIssueType('missingPrice');
-                    setSelectedProductId(null);
-                  }}
-                  style={getFilterButtonStyle(onlyIssues && issueType === 'missingPrice', issueStats.missingPrice === 0)}
-                >
-                  Sin precio <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingPrice}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  aria-pressed={onlyIssues && issueType === 'missingCosts'}
-                  disabled={issueStats.missingCosts === 0}
-                  onClick={() => {
-                    setOnlyIssues(true);
-                    setIssueType('missingCosts');
-                    setSelectedProductId(null);
-                  }}
-                  style={getFilterButtonStyle(onlyIssues && issueType === 'missingCosts', issueStats.missingCosts === 0)}
-                >
-                  Sin costo <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  aria-pressed={onlyIssues && issueType === 'missingCostItems'}
-                  disabled={issueStats.missingCostItems === 0}
-                  onClick={() => {
-                    setOnlyIssues(true);
-                    setIssueType('missingCostItems');
-                    setSelectedProductId(null);
-                  }}
-                  style={getFilterButtonStyle(onlyIssues && issueType === 'missingCostItems', issueStats.missingCostItems === 0)}
-                >
-                  Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCostItems}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}
-                  disabled={issueStats.unsupportedRecipe === 0}
-                  onClick={() => {
-                    setOnlyIssues(true);
-                    setIssueType('unsupportedRecipe');
-                    setSelectedProductId(null);
-                  }}
-                  style={getFilterButtonStyle(onlyIssues && issueType === 'unsupportedRecipe', issueStats.unsupportedRecipe === 0)}
-                >
-                  Sub-recetas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.unsupportedRecipe}</span>
-                </button>
+              <div>
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Issues</p>
+                <p className="muted" style={{ margin: '2px 0 0' }}>{issuesSummaryText}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Acción</p>
+                <p className="muted" style={{ margin: '2px 0 0' }}>{activeIssueActionText}</p>
               </div>
             </div>
           </div>
-        </section>
-      </div>
+
+          <div style={{ display: 'grid', gap: 8, justifyItems: 'end', flex: '0 1 520px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btnSecondary"
+                onClick={resetFilters}
+                disabled={isBaseState}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Limpiar filtros
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                onClick={() => {
+                  void copyCurrentView();
+                }}
+                disabled={copiedView}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                {copiedView ? 'Copiado' : 'Copiar vista'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={!onlyIssues}
+                onClick={() => {
+                  setOnlyIssues(false);
+                  setIssueType('any');
+                  setSelectedProductId(null);
+                }}
+                style={getFilterButtonStyle(!onlyIssues, false)}
+              >
+                Todos <span className="badge badge--info" style={{ marginLeft: 8 }}>{issueStats.total}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'any'}
+                disabled={issueStats.issues === 0}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('any');
+                  setSelectedProductId(null);
+                }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'any', issueStats.issues === 0)}
+              >
+                Problemas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.issues}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'missingPrice'}
+                disabled={issueStats.missingPrice === 0}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('missingPrice');
+                  setSelectedProductId(null);
+                }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'missingPrice', issueStats.missingPrice === 0)}
+              >
+                Sin precio <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingPrice}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'missingCosts'}
+                disabled={issueStats.missingCosts === 0}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('missingCosts');
+                  setSelectedProductId(null);
+                }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'missingCosts', issueStats.missingCosts === 0)}
+              >
+                Sin costo <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCosts}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'missingCostItems'}
+                disabled={issueStats.missingCostItems === 0}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('missingCostItems');
+                  setSelectedProductId(null);
+                }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'missingCostItems', issueStats.missingCostItems === 0)}
+              >
+                Faltan costos <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.missingCostItems}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btnSecondary"
+                aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}
+                disabled={issueStats.unsupportedRecipe === 0}
+                onClick={() => {
+                  setOnlyIssues(true);
+                  setIssueType('unsupportedRecipe');
+                  setSelectedProductId(null);
+                }}
+                style={getFilterButtonStyle(onlyIssues && issueType === 'unsupportedRecipe', issueStats.unsupportedRecipe === 0)}
+              >
+                Sub-recetas <span className="badge badge--warn" style={{ marginLeft: 8 }}>{issueStats.unsupportedRecipe}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
