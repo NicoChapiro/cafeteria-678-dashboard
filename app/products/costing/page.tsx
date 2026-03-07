@@ -243,9 +243,9 @@ function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
   const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
 
   return (
-    <div style={{ marginTop: 8 }}>
-      <strong style={{ fontSize: 12 }}>Top 5 drivers</strong>
-      <div style={{ marginTop: 6, display: 'grid', gap: 6 }}>
+    <div style={{ marginTop: 10 }}>
+      <strong>Top drivers</strong>
+      <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
         {drivers.map((driver) => {
           const widthPct = maxLineCost > 0 ? (driver.lineCostClp / maxLineCost) * 100 : 0;
           return (
@@ -939,7 +939,7 @@ export default function ProductCostingPage() {
         }
       `}</style>
 
-      <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+      <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
@@ -958,7 +958,7 @@ export default function ProductCostingPage() {
             type="button"
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-              <h2 className="cardTitle" style={{ marginBottom: 7 }}>{product.name}</h2>
+              <h2 className="cardTitle" style={{ marginBottom: 8 }}>{product.name}</h2>
               <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
             </div>
 
@@ -968,19 +968,27 @@ export default function ProductCostingPage() {
               ))}
             </div>
 
-            <p style={compactMetricStyle}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
-            <p style={compactMetricStyle}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
-            <p style={compactMetricStyle}>
-              <strong>Margen teórico:</strong>{' '}
-              {costing.marginClp === null || costing.marginPct === null
-                ? 'N/D'
-                : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
-            </p>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 8,
+              }}
+            >
+              <p style={{ margin: 0 }}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
+              <p style={{ margin: 0 }}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
+              <p style={{ margin: 0, gridColumn: '1 / -1' }}>
+                <strong>Margen teórico:</strong>{' '}
+                {costing.marginClp === null || costing.marginPct === null
+                  ? 'N/D'
+                  : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
+              </p>
+            </div>
 
-            {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers} /> : null}
+            {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
 
             {hasIssues ? (
-              <div style={{ marginTop: compactSectionGap, display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   className="btnSecondary"
                   aria-label={`Resolver problemas de ${product.name}`}
