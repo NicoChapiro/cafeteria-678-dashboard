@@ -465,6 +465,11 @@ export default function ProductCostingPage() {
     return { total, issues, missingPrice, missingCosts, missingCostItems, unsupportedRecipe };
   }, [productComputed]);
 
+  const issuesSummaryText =
+    issueStats.issues > 0
+      ? `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.unsupportedRecipe} sub-recetas`
+      : 'Sin problemas detectados para esta sucursal y fecha.';
+
   const selected =
     selectedProductId === null
       ? null
@@ -588,6 +593,7 @@ export default function ProductCostingPage() {
             <input
               type="checkbox"
               checked={onlyIssues}
+              disabled={issueStats.issues === 0}
               onChange={(event) => {
                 const checked = event.target.checked;
                 setOnlyIssues(checked);
@@ -606,6 +612,9 @@ export default function ProductCostingPage() {
             <strong>Resumen</strong>
             <p className="muted" style={{ margin: '4px 0 0' }}>
               Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
+            </p>
+            <p className="muted" style={{ margin: '4px 0 0' }}>
+              {issuesSummaryText}
             </p>
           </div>
 
@@ -757,7 +766,28 @@ export default function ProductCostingPage() {
       </section>
 
       {filteredSortedProducts.length === 0 ? (
-        <p className="muted" style={{ marginTop: 16 }}>Sin productos para los filtros seleccionados.</p>
+        onlyIssues ? (
+          <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
+            <p className="calloutInfo" style={{ margin: 0 }}>
+              No hay productos con problemas para esta combinación de filtros.
+            </p>
+            <div>
+              <button
+                type="button"
+                className="btnSecondary"
+                onClick={() => {
+                  setOnlyIssues(false);
+                  setIssueType('any');
+                  setSelectedProductId(null);
+                }}
+              >
+                Mostrar todos
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 16 }}>Sin productos para los filtros seleccionados.</p>
+        )
       ) : null}
 
       {selected ? (
