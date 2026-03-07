@@ -243,16 +243,16 @@ function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
   const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <strong>Top 5 drivers</strong>
-      <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+    <div style={{ marginTop: 8 }}>
+      <strong style={{ fontSize: 12 }}>Top 5 drivers</strong>
+      <div style={{ marginTop: 6, display: 'grid', gap: 6 }}>
         {drivers.map((driver) => {
           const widthPct = maxLineCost > 0 ? (driver.lineCostClp / maxLineCost) * 100 : 0;
           return (
             <div key={`${driver.itemId}-${driver.itemName}`}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                <span>{driver.itemName}</span>
-                <span className="muted" style={{ fontWeight: 600 }}>{formatClp(driver.lineCostClp)}</span>
+                <span style={{ fontSize: 12 }}>{driver.itemName}</span>
+                <span className="muted" style={{ fontWeight: 600, fontSize: 12 }}>{formatClp(driver.lineCostClp)}</span>
               </div>
               <div className="driverBarTrack" role="presentation">
                 <div className="driverBarFill" style={{ width: `${Math.max(widthPct, 3)}%` }} />
@@ -943,6 +943,8 @@ export default function ProductCostingPage() {
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
+          const compactMetricStyle = { margin: '4px 0', fontSize: 14, lineHeight: 1.3 };
+          const compactSectionGap = 10;
 
           return (<button
             key={product.id}
@@ -956,19 +958,19 @@ export default function ProductCostingPage() {
             type="button"
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-              <h2 className="cardTitle" style={{ marginBottom: 10 }}>{product.name}</h2>
+              <h2 className="cardTitle" style={{ marginBottom: 7 }}>{product.name}</h2>
               <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
               {costing.badges.map((badge) => (
                 <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
               ))}
             </div>
 
-            <p style={{ margin: '6px 0' }}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
-            <p style={{ margin: '6px 0' }}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
-            <p style={{ margin: '6px 0' }}>
+            <p style={compactMetricStyle}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
+            <p style={compactMetricStyle}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
+            <p style={compactMetricStyle}>
               <strong>Margen teórico:</strong>{' '}
               {costing.marginClp === null || costing.marginPct === null
                 ? 'N/D'
@@ -978,7 +980,7 @@ export default function ProductCostingPage() {
             {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers} /> : null}
 
             {hasIssues ? (
-              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ marginTop: compactSectionGap, display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   className="btnSecondary"
                   aria-label={`Resolver problemas de ${product.name}`}
