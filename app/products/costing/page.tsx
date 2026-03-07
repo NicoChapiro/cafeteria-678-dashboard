@@ -306,6 +306,16 @@ export default function ProductCostingPage() {
     restoreLastFocus();
   }, [restoreLastFocus]);
 
+  const resetFilters = useCallback(() => {
+    setBranch('Santiago');
+    setAsOfDate(todayIso());
+    setSearch('');
+    setSort('name');
+    setOnlyIssues(false);
+    setIssueType('any');
+    setSelectedProductId(null);
+  }, []);
+
   // URL -> State (solo al cargar)
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -491,6 +501,15 @@ export default function ProductCostingPage() {
     issueType === 'missingCostItems' ? 'Solo faltan costos' :
     'Solo sub-recetas';
 
+  const isBaseState =
+    branch === 'Santiago' &&
+    asOfDate === todayIso() &&
+    search.trim() === '' &&
+    sort === 'name' &&
+    !onlyIssues &&
+    issueType === 'any' &&
+    selectedProductId === null;
+
   const selected =
     selectedProductId === null
       ? null
@@ -654,6 +673,16 @@ export default function ProductCostingPage() {
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <button
+                type="button"
+                className="btnSecondary"
+                onClick={resetFilters}
+                disabled={isBaseState}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+              >
+                Limpiar filtros
+              </button>
+
               <button
                 type="button"
                 className="btnSecondary"
