@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 
 import type {
   Branch,
@@ -346,7 +346,14 @@ export default function ProductCostingPage() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
   const drawerCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const actionsSectionRef = useRef<HTMLElement | null>(null);
+  const breakdownSectionRef = useRef<HTMLElement | null>(null);
+  const missingItemsSectionRef = useRef<HTMLElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  const scrollDrawerSection = useCallback((ref: RefObject<HTMLElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const restoreLastFocus = useCallback(() => {
     const lastFocusedElement = lastFocusedElementRef.current;
@@ -1206,7 +1213,42 @@ export default function ProductCostingPage() {
               ) : null}
             </div>
 
-            <section className="card" style={{ marginTop: 12, marginBottom: 0 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+              <button
+                type="button"
+                className="btnSecondary"
+                style={{ fontSize: 12, padding: '4px 10px' }}
+                onClick={() => {
+                  scrollDrawerSection(actionsSectionRef);
+                }}
+              >
+                Acciones
+              </button>
+              <button
+                type="button"
+                className="btnSecondary"
+                style={{ fontSize: 12, padding: '4px 10px' }}
+                onClick={() => {
+                  scrollDrawerSection(breakdownSectionRef);
+                }}
+              >
+                Desglose
+              </button>
+              {selected.costing.missingItems.length > 0 ? (
+                <button
+                  type="button"
+                  className="btnSecondary"
+                  style={{ fontSize: 12, padding: '4px 10px' }}
+                  onClick={() => {
+                    scrollDrawerSection(missingItemsSectionRef);
+                  }}
+                >
+                  Faltantes
+                </button>
+              ) : null}
+            </div>
+
+            <section ref={actionsSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <h3 style={{ marginTop: 0 }}>Acciones</h3>
               <div style={{ display: 'grid', gap: 10 }}>
                 {primaryDrawerAction ? (
@@ -1293,40 +1335,42 @@ export default function ProductCostingPage() {
 
             {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} /> : null}
 
-            <h3 style={{ marginTop: 0 }}>Desglose de receta (items)</h3>
-            <div className="tableWrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Qty (receta/batch)</th>
-                    <th>Unidad</th>
-                    <th>Costo unitario efectivo</th>
-                    <th>Costo línea (por unidad vendible)</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selected.costing.breakdown.map((line) => (
-                    <tr key={`${line.itemId}-${line.itemName}`} className={line.status === 'Falta costo' ? 'tableRowMissing' : undefined}>
-                      <td>{line.itemName}</td>
-                      <td>{line.qtyInBase}</td>
-                      <td>{line.unit}</td>
-                      <td>{formatClp(line.effectiveUnitCostClp)}</td>
-                      <td>{formatClp(line.lineCostClp)}</td>
-                      <td>{line.status}</td>
-                    </tr>
-                  ))}
-                  {selected.costing.breakdown.length === 0 ? (
+            <section ref={breakdownSectionRef} style={{ marginTop: 12 }}>
+              <h3 style={{ marginTop: 0 }}>Desglose de receta (items)</h3>
+              <div className="tableWrap">
+                <table className="table">
+                  <thead>
                     <tr>
-                      <td colSpan={6} className="muted">Sin líneas de item para este producto.</td>
+                      <th>Item</th>
+                      <th>Qty (receta/batch)</th>
+                      <th>Unidad</th>
+                      <th>Costo unitario efectivo</th>
+                      <th>Costo línea (por unidad vendible)</th>
+                      <th>Status</th>
                     </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {selected.costing.breakdown.map((line) => (
+                      <tr key={`${line.itemId}-${line.itemName}`} className={line.status === 'Falta costo' ? 'tableRowMissing' : undefined}>
+                        <td>{line.itemName}</td>
+                        <td>{line.qtyInBase}</td>
+                        <td>{line.unit}</td>
+                        <td>{formatClp(line.effectiveUnitCostClp)}</td>
+                        <td>{formatClp(line.lineCostClp)}</td>
+                        <td>{line.status}</td>
+                      </tr>
+                    ))}
+                    {selected.costing.breakdown.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="muted">Sin líneas de item para este producto.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
 
-            <div style={{ marginTop: 12 }}>
+            <section ref={missingItemsSectionRef} style={{ marginTop: 12 }}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
@@ -1353,7 +1397,7 @@ export default function ProductCostingPage() {
                   calculan automáticamente. Por eso el costo del producto queda como N/D.
                 </p>
               ) : null}
-            </div>
+            </section>
           </aside>
         </>
       ) : null}
