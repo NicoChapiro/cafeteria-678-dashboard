@@ -619,6 +619,9 @@ export default function ProductCostingPage() {
     ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
     : [];
   const [primaryDrawerAction, ...secondaryDrawerActions] = drawerActions;
+  const drawerActionCount = selected ? drawerActions.length : 0;
+  const drawerBreakdownCount = selected?.costing.breakdown.length ?? 0;
+  const drawerMissingItemsCount = selected?.costing.missingItems.length ?? 0;
   const isInfoOnlyDrawerAction =
     primaryDrawerAction !== undefined &&
     primaryDrawerAction.tone === 'info' &&
@@ -1247,7 +1250,7 @@ export default function ProductCostingPage() {
                       scrollDrawerSection(actionsSectionRef);
                     }}
                   >
-                    Acciones
+                    {`Acciones (${drawerActionCount})`}
                   </button>
                   <button
                     type="button"
@@ -1257,7 +1260,7 @@ export default function ProductCostingPage() {
                       scrollDrawerSection(breakdownSectionRef);
                     }}
                   >
-                    Desglose
+                    {`Desglose (${drawerBreakdownCount})`}
                   </button>
                   {selected.costing.missingItems.length > 0 ? (
                     <button
@@ -1268,7 +1271,7 @@ export default function ProductCostingPage() {
                         scrollDrawerSection(missingItemsSectionRef);
                       }}
                     >
-                      Faltantes
+                      {`Faltantes (${drawerMissingItemsCount})`}
                     </button>
                   ) : null}
                 </div>
