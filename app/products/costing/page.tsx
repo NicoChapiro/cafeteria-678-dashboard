@@ -628,6 +628,7 @@ export default function ProductCostingPage() {
   const drawerBreakdownCount = selected?.costing.breakdown.length ?? 0;
   const drawerBreakdownMissingCount = selected?.costing.breakdown.filter((line) => line.status === 'Falta costo').length ?? 0;
   const drawerTopDriverName = selected?.costing.drivers[0]?.itemName ?? null;
+  const showDrawerBreakdownPreview = selected !== null && selected.costing.breakdown.length > 0;
   const drawerMissingItemsCount = selected?.costing.missingItems.length ?? 0;
   const isInfoOnlyDrawerAction =
     primaryDrawerAction !== undefined &&
@@ -1418,7 +1419,7 @@ export default function ProductCostingPage() {
               </section>
             ) : null}
 
-            {selected && selected.costing.breakdown.length > 0 ? (
+            {showDrawerBreakdownPreview ? (
               <section className="card" style={compactDrawerCardStyle} aria-label="Resumen del desglose de receta">
                 <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Resumen del desglose</p>
                 <div style={{ display: 'grid', gap: 4, marginTop: 6, fontSize: 12 }}>
