@@ -1258,6 +1258,33 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
+            {selected.costing.missingItems.length > 0 ? (
+              <section
+                className="card"
+                style={{ marginTop: 10, marginBottom: 0, padding: '10px 12px' }}
+                aria-label="Vista rápida de items faltantes"
+              >
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Items por completar</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                  {selected.costing.missingItems.slice(0, 3).map((entry) => (
+                    <Link
+                      key={`quick-missing-${entry.id}-${entry.name}`}
+                      href={`/items/${entry.id}`}
+                      className="btnSecondary"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                    >
+                      {entry.name}
+                    </Link>
+                  ))}
+                </div>
+                <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>
+                  {selected.costing.missingItems.length > 3
+                    ? `Mostrando 3 de ${selected.costing.missingItems.length} items faltantes`
+                    : `${selected.costing.missingItems.length} items faltantes`}
+                </p>
+              </section>
+            ) : null}
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 14px' }}>
               {selected.costing.badges.map((badge) => (
                 <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
