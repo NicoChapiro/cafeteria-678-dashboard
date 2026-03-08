@@ -264,18 +264,24 @@ function getFilterButtonStyle(isActive: boolean, isDisabled: boolean) {
 }
 
 
-function DriverBars({ drivers }: { drivers: ProductAsOfResult['drivers'] }) {
+function DriverBars({
+  drivers,
+  compact = false,
+}: {
+  drivers: ProductAsOfResult['drivers'];
+  compact?: boolean;
+}) {
   const maxLineCost = Math.max(...drivers.map((driver) => driver.lineCostClp), 0);
 
   return (
-    <div style={{ marginTop: 10 }}>
+    <div style={{ marginTop: compact ? 8 : 10 }}>
       <strong>Top drivers</strong>
-      <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+      <div style={{ marginTop: compact ? 6 : 8, display: 'grid', gap: compact ? 6 : 8 }}>
         {drivers.map((driver) => {
           const widthPct = maxLineCost > 0 ? (driver.lineCostClp / maxLineCost) * 100 : 0;
           return (
             <div key={`${driver.itemId}-${driver.itemName}`}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: compact ? 3 : 4 }}>
                 <span style={{ fontSize: 12 }}>{driver.itemName}</span>
                 <span className="muted" style={{ fontWeight: 600, fontSize: 12 }}>{formatClp(driver.lineCostClp)}</span>
               </div>
@@ -635,6 +641,9 @@ export default function ProductCostingPage() {
             ? 'Definir costo'
             : null
     : null;
+  const compactDrawerCardStyle = { marginTop: 10, marginBottom: 0, padding: '8px 10px' } as const;
+  const compactDrawerSectionTitleStyle = { margin: '0 0 6px', fontSize: 15, lineHeight: 1.25 } as const;
+  const compactDrawerMutedStyle = { margin: '4px 0 0', fontSize: 12 } as const;
 
   useEffect(() => {
     if (!selectedProductId) {
@@ -1144,24 +1153,24 @@ export default function ProductCostingPage() {
                 top: 0,
                 zIndex: 2,
                 background: 'var(--card)',
-                paddingBottom: 10,
-                marginBottom: 12,
+                paddingBottom: 8,
+                marginBottom: 8,
                 borderBottom: '1px solid var(--border)',
                 boxShadow: '0 1px 0 rgba(15, 23, 42, 0.04)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                 <div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                     <h2 style={{ margin: 0 }}>{selected.product.name}</h2>
                     {selectedMarginStatus ? (
                       <span className={`marginPill marginPill--${selectedMarginStatus.tone}`}>{selectedMarginStatus.display}</span>
                     ) : null}
                   </div>
-                  <p className="muted" style={{ marginTop: 4 }}>
+                  <p className="muted" style={compactDrawerMutedStyle}>
                     {branch} · {asOfDate}
                   </p>
-                  <Link href={`/products/${selected.product.id}`} style={{ fontSize: 12, fontWeight: 600 }}>
+                  <Link href={`/products/${selected.product.id}`} style={{ fontSize: 12, fontWeight: 600, marginTop: 4, display: 'inline-block' }}>
                     Ver producto
                   </Link>
                 </div>
@@ -1173,6 +1182,7 @@ export default function ProductCostingPage() {
                   aria-label="Cerrar detalle"
                   type="button"
                   ref={drawerCloseButtonRef}
+                  style={{ padding: '4px 10px' }}
                 >
                   Cerrar
                 </button>
@@ -1180,25 +1190,25 @@ export default function ProductCostingPage() {
             </div>
 
             {primaryDrawerIssueText ? (
-              <p className="calloutWarning" style={{ marginTop: 12, marginBottom: 0 }}>
+              <p className="calloutWarning" style={{ marginTop: 8, marginBottom: 0, padding: '8px 10px' }}>
                 <strong>{primaryDrawerIssueText}</strong>
                 <br />
                 <span className="muted">Acción sugerida: {primaryDrawerActionText}</span>
               </p>
             ) : null}
 
-            <section className="card" style={{ marginTop: 12, marginBottom: 0, padding: '10px 12px' }}>
+            <section className="card" style={{ ...compactDrawerCardStyle, marginTop: 8 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-                <div className="card" style={{ marginBottom: 0 }}>
-                  <p className="muted">Precio</p>
+                <div className="card" style={{ marginBottom: 0, padding: '8px 10px' }}>
+                  <p className="muted" style={{ marginBottom: 2 }}>Precio</p>
                   <strong>{formatClp(selected.costing.priceClp)}</strong>
                 </div>
-                <div className="card" style={{ marginBottom: 0 }}>
-                  <p className="muted">Costo</p>
+                <div className="card" style={{ marginBottom: 0, padding: '8px 10px' }}>
+                  <p className="muted" style={{ marginBottom: 2 }}>Costo</p>
                   <strong>{formatClp(selected.costing.costClp)}</strong>
                 </div>
-                <div className="card" style={{ marginBottom: 0 }}>
-                  <p className="muted">Margen</p>
+                <div className="card" style={{ marginBottom: 0, padding: '8px 10px' }}>
+                  <p className="muted" style={{ marginBottom: 2 }}>Margen</p>
                   <strong>
                     {selected.costing.marginClp === null || selected.costing.marginPct === null
                       ? 'N/D'
@@ -1207,15 +1217,15 @@ export default function ProductCostingPage() {
                 </div>
               </div>
               {hasMissingPrice(selected.costing) ? (
-                <p className="calloutWarning" style={{ marginTop: 8 }}>
+                <p className="calloutWarning" style={{ marginTop: 6, marginBottom: 0, padding: '6px 10px' }}>
                   Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
                 </p>
               ) : null}
             </section>
 
-            <section className="card" style={{ marginTop: 12, marginBottom: 0, padding: '10px 12px' }} aria-label="Navegación rápida">
+            <section className="card" style={{ ...compactDrawerCardStyle, marginTop: 8, padding: '6px 10px' }} aria-label="Navegación rápida">
               <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Navegación rápida</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                 <button
                   type="button"
                   className="btnSecondary"
@@ -1251,20 +1261,20 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
-            <section ref={actionsSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
-              <h3 style={{ marginTop: 0 }}>Acciones</h3>
-              <div style={{ display: 'grid', gap: 10 }}>
+            <section ref={actionsSectionRef} className="card" style={compactDrawerCardStyle}>
+              <h3 style={compactDrawerSectionTitleStyle}>Acciones</h3>
+              <div style={{ display: 'grid', gap: 8 }}>
                 {primaryDrawerAction ? (
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'flex-start',
                       justifyContent: 'space-between',
-                      gap: 14,
+                      gap: 12,
                       border: '1px solid rgba(72, 102, 48, 0.24)',
                       background: 'linear-gradient(145deg, rgba(72, 102, 48, 0.12), rgba(214, 186, 232, 0.16))',
                       borderRadius: 12,
-                      padding: '14px 16px',
+                      padding: '12px 14px',
                     }}
                   >
                     <div>
@@ -1275,17 +1285,17 @@ export default function ProductCostingPage() {
                         </span>
                       </div>
                       {primaryDrawerAction.description ? (
-                        <p className="muted" style={{ margin: '8px 0 0' }}>{primaryDrawerAction.description}</p>
+                        <p className="muted" style={{ margin: '6px 0 0' }}>{primaryDrawerAction.description}</p>
                       ) : null}
                     </div>
-                    <Link className="btn" href={primaryDrawerAction.href} style={{ whiteSpace: 'nowrap', alignSelf: 'center' }}>
+                    <Link className="btn" href={primaryDrawerAction.href} style={{ whiteSpace: 'nowrap', alignSelf: 'center', padding: '6px 12px' }}>
                       Ir primero
                     </Link>
                   </div>
                 ) : null}
 
                 {secondaryDrawerActions.map((action) => (
-                  <div key={`${action.href}-${action.label}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div key={`${action.href}-${action.label}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                     <div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <strong>{action.label}</strong>
@@ -1306,7 +1316,7 @@ export default function ProductCostingPage() {
             {selected.costing.missingItems.length > 0 ? (
               <section
                 className="card"
-                style={{ marginTop: 10, marginBottom: 0, padding: '10px 12px' }}
+                style={compactDrawerCardStyle}
                 aria-label="Vista rápida de items faltantes"
               >
                 <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Items por completar</p>
@@ -1322,7 +1332,7 @@ export default function ProductCostingPage() {
                     </Link>
                   ))}
                 </div>
-                <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>
+                <p className="muted" style={{ margin: '6px 0 0', fontSize: 12 }}>
                   {selected.costing.missingItems.length > 3
                     ? `Mostrando 3 de ${selected.costing.missingItems.length} items faltantes`
                     : `${selected.costing.missingItems.length} items faltantes`}
@@ -1330,16 +1340,16 @@ export default function ProductCostingPage() {
               </section>
             ) : null}
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '12px 0 0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 0' }}>
               {selected.costing.badges.map((badge) => (
                 <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
               ))}
             </div>
 
-            {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} /> : null}
+            {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} compact /> : null}
 
-            <section ref={breakdownSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
-              <h3 style={{ marginTop: 0 }}>Desglose de receta (items)</h3>
+            <section ref={breakdownSectionRef} className="card" style={compactDrawerCardStyle}>
+              <h3 style={compactDrawerSectionTitleStyle}>Desglose de receta (items)</h3>
               <div className="tableWrap">
                 <table className="table">
                   <thead>
@@ -1373,10 +1383,10 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
-            <section ref={missingItemsSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
+            <section ref={missingItemsSectionRef} className="card" style={compactDrawerCardStyle}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
-                <ul style={{ marginTop: 6 }}>
+                <ul style={{ marginTop: 5, marginBottom: 0, paddingLeft: 20 }}>
                   {selected.costing.missingItems.map((entry) => (
                     <li key={`${entry.id}-${entry.name}`}>
                       {entry.name}{' '}
