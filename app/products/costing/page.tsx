@@ -652,6 +652,7 @@ export default function ProductCostingPage() {
             ? 'Este producto no tiene costo calculable para la sucursal y fecha seleccionadas.'
             : null
     : null;
+  const showHealthyDrawerSummary = selected !== null && isInfoOnlyDrawerAction && primaryDrawerIssueText === null;
   const primaryDrawerActionText = selected
     ? selected.costing.unsupportedLineTypesFound
       ? 'Revisar receta'
@@ -671,6 +672,10 @@ export default function ProductCostingPage() {
   const compactTableStyle = { fontSize: 12.5, lineHeight: 1.3 } as const;
   const compactTableCellStyle = { paddingTop: 5, paddingBottom: 5 } as const;
   const compactDrawerMutedStyle = { margin: '4px 0 0', fontSize: 12 } as const;
+  const drawerActionsSectionStyle = {
+    ...compactDrawerCardStyle,
+    marginTop: !showDrawerQuickNav && drawerMissingItemsCount === 0 ? 8 : compactDrawerCardStyle.marginTop,
+  } as const;
 
   useEffect(() => {
     if (!selectedProductId) {
@@ -1323,8 +1328,24 @@ export default function ProductCostingPage() {
               </section>
             ) : null}
 
-            <section ref={actionsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
-              <h3 style={compactDrawerSectionTitleStyle}>Acciones</h3>
+            {showHealthyDrawerSummary ? (
+              <p
+                className="muted"
+                style={{
+                  margin: '8px 0 0',
+                  padding: '7px 10px',
+                  borderRadius: 8,
+                  border: '1px solid rgba(214, 186, 232, 0.38)',
+                  background: 'rgba(214, 186, 232, 0.08)',
+                  fontSize: 12.5,
+                }}
+              >
+                Sin alertas activas para esta sucursal y fecha.
+              </p>
+            ) : null}
+
+            <section ref={actionsSectionRef} className="card" style={{ ...drawerActionsSectionStyle, ...drawerSectionAnchorOffsetStyle }}>
+              <h3 style={{ ...compactDrawerSectionTitleStyle, color: isInfoOnlyDrawerAction ? 'var(--muted)' : 'var(--text)' }}>Acciones</h3>
               <div style={{ display: 'grid', gap: 8 }}>
                 {primaryDrawerAction ? (
                   <div
@@ -1334,10 +1355,10 @@ export default function ProductCostingPage() {
                         alignItems: 'flex-start',
                         justifyContent: 'space-between',
                         gap: 10,
-                        border: '1px solid rgba(214, 186, 232, 0.48)',
-                        background: 'rgba(214, 186, 232, 0.14)',
+                        border: '1px solid rgba(214, 186, 232, 0.34)',
+                        background: 'rgba(214, 186, 232, 0.09)',
                         borderRadius: 10,
-                        padding: '8px 10px',
+                        padding: '7px 10px',
                       }
                       : {
                         display: 'flex',
@@ -1352,9 +1373,9 @@ export default function ProductCostingPage() {
                   >
                     <div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: isInfoOnlyDrawerAction ? 15 : 17 }}>{primaryDrawerAction.label}</strong>
+                        <strong style={{ fontSize: isInfoOnlyDrawerAction ? 14 : 17 }}>{primaryDrawerAction.label}</strong>
                         <span className={`badge badge--${primaryDrawerAction.tone}`}>
-                          {primaryDrawerAction.tone === 'warn' ? 'Requiere atención' : 'Info'}
+                          {primaryDrawerAction.tone === 'warn' ? 'Requiere atención' : 'Siguiente paso'}
                         </span>
                       </div>
                       {primaryDrawerAction.description ? (
