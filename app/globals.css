@@ -66,14 +66,19 @@ a:hover { color: var(--brand-orange); }
 }
 
 .costingProductCard--selected {
-  border-color: rgba(72, 102, 48, 0.68);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+  border-color: rgba(72, 102, 48, 0.82);
+  background: linear-gradient(0deg, rgba(72, 102, 48, 0.045), rgba(72, 102, 48, 0.045)), #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(72, 102, 48, 0.2), 0 8px 20px rgba(15, 23, 42, 0.14);
 }
 
-.costingProductCard--selected:hover,
+.costingProductCard--selected:hover {
+  border-color: rgba(72, 102, 48, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(72, 102, 48, 0.24), 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
 .costingProductCard--selected:focus-visible {
-  border-color: rgba(72, 102, 48, 0.78);
-  box-shadow: 0 0 0 4px rgba(214, 186, 232, 0.2), 0 7px 16px rgba(15, 23, 42, 0.14);
+  border-color: rgba(72, 102, 48, 0.9);
+  box-shadow: 0 0 0 4px rgba(214, 186, 232, 0.26), inset 0 0 0 1px rgba(72, 102, 48, 0.28), 0 10px 24px rgba(15, 23, 42, 0.16);
 }
 
 .costingProductCard:focus-visible {
@@ -264,5 +269,4 @@ a:hover { color: var(--brand-orange); }
 .tableRowMissing td {
   background: rgba(244, 144, 34, 0.13);
 }
-
 
