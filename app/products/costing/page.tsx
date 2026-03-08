@@ -968,52 +968,56 @@ export default function ProductCostingPage() {
             aria-haspopup="dialog"
             type="button"
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-              <h2 className="cardTitle" style={{ marginBottom: 8 }}>{product.name}</h2>
-              <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ display: 'grid', gap: 10, flex: '1 1 auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                  <h2 className="cardTitle" style={{ marginBottom: 8 }}>{product.name}</h2>
+                  <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
+                </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
-              {costing.badges.map((badge) => (
-                <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
-              ))}
-            </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {costing.badges.map((badge) => (
+                    <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
+                  ))}
+                </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 8,
-              }}
-            >
-              <p style={{ margin: 0 }}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
-              <p style={{ margin: 0 }}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
-              <p style={{ margin: 0, gridColumn: '1 / -1' }}>
-                <strong>Margen teórico:</strong>{' '}
-                {costing.marginClp === null || costing.marginPct === null
-                  ? 'N/D'
-                  : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
-              </p>
-            </div>
-
-            {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
-
-            {hasIssues ? (
-              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  className="btnSecondary"
-                  aria-label={`Resolver problemas de ${product.name}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openDrawer(product.id);
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: 8,
                   }}
-                  style={{ fontSize: 12, padding: '4px 10px' }}
-                  type="button"
                 >
-                  Resolver
-                </button>
+                  <p style={{ margin: 0 }}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
+                  <p style={{ margin: 0 }}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
+                  <p style={{ margin: 0, gridColumn: '1 / -1' }}>
+                    <strong>Margen teórico:</strong>{' '}
+                    {costing.marginClp === null || costing.marginPct === null
+                      ? 'N/D'
+                      : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
+                  </p>
+                </div>
+
+                {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
               </div>
-            ) : null}
+
+              <div style={{ marginTop: 12, minHeight: 30, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                {hasIssues ? (
+                  <button
+                    className="btnSecondary"
+                    aria-label={`Resolver problemas de ${product.name}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openDrawer(product.id);
+                    }}
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    type="button"
+                  >
+                    Resolver
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </button>
           );
         })}
