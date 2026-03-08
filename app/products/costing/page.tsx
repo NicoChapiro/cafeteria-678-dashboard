@@ -626,6 +626,8 @@ export default function ProductCostingPage() {
   const [primaryDrawerAction, ...secondaryDrawerActions] = drawerActions;
   const drawerActionCount = selected ? drawerActions.length : 0;
   const drawerBreakdownCount = selected?.costing.breakdown.length ?? 0;
+  const drawerBreakdownMissingCount = selected?.costing.breakdown.filter((line) => line.status === 'Falta costo').length ?? 0;
+  const drawerTopDriverName = selected?.costing.drivers[0]?.itemName ?? null;
   const drawerMissingItemsCount = selected?.costing.missingItems.length ?? 0;
   const isInfoOnlyDrawerAction =
     primaryDrawerAction !== undefined &&
@@ -1413,6 +1415,23 @@ export default function ProductCostingPage() {
                     ? `Mostrando 3 de ${selected.costing.missingItems.length} items faltantes`
                     : `${selected.costing.missingItems.length} items faltantes`}
                 </p>
+              </section>
+            ) : null}
+
+            {selected && selected.costing.breakdown.length > 0 ? (
+              <section className="card" style={compactDrawerCardStyle} aria-label="Resumen del desglose de receta">
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Resumen del desglose</p>
+                <div style={{ display: 'grid', gap: 4, marginTop: 6, fontSize: 12 }}>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Líneas: <strong style={{ color: 'var(--text)' }}>{drawerBreakdownCount}</strong>
+                  </p>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Con problema: <strong style={{ color: 'var(--text)' }}>{drawerBreakdownMissingCount}</strong>
+                  </p>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Top driver: <strong style={{ color: 'var(--text)' }}>{drawerTopDriverName ?? 'N/D'}</strong>
+                  </p>
+                </div>
               </section>
             ) : null}
 
