@@ -136,6 +136,26 @@ function hasIssuesCosting(costing: ProductAsOfResult): boolean {
   );
 }
 
+function getCardActionLabel(costing: ProductAsOfResult): string {
+  if (costing.unsupportedLineTypesFound) {
+    return 'Revisar receta';
+  }
+
+  if (costing.missingItems.length > 0) {
+    return 'Completar costos';
+  }
+
+  if (costing.priceClp === null) {
+    return 'Definir precio';
+  }
+
+  if (costing.costClp === null) {
+    return 'Definir costo';
+  }
+
+  return 'Ver detalle';
+}
+
 type DrawerAction = {
   label: string;
   href: string;
@@ -983,6 +1003,7 @@ export default function ProductCostingPage() {
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
+          const cardActionLabel = getCardActionLabel(costing);
 
           return (<button
             key={product.id}
@@ -1032,7 +1053,7 @@ export default function ProductCostingPage() {
                 {hasIssues ? (
                   <button
                     className="btnSecondary"
-                    aria-label={`Resolver problemas de ${product.name}`}
+                    aria-label={`Abrir acción para ${product.name}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       openDrawer(product.id);
@@ -1040,7 +1061,7 @@ export default function ProductCostingPage() {
                     style={{ fontSize: 12, padding: '4px 10px' }}
                     type="button"
                   >
-                    Resolver
+                    {cardActionLabel}
                   </button>
                 ) : null}
               </div>
