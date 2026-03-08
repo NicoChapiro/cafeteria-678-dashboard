@@ -1004,16 +1004,18 @@ export default function ProductCostingPage() {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
           const cardActionLabel = getCardActionLabel(costing);
+          const isSelectedCard = selectedProductId === product.id;
 
           return (<button
             key={product.id}
-            className="card costingProductCard"
+            className={`card costingProductCard${isSelectedCard ? ' costingProductCard--selected' : ''}`}
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
             onClick={() => {
               openDrawer(product.id);
             }}
             aria-label={`Abrir detalle de ${product.name}`}
             aria-haspopup="dialog"
+            aria-expanded={isSelectedCard}
             type="button"
           >
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

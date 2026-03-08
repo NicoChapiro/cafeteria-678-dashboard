@@ -65,6 +65,17 @@ a:hover { color: var(--brand-orange); }
   transform: translateY(-1px);
 }
 
+.costingProductCard--selected {
+  border-color: rgba(72, 102, 48, 0.68);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+}
+
+.costingProductCard--selected:hover,
+.costingProductCard--selected:focus-visible {
+  border-color: rgba(72, 102, 48, 0.78);
+  box-shadow: 0 0 0 4px rgba(214, 186, 232, 0.2), 0 7px 16px rgba(15, 23, 42, 0.14);
+}
+
 .costingProductCard:focus-visible {
   outline: 2px solid var(--brand-lilac);
   outline-offset: 2px;
