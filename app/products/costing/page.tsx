@@ -1179,6 +1179,32 @@ export default function ProductCostingPage() {
               </p>
             ) : null}
 
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Precio</p>
+                  <strong>{formatClp(selected.costing.priceClp)}</strong>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Costo</p>
+                  <strong>{formatClp(selected.costing.costClp)}</strong>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <p className="muted">Margen</p>
+                  <strong>
+                    {selected.costing.marginClp === null || selected.costing.marginPct === null
+                      ? 'N/D'
+                      : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
+                  </strong>
+                </div>
+              </div>
+              {hasMissingPrice(selected.costing) ? (
+                <p className="calloutWarning" style={{ marginTop: 8 }}>
+                  Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
+                </p>
+              ) : null}
+            </div>
+
             <section className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <h3 style={{ marginTop: 0 }}>Acciones</h3>
               <div style={{ display: 'grid', gap: 10 }}>
@@ -1200,32 +1226,6 @@ export default function ProductCostingPage() {
                 ))}
               </div>
             </section>
-
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
-                <div className="card" style={{ marginBottom: 0 }}>
-                  <p className="muted">Precio</p>
-                  <strong>{formatClp(selected.costing.priceClp)}</strong>
-                </div>
-                <div className="card" style={{ marginBottom: 0 }}>
-                  <p className="muted">Costo</p>
-                  <strong>{formatClp(selected.costing.costClp)}</strong>
-                </div>
-                <div className="card" style={{ marginBottom: 0 }}>
-                  <p className="muted">Margen</p>
-                  <strong>
-                    {selected.costing.marginClp === null || selected.costing.marginPct === null
-                      ? 'N/D'
-                      : `${formatClp(selected.costing.marginClp)} (${formatPct(selected.costing.marginPct)})`}
-                  </strong>
-                </div>
-              </div>
-              {hasMissingPrice(selected.costing) ? (
-                <p className="calloutWarning" style={{ marginTop: 10 }}>
-                  Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
-                </p>
-              ) : null}
-            </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 14px' }}>
               {selected.costing.badges.map((badge) => (
