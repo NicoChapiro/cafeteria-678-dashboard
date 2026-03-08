@@ -605,6 +605,7 @@ export default function ProductCostingPage() {
   const drawerActions = selected
     ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
     : [];
+  const [primaryDrawerAction, ...secondaryDrawerActions] = drawerActions;
   const primaryDrawerIssueText = selected
     ? selected.costing.unsupportedLineTypesFound
       ? 'Este producto tiene sub-recetas no soportadas en Mockup 1 V1.'
@@ -1208,7 +1209,37 @@ export default function ProductCostingPage() {
             <section className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <h3 style={{ marginTop: 0 }}>Acciones</h3>
               <div style={{ display: 'grid', gap: 10 }}>
-                {drawerActions.map((action) => (
+                {primaryDrawerAction ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 14,
+                      border: '1px solid rgba(72, 102, 48, 0.24)',
+                      background: 'linear-gradient(145deg, rgba(72, 102, 48, 0.12), rgba(214, 186, 232, 0.16))',
+                      borderRadius: 12,
+                      padding: '14px 16px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: 17 }}>{primaryDrawerAction.label}</strong>
+                        <span className={`badge badge--${primaryDrawerAction.tone}`}>
+                          {primaryDrawerAction.tone === 'warn' ? 'Requiere atención' : 'Info'}
+                        </span>
+                      </div>
+                      {primaryDrawerAction.description ? (
+                        <p className="muted" style={{ margin: '8px 0 0' }}>{primaryDrawerAction.description}</p>
+                      ) : null}
+                    </div>
+                    <Link className="btn" href={primaryDrawerAction.href} style={{ whiteSpace: 'nowrap', alignSelf: 'center' }}>
+                      Ir primero
+                    </Link>
+                  </div>
+                ) : null}
+
+                {secondaryDrawerActions.map((action) => (
                   <div key={`${action.href}-${action.label}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                     <div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
