@@ -1130,32 +1130,45 @@ export default function ProductCostingPage() {
               marginBottom: 0,
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-                  <h2 style={{ margin: 0 }}>{selected.product.name}</h2>
-                  {selectedMarginStatus ? (
-                    <span className={`marginPill marginPill--${selectedMarginStatus.tone}`}>{selectedMarginStatus.display}</span>
-                  ) : null}
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 2,
+                background: 'var(--card)',
+                paddingBottom: 10,
+                marginBottom: 12,
+                borderBottom: '1px solid var(--border)',
+                boxShadow: '0 1px 0 rgba(15, 23, 42, 0.04)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                    <h2 style={{ margin: 0 }}>{selected.product.name}</h2>
+                    {selectedMarginStatus ? (
+                      <span className={`marginPill marginPill--${selectedMarginStatus.tone}`}>{selectedMarginStatus.display}</span>
+                    ) : null}
+                  </div>
+                  <p className="muted" style={{ marginTop: 4 }}>
+                    {branch} · {asOfDate}
+                  </p>
+                  <Link href={`/products/${selected.product.id}`} style={{ fontSize: 12, fontWeight: 600 }}>
+                    Ver producto
+                  </Link>
                 </div>
-                <p className="muted" style={{ marginTop: 4 }}>
-                  {branch} · {asOfDate}
-                </p>
-                <Link href={`/products/${selected.product.id}`} style={{ fontSize: 12, fontWeight: 600 }}>
-                  Ver producto
-                </Link>
+                <button
+                  className="btnSecondary"
+                  onClick={() => {
+                    closeDrawer();
+                    }}
+                  aria-label="Cerrar detalle"
+                  type="button"
+                  ref={drawerCloseButtonRef}
+                >
+                  Cerrar
+                </button>
               </div>
-              <button
-                className="btnSecondary"
-                onClick={() => {
-                  closeDrawer();
-                  }}
-                aria-label="Cerrar detalle"
-                type="button"
-                ref={drawerCloseButtonRef}
-              >
-                Cerrar
-              </button>
             </div>
 
             {primaryDrawerIssueText ? (
