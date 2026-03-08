@@ -542,7 +542,7 @@ export default function ProductCostingPage() {
 
   const issuesSummaryText =
     issueStats.issues > 0
-      ? `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.unsupportedRecipe} sub-recetas`
+      ? `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.missingCostItems} faltan costos · ${issueStats.unsupportedRecipe} sub-recetas`
       : 'Sin problemas detectados para esta sucursal y fecha.';
 
   const activeIssueLabel =
