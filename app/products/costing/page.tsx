@@ -128,7 +128,12 @@ function hasUnsupportedRecipe(costing: ProductAsOfResult): boolean {
 }
 
 function hasIssuesCosting(costing: ProductAsOfResult): boolean {
-  return hasMissingPrice(costing) || hasMissingCosts(costing) || hasUnsupportedRecipe(costing);
+  return (
+    hasMissingPrice(costing) ||
+    hasMissingCosts(costing) ||
+    hasMissingCostItems(costing) ||
+    hasUnsupportedRecipe(costing)
+  );
 }
 
 type DrawerAction = {
