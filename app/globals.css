@@ -55,6 +55,28 @@ a:hover { color: var(--brand-orange); }
   margin-bottom: 16px;
 }
 
+.costingProductCard {
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
+}
+
+.costingProductCard:hover {
+  border-color: rgba(72, 102, 48, 0.42);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.costingProductCard:focus-visible {
+  outline: 2px solid var(--brand-lilac);
+  outline-offset: 2px;
+  border-color: rgba(72, 102, 48, 0.5);
+  box-shadow: 0 0 0 4px rgba(214, 186, 232, 0.26), 0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+.costingProductCard:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
 .cardTitle { margin: 0 0 8px 0; font-size: 18px; }
 .muted { color: var(--muted); margin: 0; }
 

@@ -986,7 +986,7 @@ export default function ProductCostingPage() {
 
           return (<button
             key={product.id}
-            className="card"
+            className="card costingProductCard"
             style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
             onClick={() => {
               openDrawer(product.id);
