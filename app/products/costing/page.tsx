@@ -723,33 +723,33 @@ export default function ProductCostingPage() {
         <div className="costingSummaryLayout">
           <div style={{ minWidth: 0 }}>
             <strong>Resumen</strong>
-            <p className="muted" style={{ margin: '4px 0 0' }}>
+            <p className="muted" style={{ margin: '2px 0 0', fontSize: 13 }}>
               Mostrando {filteredSortedProducts.length} de {issueStats.total} productos
             </p>
             <div
               className="costingSummaryMiniBlocks"
               style={{
                 display: 'grid',
-                gap: 6,
+                gap: 10,
                 gridTemplateColumns: 'repeat(2, minmax(180px, 1fr))',
-                marginTop: 6,
+                marginTop: 8,
               }}
             >
-              <div>
+              <div className="costingSummaryBlock costingSummaryBlock--primary">
                 <p className="muted" style={{ margin: 0, fontSize: 12 }}>Vista</p>
-                <p style={{ margin: '2px 0 0', fontWeight: 600 }}>{activeIssueLabel}</p>
+                <p style={{ margin: '4px 0 0', fontWeight: 700, fontSize: 16 }}>{activeIssueLabel}</p>
               </div>
-              <div>
+              <div className="costingSummaryBlock costingSummaryBlock--primary">
                 <p className="muted" style={{ margin: 0, fontSize: 12 }}>Impacto</p>
-                <p style={{ margin: '2px 0 0', fontWeight: 600 }}>
+                <p style={{ margin: '4px 0 0', fontWeight: 700, fontSize: 16 }}>
                   {filteredSortedProducts.length} {onlyIssues ? 'por resolver' : 'en vista'}
                 </p>
               </div>
-              <div>
+              <div className="costingSummaryBlock costingSummaryBlock--secondary">
                 <p className="muted" style={{ margin: 0, fontSize: 12 }}>Issues</p>
                 <p className="muted" style={{ margin: '2px 0 0' }}>{issuesSummaryText}</p>
               </div>
-              <div>
+              <div className="costingSummaryBlock costingSummaryBlock--secondary">
                 <p className="muted" style={{ margin: 0, fontSize: 12 }}>Acción</p>
                 <p className="muted" style={{ margin: '2px 0 0' }}>{activeIssueActionText}</p>
               </div>
@@ -901,6 +901,19 @@ export default function ProductCostingPage() {
           grid-template-columns: 1fr !important;
         }
 
+        .costingSummaryBlock {
+          border-radius: 10px;
+          padding: 8px 10px;
+        }
+
+        .costingSummaryBlock--primary {
+          background: rgba(72, 102, 48, 0.08);
+        }
+
+        .costingSummaryBlock--secondary {
+          background: rgba(72, 102, 48, 0.03);
+        }
+
         .costingSummaryActionsArea {
           display: grid;
           gap: 8px;
@@ -943,8 +956,6 @@ export default function ProductCostingPage() {
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
-          const compactMetricStyle = { margin: '4px 0', fontSize: 14, lineHeight: 1.3 };
-          const compactSectionGap = 10;
 
           return (<button
             key={product.id}
