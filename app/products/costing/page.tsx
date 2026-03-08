@@ -585,6 +585,28 @@ export default function ProductCostingPage() {
   const drawerActions = selected
     ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
     : [];
+  const primaryDrawerIssueText = selected
+    ? selected.costing.unsupportedLineTypesFound
+      ? 'Este producto tiene sub-recetas no soportadas en Mockup 1 V1.'
+      : selected.costing.missingItems.length > 0
+        ? `Este producto tiene ${selected.costing.missingItems.length} item(s) sin costo.`
+        : selected.costing.priceClp === null
+          ? 'Este producto no tiene precio vigente para la sucursal y fecha seleccionadas.'
+          : selected.costing.costClp === null
+            ? 'Este producto no tiene costo calculable para la sucursal y fecha seleccionadas.'
+            : null
+    : null;
+  const primaryDrawerActionText = selected
+    ? selected.costing.unsupportedLineTypesFound
+      ? 'Revisar receta'
+      : selected.costing.missingItems.length > 0
+        ? 'Completar costos de items'
+        : selected.costing.priceClp === null
+          ? 'Definir precio'
+          : selected.costing.costClp === null
+            ? 'Definir costo'
+            : null
+    : null;
 
   useEffect(() => {
     if (!selectedProductId) {
@@ -1113,6 +1135,14 @@ export default function ProductCostingPage() {
               </button>
             </div>
 
+            {primaryDrawerIssueText ? (
+              <p className="calloutWarning" style={{ marginTop: 12, marginBottom: 0 }}>
+                <strong>{primaryDrawerIssueText}</strong>
+                <br />
+                <span className="muted">Acción sugerida: {primaryDrawerActionText}</span>
+              </p>
+            ) : null}
+
             <section className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <h3 style={{ marginTop: 0 }}>Acciones</h3>
               <div style={{ display: 'grid', gap: 10 }}>
@@ -1225,8 +1255,8 @@ export default function ProductCostingPage() {
               ) : null}
               {selected.costing.unsupportedLineTypesFound ? (
                 <p className="alert" style={{ marginTop: 10 }}>
-                  Se detectaron sub-recetas en esta receta. Mockup 1 V1 no soporta lineType=recipe,
-                  por lo que el costo del producto queda en N/D.
+                  La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
+                  calculan automáticamente. Por eso el costo del producto queda como N/D.
                 </p>
               ) : null}
             </div>
