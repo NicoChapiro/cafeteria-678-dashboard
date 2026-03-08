@@ -619,6 +619,13 @@ export default function ProductCostingPage() {
     ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
     : [];
   const [primaryDrawerAction, ...secondaryDrawerActions] = drawerActions;
+  const showDrawerQuickNav =
+    selected !== null &&
+    (
+      selected.costing.missingItems.length > 0 ||
+      selected.costing.unsupportedLineTypesFound ||
+      secondaryDrawerActions.length > 0
+    );
   const primaryDrawerIssueText = selected
     ? selected.costing.unsupportedLineTypesFound
       ? 'Este producto tiene sub-recetas no soportadas en Mockup 1 V1.'
@@ -1223,43 +1230,45 @@ export default function ProductCostingPage() {
               ) : null}
             </section>
 
-            <section className="card" style={{ ...compactDrawerCardStyle, marginTop: 8, padding: '6px 10px' }} aria-label="Navegación rápida">
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Navegación rápida</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  style={{ fontSize: 12, padding: '4px 10px' }}
-                  onClick={() => {
-                    scrollDrawerSection(actionsSectionRef);
-                  }}
-                >
-                  Acciones
-                </button>
-                <button
-                  type="button"
-                  className="btnSecondary"
-                  style={{ fontSize: 12, padding: '4px 10px' }}
-                  onClick={() => {
-                    scrollDrawerSection(breakdownSectionRef);
-                  }}
-                >
-                  Desglose
-                </button>
-                {selected.costing.missingItems.length > 0 ? (
+            {showDrawerQuickNav ? (
+              <section className="card" style={{ ...compactDrawerCardStyle, marginTop: 8, padding: '6px 10px' }} aria-label="Navegación rápida">
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Navegación rápida</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                   <button
                     type="button"
                     className="btnSecondary"
                     style={{ fontSize: 12, padding: '4px 10px' }}
                     onClick={() => {
-                      scrollDrawerSection(missingItemsSectionRef);
+                      scrollDrawerSection(actionsSectionRef);
                     }}
                   >
-                    Faltantes
+                    Acciones
                   </button>
-                ) : null}
-              </div>
-            </section>
+                  <button
+                    type="button"
+                    className="btnSecondary"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={() => {
+                      scrollDrawerSection(breakdownSectionRef);
+                    }}
+                  >
+                    Desglose
+                  </button>
+                  {selected.costing.missingItems.length > 0 ? (
+                    <button
+                      type="button"
+                      className="btnSecondary"
+                      style={{ fontSize: 12, padding: '4px 10px' }}
+                      onClick={() => {
+                        scrollDrawerSection(missingItemsSectionRef);
+                      }}
+                    >
+                      Faltantes
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
 
             <section ref={actionsSectionRef} className="card" style={compactDrawerCardStyle}>
               <h3 style={compactDrawerSectionTitleStyle}>Acciones</h3>
