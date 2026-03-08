@@ -666,6 +666,10 @@ export default function ProductCostingPage() {
   const compactDrawerCardStyle = { marginTop: 10, marginBottom: 0, padding: '8px 10px' } as const;
   const drawerSectionAnchorOffsetStyle = { scrollMarginTop: 116 } as const;
   const compactDrawerSectionTitleStyle = { margin: '0 0 6px', fontSize: 15, lineHeight: 1.25 } as const;
+  const compactBreakdownSectionStyle = { ...compactDrawerCardStyle, marginTop: 8 } as const;
+  const compactBreakdownTitleStyle = { ...compactDrawerSectionTitleStyle, marginBottom: 4 } as const;
+  const compactTableStyle = { fontSize: 12.5, lineHeight: 1.3 } as const;
+  const compactTableCellStyle = { paddingTop: 5, paddingBottom: 5 } as const;
   const compactDrawerMutedStyle = { margin: '4px 0 0', fontSize: 12 } as const;
 
   useEffect(() => {
@@ -1444,34 +1448,34 @@ export default function ProductCostingPage() {
 
             {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} compact /> : null}
 
-            <section ref={breakdownSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
-              <h3 style={compactDrawerSectionTitleStyle}>Desglose de receta (items)</h3>
+            <section ref={breakdownSectionRef} className="card" style={{ ...compactBreakdownSectionStyle, ...drawerSectionAnchorOffsetStyle }}>
+              <h3 style={compactBreakdownTitleStyle}>Desglose de receta (items)</h3>
               <div className="tableWrap">
-                <table className="table">
+                <table className="table" style={compactTableStyle}>
                   <thead>
                     <tr>
-                      <th>Item</th>
-                      <th>Qty (receta/batch)</th>
-                      <th>Unidad</th>
-                      <th>Costo unitario efectivo</th>
-                      <th>Costo línea (por unidad vendible)</th>
-                      <th>Status</th>
+                      <th style={compactTableCellStyle}>Item</th>
+                      <th style={compactTableCellStyle}>Qty (receta/batch)</th>
+                      <th style={compactTableCellStyle}>Unidad</th>
+                      <th style={compactTableCellStyle}>Costo unitario efectivo</th>
+                      <th style={compactTableCellStyle}>Costo línea (por unidad vendible)</th>
+                      <th style={compactTableCellStyle}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selected.costing.breakdown.map((line) => (
                       <tr key={`${line.itemId}-${line.itemName}`} className={line.status === 'Falta costo' ? 'tableRowMissing' : undefined}>
-                        <td>{line.itemName}</td>
-                        <td>{line.qtyInBase}</td>
-                        <td>{line.unit}</td>
-                        <td>{formatClp(line.effectiveUnitCostClp)}</td>
-                        <td>{formatClp(line.lineCostClp)}</td>
-                        <td>{line.status}</td>
+                        <td style={compactTableCellStyle}>{line.itemName}</td>
+                        <td style={compactTableCellStyle}>{line.qtyInBase}</td>
+                        <td style={compactTableCellStyle}>{line.unit}</td>
+                        <td style={compactTableCellStyle}>{formatClp(line.effectiveUnitCostClp)}</td>
+                        <td style={compactTableCellStyle}>{formatClp(line.lineCostClp)}</td>
+                        <td style={compactTableCellStyle}>{line.status}</td>
                       </tr>
                     ))}
                     {selected.costing.breakdown.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="muted">Sin líneas de item para este producto.</td>
+                        <td colSpan={6} className="muted" style={compactTableCellStyle}>Sin líneas de item para este producto.</td>
                       </tr>
                     ) : null}
                   </tbody>
