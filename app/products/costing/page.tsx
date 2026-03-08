@@ -653,6 +653,7 @@ export default function ProductCostingPage() {
             : null
     : null;
   const compactDrawerCardStyle = { marginTop: 10, marginBottom: 0, padding: '8px 10px' } as const;
+  const drawerSectionAnchorOffsetStyle = { scrollMarginTop: 116 } as const;
   const compactDrawerSectionTitleStyle = { margin: '0 0 6px', fontSize: 15, lineHeight: 1.25 } as const;
   const compactDrawerMutedStyle = { margin: '4px 0 0', fontSize: 12 } as const;
 
@@ -1274,7 +1275,7 @@ export default function ProductCostingPage() {
               </section>
             ) : null}
 
-            <section ref={actionsSectionRef} className="card" style={compactDrawerCardStyle}>
+            <section ref={actionsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
               <h3 style={compactDrawerSectionTitleStyle}>Acciones</h3>
               <div style={{ display: 'grid', gap: 8 }}>
                 {primaryDrawerAction ? (
@@ -1382,7 +1383,7 @@ export default function ProductCostingPage() {
 
             {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} compact /> : null}
 
-            <section ref={breakdownSectionRef} className="card" style={compactDrawerCardStyle}>
+            <section ref={breakdownSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
               <h3 style={compactDrawerSectionTitleStyle}>Desglose de receta (items)</h3>
               <div className="tableWrap">
                 <table className="table">
@@ -1417,7 +1418,7 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
-            <section ref={missingItemsSectionRef} className="card" style={compactDrawerCardStyle}>
+            <section ref={missingItemsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 5, marginBottom: 0, paddingLeft: 20 }}>
