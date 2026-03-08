@@ -975,7 +975,7 @@ export default function ProductCostingPage() {
                   <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 6 }}>
                   {costing.badges.map((badge) => (
                     <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
                   ))}
