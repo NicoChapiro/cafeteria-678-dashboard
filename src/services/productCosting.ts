@@ -232,9 +232,6 @@ export function computeProductAsOf(context: ProductCostingContext): ProductAsOfR
       : null;
 
   const badges: ProductCostingBadge[] = [];
-  if (!product.recipeId) {
-    badges.push('Sin receta');
-  }
   if (costClp === null) {
     badges.push('Sin costo');
   }
