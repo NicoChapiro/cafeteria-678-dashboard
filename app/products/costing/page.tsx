@@ -619,6 +619,10 @@ export default function ProductCostingPage() {
     ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate)
     : [];
   const [primaryDrawerAction, ...secondaryDrawerActions] = drawerActions;
+  const isInfoOnlyDrawerAction =
+    primaryDrawerAction !== undefined &&
+    primaryDrawerAction.tone === 'info' &&
+    secondaryDrawerActions.length === 0;
   const showDrawerQuickNav =
     selected !== null &&
     (
@@ -1275,29 +1279,50 @@ export default function ProductCostingPage() {
               <div style={{ display: 'grid', gap: 8 }}>
                 {primaryDrawerAction ? (
                   <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      border: '1px solid rgba(72, 102, 48, 0.24)',
-                      background: 'linear-gradient(145deg, rgba(72, 102, 48, 0.12), rgba(214, 186, 232, 0.16))',
-                      borderRadius: 12,
-                      padding: '12px 14px',
-                    }}
+                    style={isInfoOnlyDrawerAction
+                      ? {
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                        border: '1px solid rgba(214, 186, 232, 0.48)',
+                        background: 'rgba(214, 186, 232, 0.14)',
+                        borderRadius: 10,
+                        padding: '8px 10px',
+                      }
+                      : {
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        border: '1px solid rgba(72, 102, 48, 0.24)',
+                        background: 'linear-gradient(145deg, rgba(72, 102, 48, 0.12), rgba(214, 186, 232, 0.16))',
+                        borderRadius: 12,
+                        padding: '12px 14px',
+                      }}
                   >
                     <div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: 17 }}>{primaryDrawerAction.label}</strong>
+                        <strong style={{ fontSize: isInfoOnlyDrawerAction ? 15 : 17 }}>{primaryDrawerAction.label}</strong>
                         <span className={`badge badge--${primaryDrawerAction.tone}`}>
                           {primaryDrawerAction.tone === 'warn' ? 'Requiere atención' : 'Info'}
                         </span>
                       </div>
                       {primaryDrawerAction.description ? (
-                        <p className="muted" style={{ margin: '6px 0 0' }}>{primaryDrawerAction.description}</p>
+                        <p className="muted" style={{ margin: isInfoOnlyDrawerAction ? '4px 0 0' : '6px 0 0' }}>
+                          {primaryDrawerAction.description}
+                        </p>
                       ) : null}
                     </div>
-                    <Link className="btn" href={primaryDrawerAction.href} style={{ whiteSpace: 'nowrap', alignSelf: 'center', padding: '6px 12px' }}>
+                    <Link
+                      className={isInfoOnlyDrawerAction ? 'btnSecondary' : 'btn'}
+                      href={primaryDrawerAction.href}
+                      style={{
+                        whiteSpace: 'nowrap',
+                        alignSelf: 'center',
+                        padding: isInfoOnlyDrawerAction ? '4px 10px' : '6px 12px',
+                      }}
+                    >
                       Ir primero
                     </Link>
                   </div>
