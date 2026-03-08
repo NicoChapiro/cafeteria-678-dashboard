@@ -1187,7 +1187,7 @@ export default function ProductCostingPage() {
               </p>
             ) : null}
 
-            <div style={{ marginTop: 10 }}>
+            <section className="card" style={{ marginTop: 12, marginBottom: 0, padding: '10px 12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
                 <div className="card" style={{ marginBottom: 0 }}>
                   <p className="muted">Precio</p>
@@ -1211,42 +1211,45 @@ export default function ProductCostingPage() {
                   Falta precio vigente para {branch} al {asOfDate}. Define el precio para completar el margen.
                 </p>
               ) : null}
-            </div>
+            </section>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-              <button
-                type="button"
-                className="btnSecondary"
-                style={{ fontSize: 12, padding: '4px 10px' }}
-                onClick={() => {
-                  scrollDrawerSection(actionsSectionRef);
-                }}
-              >
-                Acciones
-              </button>
-              <button
-                type="button"
-                className="btnSecondary"
-                style={{ fontSize: 12, padding: '4px 10px' }}
-                onClick={() => {
-                  scrollDrawerSection(breakdownSectionRef);
-                }}
-              >
-                Desglose
-              </button>
-              {selected.costing.missingItems.length > 0 ? (
+            <section className="card" style={{ marginTop: 12, marginBottom: 0, padding: '10px 12px' }} aria-label="Navegación rápida">
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Navegación rápida</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                 <button
                   type="button"
                   className="btnSecondary"
                   style={{ fontSize: 12, padding: '4px 10px' }}
                   onClick={() => {
-                    scrollDrawerSection(missingItemsSectionRef);
+                    scrollDrawerSection(actionsSectionRef);
                   }}
                 >
-                  Faltantes
+                  Acciones
                 </button>
-              ) : null}
-            </div>
+                <button
+                  type="button"
+                  className="btnSecondary"
+                  style={{ fontSize: 12, padding: '4px 10px' }}
+                  onClick={() => {
+                    scrollDrawerSection(breakdownSectionRef);
+                  }}
+                >
+                  Desglose
+                </button>
+                {selected.costing.missingItems.length > 0 ? (
+                  <button
+                    type="button"
+                    className="btnSecondary"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={() => {
+                      scrollDrawerSection(missingItemsSectionRef);
+                    }}
+                  >
+                    Faltantes
+                  </button>
+                ) : null}
+              </div>
+            </section>
 
             <section ref={actionsSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <h3 style={{ marginTop: 0 }}>Acciones</h3>
@@ -1327,7 +1330,7 @@ export default function ProductCostingPage() {
               </section>
             ) : null}
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 14px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '12px 0 0' }}>
               {selected.costing.badges.map((badge) => (
                 <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
               ))}
@@ -1335,7 +1338,7 @@ export default function ProductCostingPage() {
 
             {selected.costing.drivers.length > 0 ? <DriverBars drivers={selected.costing.drivers} /> : null}
 
-            <section ref={breakdownSectionRef} style={{ marginTop: 12 }}>
+            <section ref={breakdownSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <h3 style={{ marginTop: 0 }}>Desglose de receta (items)</h3>
               <div className="tableWrap">
                 <table className="table">
@@ -1370,7 +1373,7 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
-            <section ref={missingItemsSectionRef} style={{ marginTop: 12 }}>
+            <section ref={missingItemsSectionRef} className="card" style={{ marginTop: 12, marginBottom: 0 }}>
               <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
               {selected.costing.missingItems.length > 0 ? (
                 <ul style={{ marginTop: 6 }}>
