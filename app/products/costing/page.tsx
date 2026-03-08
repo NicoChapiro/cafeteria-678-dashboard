@@ -1471,12 +1471,15 @@ export default function ProductCostingPage() {
 
             <section ref={breakdownSectionRef} className="card" style={{ ...compactBreakdownSectionStyle, ...drawerSectionAnchorOffsetStyle }}>
               <h3 style={compactBreakdownTitleStyle}>Desglose de receta (items)</h3>
+              <p className="muted" style={{ margin: '4px 0 10px', fontSize: 12 }}>
+                Batch opcional para ajustes finales del costo por unidad vendible.
+              </p>
               <div className="tableWrap">
                 <table className="table" style={compactTableStyle}>
                   <thead>
                     <tr>
                       <th style={compactTableCellStyle}>Item</th>
-                      <th style={compactTableCellStyle}>Qty (receta/batch)</th>
+                      <th style={compactTableCellStyle}>Qty (receta / batch opcional)</th>
                       <th style={compactTableCellStyle}>Unidad</th>
                       <th style={compactTableCellStyle}>Costo unitario efectivo</th>
                       <th style={compactTableCellStyle}>Costo línea (por unidad vendible)</th>
