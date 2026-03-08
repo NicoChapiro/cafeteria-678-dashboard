@@ -163,6 +163,8 @@ type DrawerAction = {
   description?: string;
 };
 
+type DrawerQuickNavSection = 'actions' | 'breakdown' | 'missingItems';
+
 function buildDrawerActions(productId: string, costing: ProductAsOfResult, branch: Branch, asOfDate: string): DrawerAction[] {
   const actions: DrawerAction[] = [];
 
@@ -356,6 +358,7 @@ export default function ProductCostingPage() {
   const breakdownSectionRef = useRef<HTMLElement | null>(null);
   const missingItemsSectionRef = useRef<HTMLElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const [activeDrawerSection, setActiveDrawerSection] = useState<DrawerQuickNavSection | null>(null);
 
   const scrollDrawerSection = useCallback((ref: RefObject<HTMLElement | null>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -372,10 +375,12 @@ export default function ProductCostingPage() {
   const openDrawer = useCallback((productId: string) => {
     const activeElement = document.activeElement;
     lastFocusedElementRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+    setActiveDrawerSection(null);
     setSelectedProductId(productId);
   }, []);
 
   const closeDrawer = useCallback(() => {
+    setActiveDrawerSection(null);
     setSelectedProductId(null);
     restoreLastFocus();
   }, [restoreLastFocus]);
@@ -1245,8 +1250,19 @@ export default function ProductCostingPage() {
                   <button
                     type="button"
                     className="btnSecondary"
-                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    style={activeDrawerSection === 'actions'
+                      ? {
+                        fontSize: 12,
+                        padding: '4px 10px',
+                        borderColor: 'var(--brand-green)',
+                        background: 'rgba(72, 102, 48, 0.16)',
+                        color: 'var(--brand-green)',
+                        boxShadow: 'inset 0 0 0 1px rgba(72, 102, 48, 0.28)',
+                        fontWeight: 700,
+                      }
+                      : { fontSize: 12, padding: '4px 10px' }}
                     onClick={() => {
+                      setActiveDrawerSection('actions');
                       scrollDrawerSection(actionsSectionRef);
                     }}
                   >
@@ -1255,8 +1271,19 @@ export default function ProductCostingPage() {
                   <button
                     type="button"
                     className="btnSecondary"
-                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    style={activeDrawerSection === 'breakdown'
+                      ? {
+                        fontSize: 12,
+                        padding: '4px 10px',
+                        borderColor: 'var(--brand-green)',
+                        background: 'rgba(72, 102, 48, 0.16)',
+                        color: 'var(--brand-green)',
+                        boxShadow: 'inset 0 0 0 1px rgba(72, 102, 48, 0.28)',
+                        fontWeight: 700,
+                      }
+                      : { fontSize: 12, padding: '4px 10px' }}
                     onClick={() => {
+                      setActiveDrawerSection('breakdown');
                       scrollDrawerSection(breakdownSectionRef);
                     }}
                   >
@@ -1266,8 +1293,19 @@ export default function ProductCostingPage() {
                     <button
                       type="button"
                       className="btnSecondary"
-                      style={{ fontSize: 12, padding: '4px 10px' }}
+                      style={activeDrawerSection === 'missingItems'
+                        ? {
+                          fontSize: 12,
+                          padding: '4px 10px',
+                          borderColor: 'var(--brand-green)',
+                          background: 'rgba(72, 102, 48, 0.16)',
+                          color: 'var(--brand-green)',
+                          boxShadow: 'inset 0 0 0 1px rgba(72, 102, 48, 0.28)',
+                          fontWeight: 700,
+                        }
+                        : { fontSize: 12, padding: '4px 10px' }}
                       onClick={() => {
+                        setActiveDrawerSection('missingItems');
                         scrollDrawerSection(missingItemsSectionRef);
                       }}
                     >
