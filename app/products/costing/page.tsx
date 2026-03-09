@@ -1046,6 +1046,64 @@ export default function ProductCostingPage() {
             justify-content: flex-end;
           }
         }
+
+        .costingCardBody {
+          display: grid;
+          gap: 10px;
+          flex: 1 1 auto;
+          align-content: start;
+        }
+
+        .costingCardHeader {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .costingCardBadges {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          gap: 6px;
+          opacity: 0.82;
+        }
+
+        .costingCardKpiCluster {
+          display: grid;
+          gap: 8px;
+          padding: 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(72, 102, 48, 0.16);
+          background: rgba(72, 102, 48, 0.06);
+        }
+
+        .costingCardKpiRow {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 10px;
+        }
+
+        .costingCardKpiLabel {
+          margin: 0;
+          color: var(--muted);
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .costingCardKpiValue {
+          margin: 0;
+          font-size: 17px;
+          font-weight: 800;
+          line-height: 1.2;
+          color: var(--text);
+          text-align: right;
+        }
+
+        .costingCardKpiValue--margin {
+          font-size: 16px;
+        }
       `}</style>
 
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
@@ -1068,33 +1126,35 @@ export default function ProductCostingPage() {
             type="button"
           >
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ display: 'grid', gap: 10, flex: '1 1 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+              <div className="costingCardBody">
+                <div className="costingCardHeader">
                   <h2 className="cardTitle" style={{ marginBottom: 8 }}>{product.name}</h2>
                   <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 6 }}>
+                <div className="costingCardBadges">
                   {costing.badges.map((badge) => (
                     <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
                   ))}
                 </div>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                    gap: 8,
-                  }}
-                >
-                  <p style={{ margin: 0 }}><strong>Costo unitario:</strong> {formatClp(costing.costClp)}</p>
-                  <p style={{ margin: 0 }}><strong>Precio vigente:</strong> {formatClp(costing.priceClp)}</p>
-                  <p style={{ margin: 0, gridColumn: '1 / -1' }}>
-                    <strong>Margen teórico:</strong>{' '}
-                    {costing.marginClp === null || costing.marginPct === null
-                      ? 'N/D'
-                      : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
-                  </p>
+                <div className="costingCardKpiCluster" aria-label="KPIs del producto">
+                  <div className="costingCardKpiRow">
+                    <p className="costingCardKpiLabel">Costo unitario</p>
+                    <p className="costingCardKpiValue">{formatClp(costing.costClp)}</p>
+                  </div>
+                  <div className="costingCardKpiRow">
+                    <p className="costingCardKpiLabel">Precio vigente</p>
+                    <p className="costingCardKpiValue">{formatClp(costing.priceClp)}</p>
+                  </div>
+                  <div className="costingCardKpiRow">
+                    <p className="costingCardKpiLabel">Margen teórico</p>
+                    <p className="costingCardKpiValue costingCardKpiValue--margin">
+                      {costing.marginClp === null || costing.marginPct === null
+                        ? 'N/D'
+                        : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
+                    </p>
+                  </div>
                 </div>
 
                 {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
@@ -1507,9 +1567,9 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
-            <section ref={missingItemsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
-              <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
-              {selected.costing.missingItems.length > 0 ? (
+            {drawerMissingItemsCount > 0 ? (
+              <section ref={missingItemsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
+                <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
                 <ul style={{ marginTop: 5, marginBottom: 0, paddingLeft: 20 }}>
                   {selected.costing.missingItems.map((entry) => (
                     <li key={`${entry.id}-${entry.name}`}>
@@ -1520,21 +1580,33 @@ export default function ProductCostingPage() {
                     </li>
                   ))}
                 </ul>
-              ) : null}
-              {selected.costing.costClp === null &&
-              selected.costing.missingItems.length === 0 &&
-              !selected.costing.unsupportedLineTypesFound ? (
-                <p className="calloutWarning" style={{ marginTop: 10 }}>
-                  Este producto no tiene costos configurados (ni receta costead(a), ni costo manual). Revisa la ficha del producto para definirlos.
-                </p>
-              ) : null}
-              {selected.costing.unsupportedLineTypesFound ? (
-                <p className="alert" style={{ marginTop: 10 }}>
-                  La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
-                  calculan automáticamente. Por eso el costo del producto queda como N/D.
-                </p>
-              ) : null}
-            </section>
+                {selected.costing.unsupportedLineTypesFound ? (
+                  <p className="alert" style={{ marginTop: 10 }}>
+                    La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
+                    calculan automáticamente. Por eso el costo del producto queda como N/D.
+                  </p>
+                ) : null}
+              </section>
+            ) : !showHealthyDrawerSummary ? (
+              <section
+                ref={missingItemsSectionRef}
+                className="card"
+                style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle, padding: '6px 10px' }}
+              >
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Sin costos faltantes.</p>
+                {selected.costing.costClp === null && !selected.costing.unsupportedLineTypesFound ? (
+                  <p className="calloutWarning" style={{ marginTop: 8 }}>
+                    Este producto no tiene costos configurados (ni receta costead(a), ni costo manual). Revisa la ficha del producto para definirlos.
+                  </p>
+                ) : null}
+                {selected.costing.unsupportedLineTypesFound ? (
+                  <p className="alert" style={{ marginTop: 8 }}>
+                    La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
+                    calculan automáticamente. Por eso el costo del producto queda como N/D.
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
           </aside>
         </>
       ) : null}
