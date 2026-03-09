@@ -1567,9 +1567,9 @@ export default function ProductCostingPage() {
               </div>
             </section>
 
-            <section ref={missingItemsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
-              <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
-              {selected.costing.missingItems.length > 0 ? (
+            {drawerMissingItemsCount > 0 ? (
+              <section ref={missingItemsSectionRef} className="card" style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle }}>
+                <strong>Faltan costos: {selected.costing.missingItems.length} items</strong>
                 <ul style={{ marginTop: 5, marginBottom: 0, paddingLeft: 20 }}>
                   {selected.costing.missingItems.map((entry) => (
                     <li key={`${entry.id}-${entry.name}`}>
@@ -1580,21 +1580,33 @@ export default function ProductCostingPage() {
                     </li>
                   ))}
                 </ul>
-              ) : null}
-              {selected.costing.costClp === null &&
-              selected.costing.missingItems.length === 0 &&
-              !selected.costing.unsupportedLineTypesFound ? (
-                <p className="calloutWarning" style={{ marginTop: 10 }}>
-                  Este producto no tiene costos configurados (ni receta costead(a), ni costo manual). Revisa la ficha del producto para definirlos.
-                </p>
-              ) : null}
-              {selected.costing.unsupportedLineTypesFound ? (
-                <p className="alert" style={{ marginTop: 10 }}>
-                  La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
-                  calculan automáticamente. Por eso el costo del producto queda como N/D.
-                </p>
-              ) : null}
-            </section>
+                {selected.costing.unsupportedLineTypesFound ? (
+                  <p className="alert" style={{ marginTop: 10 }}>
+                    La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
+                    calculan automáticamente. Por eso el costo del producto queda como N/D.
+                  </p>
+                ) : null}
+              </section>
+            ) : !showHealthyDrawerSummary ? (
+              <section
+                ref={missingItemsSectionRef}
+                className="card"
+                style={{ ...compactDrawerCardStyle, ...drawerSectionAnchorOffsetStyle, padding: '6px 10px' }}
+              >
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Sin costos faltantes.</p>
+                {selected.costing.costClp === null && !selected.costing.unsupportedLineTypesFound ? (
+                  <p className="calloutWarning" style={{ marginTop: 8 }}>
+                    Este producto no tiene costos configurados (ni receta costead(a), ni costo manual). Revisa la ficha del producto para definirlos.
+                  </p>
+                ) : null}
+                {selected.costing.unsupportedLineTypesFound ? (
+                  <p className="alert" style={{ marginTop: 8 }}>
+                    La receta contiene líneas de sub-receta (lineType=recipe), que en Mockup 1 V1 aún no se
+                    calculan automáticamente. Por eso el costo del producto queda como N/D.
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
           </aside>
         </>
       ) : null}
