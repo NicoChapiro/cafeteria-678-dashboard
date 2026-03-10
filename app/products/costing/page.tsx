@@ -596,6 +596,29 @@ export default function ProductCostingPage() {
     issueType === 'missingCostItems' ? 'Solo faltan costos' :
     'Solo sub-recetas';
 
+  const isZeroResultsState = filteredSortedProducts.length === 0;
+  const isHealthyView = !onlyIssues && issueStats.issues === 0;
+  const isZeroIssueBucketState = onlyIssues && filteredSortedProducts.length === 0;
+
+  const emptyStateTitle =
+    isZeroIssueBucketState
+      ? 'No hay productos para este filtro'
+      : isZeroResultsState
+        ? 'No encontramos productos con esos filtros'
+        : null;
+  const emptyStateDescription =
+    isZeroIssueBucketState
+      ? 'Prueba otro tipo de problema o vuelve a “Todos”.'
+      : isZeroResultsState
+        ? 'Ajusta la búsqueda, fecha o sucursal para ver resultados.'
+        : null;
+  const showResetEmptyStateAction = isZeroResultsState && (onlyIssues || search.trim().length > 0);
+
+  const healthyStateTitle = isHealthyView ? 'No hay alertas activas' : null;
+  const healthyStateDescription = isHealthyView
+    ? 'Todos los productos visibles tienen costo y precio calculables para esta sucursal y fecha.'
+    : null;
+
   const activeIssueActionText =
     !onlyIssues ? 'Revisión general' :
     issueType === 'any' ? 'Resolver problemas detectados' :
@@ -1115,106 +1138,120 @@ export default function ProductCostingPage() {
         }
       `}</style>
 
-      <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-        {filteredSortedProducts.map(({ product, costing }) => {
-          const marginStatus = getMarginStatus(costing.marginPct);
-          const hasIssues = hasIssuesCosting(costing);
-          const cardActionLabel = getCardActionLabel(costing);
-          const isSelectedCard = selectedProductId === product.id;
+      {isHealthyView && healthyStateTitle && healthyStateDescription ? (
+        <section
+          className="card"
+          aria-live="polite"
+          style={{
+            marginBottom: 12,
+            borderColor: 'rgba(72, 102, 48, 0.24)',
+            background: 'rgba(72, 102, 48, 0.06)',
+            padding: '10px 12px',
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 700, color: 'var(--brand-green)' }}>{healthyStateTitle}</p>
+          <p className="muted" style={{ margin: '4px 0 0', fontSize: 13 }}>{healthyStateDescription}</p>
+        </section>
+      ) : null}
 
-          return (<button
-            key={product.id}
-            className={`card costingProductCard${isSelectedCard ? ' costingProductCard--selected' : ''}`}
-            style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
-            onClick={() => {
-              openDrawer(product.id);
-            }}
-            aria-label={`Abrir detalle de ${product.name}`}
-            aria-haspopup="dialog"
-            aria-expanded={isSelectedCard}
-            type="button"
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div className="costingCardBody">
-                <div className="costingCardHeader">
-                  <h2 className="cardTitle" style={{ marginBottom: 8 }}>{product.name}</h2>
-                  <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
-                </div>
-
-                <div className="costingCardBadges">
-                  {costing.badges.map((badge) => (
-                    <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
-                  ))}
-                </div>
-
-                <div className="costingCardKpiCluster" aria-label="KPIs del producto">
-                  <div className="costingCardKpiRow">
-                    <p className="costingCardKpiLabel">Costo unitario</p>
-                    <p className="costingCardKpiValue">{formatClp(costing.costClp)}</p>
-                  </div>
-                  <div className="costingCardKpiRow">
-                    <p className="costingCardKpiLabel">Precio vigente</p>
-                    <p className="costingCardKpiValue">{formatClp(costing.priceClp)}</p>
-                  </div>
-                  <div className="costingCardKpiRow">
-                    <p className="costingCardKpiLabel">Margen teórico</p>
-                    <p className="costingCardKpiValue costingCardKpiValue--margin">
-                      {costing.marginClp === null || costing.marginPct === null
-                        ? 'N/D'
-                        : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
-                    </p>
-                  </div>
-                </div>
-
-                {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
-              </div>
-
-              <div className="costingCardFooter">
-                {hasIssues ? (
-                  <button
-                    className="btnSecondary"
-                    aria-label={`Abrir acción para ${product.name}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openDrawer(product.id);
-                    }}
-                    style={{ fontSize: 12, padding: '4px 10px' }}
-                    type="button"
-                  >
-                    {cardActionLabel}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </button>
-          );
-        })}
-      </section>
-
-      {filteredSortedProducts.length === 0 ? (
-        onlyIssues ? (
-          <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
-            <p className="calloutInfo" style={{ margin: 0 }}>
-              No hay productos con problemas para esta combinación de filtros.
-            </p>
-            <div>
+      {isZeroResultsState && emptyStateTitle && emptyStateDescription ? (
+        <section className="card" style={{ padding: '14px 16px' }}>
+          <p style={{ margin: 0, fontWeight: 700 }}>{emptyStateTitle}</p>
+          <p className="muted" style={{ margin: '6px 0 0' }}>{emptyStateDescription}</p>
+          {showResetEmptyStateAction ? (
+            <div style={{ marginTop: 10 }}>
               <button
                 type="button"
                 className="btnSecondary"
                 onClick={() => {
                   setOnlyIssues(false);
                   setIssueType('any');
+                  setSearch('');
                   setSelectedProductId(null);
                 }}
               >
                 Mostrar todos
               </button>
             </div>
-          </div>
-        ) : (
-          <p className="muted" style={{ marginTop: 16 }}>Sin productos para los filtros seleccionados.</p>
-        )
-      ) : null}
+          ) : null}
+        </section>
+      ) : (
+        <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          {filteredSortedProducts.map(({ product, costing }) => {
+            const marginStatus = getMarginStatus(costing.marginPct);
+            const hasIssues = hasIssuesCosting(costing);
+            const cardActionLabel = getCardActionLabel(costing);
+            const isSelectedCard = selectedProductId === product.id;
+
+            return (<button
+              key={product.id}
+              className={`card costingProductCard${isSelectedCard ? ' costingProductCard--selected' : ''}`}
+              style={{ cursor: 'pointer', marginBottom: 0, textAlign: 'left', width: '100%' }}
+              onClick={() => {
+                openDrawer(product.id);
+              }}
+              aria-label={`Abrir detalle de ${product.name}`}
+              aria-haspopup="dialog"
+              aria-expanded={isSelectedCard}
+              type="button"
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div className="costingCardBody">
+                  <div className="costingCardHeader">
+                    <h2 className="cardTitle" style={{ marginBottom: 8 }}>{product.name}</h2>
+                    <span className={`marginPill marginPill--${marginStatus.tone}`}>{marginStatus.display}</span>
+                  </div>
+
+                  <div className="costingCardBadges">
+                    {costing.badges.map((badge) => (
+                      <span key={badge} className={`badge badge--${getBadgeTone(badge)}`}>{badge}</span>
+                    ))}
+                  </div>
+
+                  <div className="costingCardKpiCluster" aria-label="KPIs del producto">
+                    <div className="costingCardKpiRow">
+                      <p className="costingCardKpiLabel">Costo unitario</p>
+                      <p className="costingCardKpiValue">{formatClp(costing.costClp)}</p>
+                    </div>
+                    <div className="costingCardKpiRow">
+                      <p className="costingCardKpiLabel">Precio vigente</p>
+                      <p className="costingCardKpiValue">{formatClp(costing.priceClp)}</p>
+                    </div>
+                    <div className="costingCardKpiRow">
+                      <p className="costingCardKpiLabel">Margen teórico</p>
+                      <p className="costingCardKpiValue costingCardKpiValue--margin">
+                        {costing.marginClp === null || costing.marginPct === null
+                          ? 'N/D'
+                          : `${formatClp(costing.marginClp)} (${formatPct(costing.marginPct)})`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
+                </div>
+
+                <div className="costingCardFooter">
+                  {hasIssues ? (
+                    <button
+                      className="btnSecondary"
+                      aria-label={`Abrir acción para ${product.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openDrawer(product.id);
+                      }}
+                      style={{ fontSize: 12, padding: '4px 10px' }}
+                      type="button"
+                    >
+                      {cardActionLabel}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </button>
+            );
+          })}
+        </section>
+      )}
 
       {selected ? (
         <>
