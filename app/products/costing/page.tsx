@@ -628,7 +628,8 @@ export default function ProductCostingPage() {
   const drawerBreakdownCount = selected?.costing.breakdown.length ?? 0;
   const drawerBreakdownMissingCount = selected?.costing.breakdown.filter((line) => line.status === 'Falta costo').length ?? 0;
   const drawerTopDriverName = selected?.costing.drivers[0]?.itemName ?? null;
-  const showDrawerBreakdownPreview = selected !== null && selected.costing.breakdown.length > 0;
+  const showDrawerBreakdownPreview =
+    selected !== null && (drawerBreakdownCount > 1 || drawerBreakdownMissingCount > 0);
   const drawerMissingItemsCount = selected?.costing.missingItems.length ?? 0;
   const isInfoOnlyDrawerAction =
     primaryDrawerAction !== undefined &&
