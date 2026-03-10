@@ -1050,7 +1050,7 @@ export default function ProductCostingPage() {
 
         .costingCardBody {
           display: grid;
-          gap: 10px;
+          gap: 8px;
           flex: 1 1 auto;
           align-content: start;
         }
@@ -1066,17 +1066,25 @@ export default function ProductCostingPage() {
           display: flex;
           flex-wrap: wrap;
           align-items: flex-start;
-          gap: 6px;
+          gap: 5px;
           opacity: 0.82;
         }
 
         .costingCardKpiCluster {
           display: grid;
-          gap: 8px;
-          padding: 10px;
+          gap: 7px;
+          padding: 9px;
           border-radius: 10px;
           border: 1px solid rgba(72, 102, 48, 0.16);
           background: rgba(72, 102, 48, 0.06);
+        }
+
+        .costingCardFooter {
+          margin-top: 10px;
+          min-height: 30px;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
         }
 
         .costingCardKpiRow {
@@ -1107,7 +1115,7 @@ export default function ProductCostingPage() {
         }
       `}</style>
 
-      <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+      <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         {filteredSortedProducts.map(({ product, costing }) => {
           const marginStatus = getMarginStatus(costing.marginPct);
           const hasIssues = hasIssuesCosting(costing);
@@ -1161,7 +1169,7 @@ export default function ProductCostingPage() {
                 {costing.drivers.length > 0 ? <DriverBars drivers={costing.drivers.slice(0, 3)} /> : null}
               </div>
 
-              <div style={{ marginTop: 12, minHeight: 30, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <div className="costingCardFooter">
                 {hasIssues ? (
                   <button
                     className="btnSecondary"
