@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
@@ -108,7 +110,29 @@ function findEffectiveManualCost(versions: ProductCostVersion[], asOfDate: Date)
 }
 
 export default function DashboardPage() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selectedBranch, setSelectedBranch] = useState<DashboardBranch>('Consolidado');
+
+  const dashboardReturnTo = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
+
+  function buildProductHref(productId: string, focus?: 'base' | 'price' | 'manualCost' | 'recipePreview') {
+    const params = new URLSearchParams();
+    params.set('returnTo', dashboardReturnTo);
+
+    if (focus) {
+      params.set('focus', focus);
+      if (selectedBranch !== 'Consolidado') {
+        params.set('branch', selectedBranch);
+      }
+    }
+
+    return `/products/${productId}?${params.toString()}`;
+  }
+
   const [fromDate, setFromDate] = useState<string>(defaultFromIsoDate());
   const [toDate, setToDate] = useState<string>(todayIsoDate());
   const [salesRows, setSalesRows] = useState<SalesDaily[]>([]);
@@ -413,7 +437,7 @@ export default function DashboardPage() {
                 <summary>Ver productos (máximo 10)</summary>
                 <ul style={{ marginBottom: 0 }}>
                   {dashboard.alerts.sinReceta.slice(0, 10).map((row) => (
-                    <li key={row.productId}>{row.productName}</li>
+                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'base')}>{row.productName}</Link></li>
                   ))}
                 </ul>
               </details>
@@ -428,7 +452,7 @@ export default function DashboardPage() {
                 <summary>Ver productos (máximo 10)</summary>
                 <ul style={{ marginBottom: 0 }}>
                   {dashboard.alerts.sinCosto.slice(0, 10).map((row) => (
-                    <li key={row.productId}>{row.productName}</li>
+                    <li key={row.productId}><Link href={buildProductHref(row.productId, row.recipeId ? 'recipePreview' : 'manualCost')}>{row.productName}</Link></li>
                   ))}
                 </ul>
               </details>
@@ -443,7 +467,7 @@ export default function DashboardPage() {
                 <summary>Ver productos (máximo 10)</summary>
                 <ul style={{ marginBottom: 0 }}>
                   {dashboard.alerts.sinPrecio.slice(0, 10).map((row) => (
-                    <li key={row.productId}>{row.productName}</li>
+                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'price')}>{row.productName}</Link></li>
                   ))}
                 </ul>
               </details>
@@ -473,7 +497,7 @@ export default function DashboardPage() {
           <tbody>
             {dashboard.rows.map((row) => (
               <tr key={row.productId}>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}><Link href={buildProductHref(row.productId)}>{row.productName}</Link></td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasLista.toLocaleString('es-CL')}</td>
