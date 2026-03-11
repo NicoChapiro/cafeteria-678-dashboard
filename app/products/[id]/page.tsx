@@ -5,6 +5,9 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
+import FieldHint from '@/src/components/feedback/FieldHint';
+import InlineAlert from '@/src/components/feedback/InlineAlert';
+import Toast from '@/src/components/feedback/Toast';
 import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type {
   Branch,
@@ -42,6 +45,7 @@ const EMPTY_FORM: MoneyVersionForm = {
 };
 
 type ProductFocusTarget = 'base' | 'price' | 'manualCost' | 'recipePreview';
+type ProductPageState = 'loading' | 'ready' | 'missing';
 
 function isProductFocusTarget(value: string | null): value is ProductFocusTarget {
   return value === 'base' || value === 'price' || value === 'manualCost' || value === 'recipePreview';
@@ -112,6 +116,7 @@ export default function ProductDetailPage() {
   const [activeFocus, setActiveFocus] = useState<ProductFocusTarget | null>(null);
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [pageState, setPageState] = useState<ProductPageState>('loading');
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
   const [baseError, setBaseError] = useState<string | null>(null);
@@ -143,10 +148,13 @@ export default function ProductDetailPage() {
   });
 
   const [marginAsOfDate, setMarginAsOfDate] = useState<string>(todayInputValue());
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    setPageState('loading');
     const found = getProduct(productId);
     setProduct(found ?? null);
+    setPageState(found ? 'ready' : 'missing');
     setAllRecipes(listRecipes());
     setPricesByBranch({
       Santiago: listProductPrices(productId, 'Santiago'),
@@ -290,15 +298,30 @@ export default function ProductDetailPage() {
     return result;
   }, [costsByBranch, marginAsOfDate, pricesByBranch, product]);
 
-  if (!product) {
+  if (pageState === 'loading') {
     return (
       <main>
-        <h1>Producto no encontrado</h1>
+        <h1>Cargando producto…</h1>
+        <p>Estamos preparando la información para edición.</p>
+      </main>
+    );
+  }
+
+  if (pageState === 'missing') {
+    return (
+      <main>
+        <h1>No encontramos este producto</h1>
+        <p>Puede que haya sido eliminado o que el enlace esté incompleto.</p>
         <p>
           <Link href="/products">Volver a productos</Link>
         </p>
       </main>
     );
+  }
+
+
+  if (!product) {
+    return null;
   }
 
   function onProductSubmit(event: FormEvent<HTMLFormElement>) {
@@ -334,6 +357,7 @@ export default function ProductDetailPage() {
       });
 
       setProduct(updated);
+      setSuccessMessage('Datos base guardados correctamente.');
     } catch (submitError) {
       setBaseError(
         submitError instanceof Error ? submitError.message : 'Error al actualizar producto',
@@ -372,7 +396,7 @@ export default function ProductDetailPage() {
 
     const amount = Number(form.amount);
     if (!form.amount.trim() || !Number.isFinite(amount) || amount < 0) {
-      return 'Falta priceGrossClp.';
+      return 'Ingresa un precio bruto válido.';
     }
 
     return null;
@@ -387,7 +411,7 @@ export default function ProductDetailPage() {
 
     const amount = Number(form.amount);
     if (!form.amount.trim() || !Number.isFinite(amount) || amount < 0) {
-      return 'Falta costGrossClp.';
+      return 'Ingresa un costo bruto válido.';
     }
 
     return null;
@@ -401,7 +425,7 @@ export default function ProductDetailPage() {
         throw new Error('producto no encontrado');
       }
 
-      const parsed = parseMoneyVersion(priceForms[branch], 'priceGrossClp');
+      const parsed = parseMoneyVersion(priceForms[branch], 'precio');
       const updated = addProductPriceVersion(product.id, branch, {
         validFrom: parsed.validFrom,
         priceGrossClp: parsed.amount,
@@ -412,6 +436,7 @@ export default function ProductDetailPage() {
         ...prev,
         [branch]: { ...EMPTY_FORM },
       }));
+      setSuccessMessage(`Precio agregado en ${branch}.`);
     } catch (submitError) {
       setPriceError(
         submitError instanceof Error ? `${branch}: ${submitError.message}` : `${branch}: error`,
@@ -427,7 +452,7 @@ export default function ProductDetailPage() {
         throw new Error('producto no encontrado');
       }
 
-      const parsed = parseMoneyVersion(costForms[branch], 'costGrossClp');
+      const parsed = parseMoneyVersion(costForms[branch], 'costo');
       const updated = addProductCostVersion(product.id, branch, {
         validFrom: parsed.validFrom,
         costGrossClp: parsed.amount,
@@ -442,6 +467,7 @@ export default function ProductDetailPage() {
         ...prev,
         [branch]: { ...EMPTY_FORM },
       }));
+      setSuccessMessage(`Costo manual agregado en ${branch}.`);
     } catch (submitError) {
       setCostError(
         submitError instanceof Error ? `${branch}: ${submitError.message}` : `${branch}: error`,
@@ -479,6 +505,7 @@ export default function ProductDetailPage() {
         ...prev,
         [branch]: updated[0]?.validFrom.toISOString().slice(0, 10) ?? '',
       }));
+      setSuccessMessage(`Fecha de inicio del costo actualizada en ${branch}.`);
     } catch (submitError) {
       setCostError(
         submitError instanceof Error ? `${branch}: ${submitError.message}` : `${branch}: error`,
@@ -488,6 +515,7 @@ export default function ProductDetailPage() {
 
   return (
     <main>
+      {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
       <h1>Producto: {product.name}</h1>
       <p>
         <Link href="/products">Volver a productos</Link>
@@ -498,13 +526,13 @@ export default function ProductDetailPage() {
         <h2>Datos base</h2>
         <form onSubmit={onProductSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
-            Name *
+            Nombre del producto *
             <br />
             <input name="name" defaultValue={product.name} required style={{ width: '100%' }} />
           </label>
 
           <label>
-            Category
+            Categoría
             <br />
             <input
               name="category"
@@ -524,6 +552,7 @@ export default function ProductDetailPage() {
                 </option>
               ))}
             </select>
+            <FieldHint>Si eliges receta, el costo manual se ignora para la proyección teórica.</FieldHint>
           </label>
 
           <label>
@@ -541,19 +570,19 @@ export default function ProductDetailPage() {
           </label>
 
           <label>
-            <input name="active" type="checkbox" defaultChecked={product.active} /> Active
+            <input name="active" type="checkbox" defaultChecked={product.active} /> Producto activo
           </label>
 
-          {baseError ? <p style={{ color: 'crimson' }}>{baseError}</p> : null}
+          {baseError ? <InlineAlert tone="error">{baseError}</InlineAlert> : null}
 
-          <button className="btn" type="submit">Guardar cambios</button>
+          <button className="btn" type="submit">Guardar datos base</button>
         </form>
       </section>
 
       <section ref={recipePreviewSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'recipePreview' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
-        <h2>Preview teórico de margen</h2>
+        <h2>Vista teórica de margen</h2>
         <label>
-          Fecha (asOf)
+          Fecha de análisis
           <br />
           <input
             type="date"
@@ -585,7 +614,8 @@ export default function ProductDetailPage() {
 
       <section ref={priceSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'price' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
         <h2>Precios por sucursal</h2>
-        {priceError ? <p style={{ color: 'crimson' }}>{priceError}</p> : null}
+        <FieldHint>Registra el precio bruto vigente para cada sucursal.</FieldHint>
+        {priceError ? <InlineAlert tone="error">{priceError}</InlineAlert> : null}
 
         {BRANCHES.map((branch) => (
           <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12, background: branchParam === branch && activeFocus === 'price' ? 'rgba(72, 102, 48, 0.08)' : undefined }}>
@@ -593,7 +623,7 @@ export default function ProductDetailPage() {
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
               <label>
-                priceGrossClp
+                Precio bruto (CLP)
                 <br />
                 <input
                   type="number"
@@ -606,7 +636,7 @@ export default function ProductDetailPage() {
             </div>
 
             <VersionTimelinePreview
-              title="Nueva versión de precio"
+              title="Nueva vigencia de precio"
               branchLabel={branch}
               existingVersions={pricesByBranch[branch]}
               newValidFrom={priceForms[branch].validFrom}
@@ -633,8 +663,9 @@ export default function ProductDetailPage() {
       </section>
 
       <section ref={manualCostSectionRef} style={{ border: '1px solid #ddd', padding: 16, background: activeFocus === 'manualCost' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
-        <h2>Costo manual por sucursal</h2>
-        {costError ? <p style={{ color: 'crimson' }}>{costError}</p> : null}
+        <h2>Costos manuales por sucursal</h2>
+        <FieldHint>Usa esta sección cuando el producto no tenga receta asociada.</FieldHint>
+        {costError ? <InlineAlert tone="error">{costError}</InlineAlert> : null}
 
         {BRANCHES.map((branch) => (
           <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12, background: branchParam === branch && activeFocus === 'manualCost' ? 'rgba(72, 102, 48, 0.08)' : undefined }}>
@@ -642,7 +673,7 @@ export default function ProductDetailPage() {
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
               <label>
-                costGrossClp
+                Costo bruto (CLP)
                 <br />
                 <input
                   type="number"
@@ -655,7 +686,7 @@ export default function ProductDetailPage() {
             </div>
 
             <VersionTimelinePreview
-              title="Nueva versión de costo manual"
+              title="Nueva vigencia de costo manual"
               branchLabel={branch}
               existingVersions={costsByBranch[branch]}
               newValidFrom={costForms[branch].validFrom}
