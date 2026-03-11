@@ -20,6 +20,7 @@ import type {
   RecipeLine,
 } from '@/src/domain/types';
 import { computeProductAsOf } from '@/src/services/productCosting';
+import { buildEditorHref } from '@/src/lib/navigation/buildReturnTo';
 import {
   listItemCosts,
   listItems,
@@ -55,31 +56,67 @@ const parseIsoToUtcDate = (value: string) => {
   return new Date(Date.UTC(year, (month || 1) - 1, day || 1));
 };
 
-function buildDrawerActions(productId: string, costing: ProductWithCosting['costing'], branch: Branch, asOfDate: string): DrawerAction[] {
+function buildDrawerActions(
+  productId: string,
+  costing: ProductWithCosting['costing'],
+  branch: Branch,
+  asOfDate: string,
+  returnTo: string,
+): DrawerAction[] {
   const actions: DrawerAction[] = [];
+  const baseParams = { branch, asOf: asOfDate, returnTo };
+
   if (hasMissingPrice(costing)) {
-    actions.push({ label: 'Definir precio', href: `/products/${productId}`, tone: 'warn', description: `Falta precio vigente para ${branch} al ${asOfDate}.` });
-  }
-  if (hasMissingCosts(costing)) {
-    const firstMissing = costing.missingItems[0];
-    const isNoRecipe = costing.badges.includes('Sin receta');
     actions.push({
-      label: firstMissing ? 'Completar costo de item' : isNoRecipe ? 'Definir costo manual' : 'Revisar receta',
-      href: firstMissing ? `/items/${firstMissing.id}` : `/products/${productId}`,
+      label: 'Edit price',
+      href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'price' }),
       tone: 'warn',
-      description: firstMissing
-        ? `Primer item sin costo: ${firstMissing.name}.`
-        : isNoRecipe
-          ? `Producto sin receta: falta un costo manual vigente para ${branch} al ${asOfDate}.`
-          : 'No se pudo calcular el costo de la receta. Revisa receta/yield e insumos.',
+      description: `Falta precio vigente para ${branch} al ${asOfDate}.`,
     });
   }
+
+  if (hasMissingCosts(costing) && costing.badges.includes('Sin receta')) {
+    actions.push({
+      label: 'Edit manual cost',
+      href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'manualCost' }),
+      tone: 'warn',
+      description: `Producto sin receta: falta un costo manual vigente para ${branch} al ${asOfDate}.`,
+    });
+  }
+
+  if (costing.missingItems.length > 0) {
+    const firstMissing = costing.missingItems[0];
+    actions.push({
+      label: 'Edit missing item cost',
+      href: buildEditorHref(`/items/${firstMissing.id}`, { ...baseParams, focus: 'cost' }),
+      tone: 'warn',
+      description: `Primer item sin costo: ${firstMissing.name}.`,
+    });
+  }
+
   if (hasUnsupportedRecipe(costing)) {
-    actions.push({ label: 'Revisar sub-recetas', href: `/products/${productId}`, tone: 'warn', description: 'La receta incluye sub-recetas.' });
+    actions.push({
+      label: 'Review recipe',
+      href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'recipePreview' }),
+      tone: 'warn',
+      description: 'La receta incluye sub-recetas.',
+    });
   }
-  if (actions.length === 0) {
-    actions.push({ label: 'Ver producto', href: `/products/${productId}`, tone: 'info', description: 'Sin acciones pendientes. Puedes revisar la ficha del producto.' });
-  }
+
+  actions.push({
+    label: 'Edit product',
+    href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'base' }),
+    tone: actions.length > 0 ? 'warn' : 'info',
+    description: 'Editar datos base y configuración del producto.',
+  });
+
+  actions.push({
+    label: 'Open full product',
+    href: buildEditorHref(`/products/${productId}`, baseParams),
+    tone: 'info',
+    description: 'Abrir ficha completa del producto.',
+  });
+
   return actions;
 }
 
@@ -228,7 +265,8 @@ export default function ProductCostingPage() {
   }, [productComputed]);
 
   const selected = selectedProductId === null ? null : filteredSortedProducts.find(({ product }) => product.id === selectedProductId) ?? productComputed.find(({ product }) => product.id === selectedProductId) ?? null;
-  const drawerActions = selected ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate) : [];
+  const returnTo = typeof window === 'undefined' ? '/products/costing' : `${window.location.pathname}${window.location.search}`;
+  const drawerActions = selected ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate, returnTo) : [];
 
   useEffect(() => {
     if (!selectedProductId) return;
