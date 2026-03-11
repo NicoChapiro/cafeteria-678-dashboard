@@ -1,9 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+import FieldHint from '@/src/components/feedback/FieldHint';
+import InlineAlert from '@/src/components/feedback/InlineAlert';
+import Toast from '@/src/components/feedback/Toast';
+import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
 import type {
   Branch,
   Item,
@@ -35,6 +39,7 @@ const RECIPE_TYPES: RecipeType[] = [
 const YIELD_UNITS: YieldUnit[] = ['portion', 'g', 'ml', 'unit'];
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
+type RecipePageState = 'loading' | 'ready' | 'missing';
 
 type CostBreakdownRow = {
   id: string;
@@ -101,13 +106,18 @@ export default function RecipeDetailPage() {
   const params = useParams<{ id: string }>();
   const recipeId = useMemo(() => String(params.id), [params.id]);
 
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [pageState, setPageState] = useState<RecipePageState>('loading');
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
   const [lines, setLines] = useState<RecipeLine[]>([]);
 
   const [metaError, setMetaError] = useState<string | null>(null);
   const [lineError, setLineError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [itemId, setItemId] = useState('');
   const [itemQty, setItemQty] = useState('');
@@ -122,8 +132,10 @@ export default function RecipeDetailPage() {
   const [costingError, setCostingError] = useState<string | null>(null);
 
   useEffect(() => {
+    setPageState('loading');
     const found = getRecipe(recipeId);
     setRecipe(found ?? null);
+    setPageState(found ? 'ready' : 'missing');
 
     const items = listItems();
     const recipes = listRecipes();
@@ -153,15 +165,30 @@ export default function RecipeDetailPage() {
     [allRecipes, recipeId],
   );
 
-  if (!recipe) {
+  if (pageState === 'loading') {
     return (
       <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>Receta no encontrada</h1>
+        <h1>Cargando receta…</h1>
+        <p>Estamos preparando la información para edición.</p>
+      </main>
+    );
+  }
+
+  if (pageState === 'missing') {
+    return (
+      <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+        <h1>No encontramos esta receta</h1>
+        <p>Puede que haya sido eliminada o que el enlace esté incompleto.</p>
         <p>
           <Link href="/recipes">Volver a recetas</Link>
         </p>
+        <ReturnToLink returnTo={returnTo} />
       </main>
     );
+  }
+
+  if (!recipe) {
+    return null;
   }
 
   function handleMetaSubmit(event: FormEvent<HTMLFormElement>) {
@@ -197,6 +224,7 @@ export default function RecipeDetailPage() {
 
       setRecipe(updated);
       setAllRecipes(listRecipes());
+      setSuccessMessage('Metadatos guardados correctamente.');
     } catch (error) {
       setMetaError(error instanceof Error ? error.message : 'Error al guardar metadatos');
     }
@@ -231,6 +259,7 @@ export default function RecipeDetailPage() {
 
       setLines(listRecipeLines(recipeId));
       setItemQty('');
+      setSuccessMessage('Línea de item agregada correctamente.');
     } catch (error) {
       setLineError(error instanceof Error ? error.message : 'Error al agregar línea item');
     }
@@ -263,6 +292,7 @@ export default function RecipeDetailPage() {
 
       setLines(listRecipeLines(recipeId));
       setSubQty('');
+      setSuccessMessage('Línea de sub-receta agregada correctamente.');
     } catch (error) {
       setLineError(error instanceof Error ? error.message : 'Error al agregar sub-receta');
     }
@@ -271,6 +301,7 @@ export default function RecipeDetailPage() {
   function handleDeleteLine(id: string) {
     deleteRecipeLine(id);
     setLines(listRecipeLines(recipeId));
+    setSuccessMessage('Línea eliminada correctamente.');
   }
 
   function handleCalculateCost() {
@@ -359,22 +390,25 @@ export default function RecipeDetailPage() {
 
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
+      {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
       <h1>Receta: {recipe.name}</h1>
       <p>
         <Link href="/recipes">Volver a recetas</Link>
       </p>
+      <ReturnToLink returnTo={returnTo} />
 
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16, marginBottom: 20 }}>
         <h2>Metadatos</h2>
+        <FieldHint>Define los datos base de la receta antes de editar sus líneas y costos.</FieldHint>
         <form onSubmit={handleMetaSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
-            Name *
+            Nombre *
             <br />
             <input name="name" defaultValue={recipe.name} required style={{ width: '100%' }} />
           </label>
 
           <label>
-            Type *
+            Tipo *
             <br />
             <select name="type" defaultValue={recipe.type} style={{ width: '100%' }}>
               {RECIPE_TYPES.map((type) => (
@@ -386,7 +420,7 @@ export default function RecipeDetailPage() {
           </label>
 
           <label>
-            Yield Qty *
+            Cantidad de yield *
             <br />
             <input
               name="yieldQty"
@@ -399,7 +433,7 @@ export default function RecipeDetailPage() {
           </label>
 
           <label>
-            Yield Unit *
+            Unidad de yield *
             <br />
             <select name="yieldUnit" defaultValue={recipe.yieldUnit} style={{ width: '100%' }}>
               {YIELD_UNITS.map((unit) => (
@@ -411,17 +445,18 @@ export default function RecipeDetailPage() {
           </label>
 
           <label>
-            <input name="active" type="checkbox" defaultChecked={recipe.active} /> Active
+            <input name="active" type="checkbox" defaultChecked={recipe.active} /> Activa
           </label>
 
-          {metaError ? <p style={{ color: 'crimson' }}>{metaError}</p> : null}
+          {metaError ? <InlineAlert tone="error">{metaError}</InlineAlert> : null}
 
           <button type="submit">Guardar cambios</button>
         </form>
       </section>
 
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16, marginBottom: 20 }}>
         <h2>Costeo teórico</h2>
+        <FieldHint>Calcula una vista rápida del costo total y por unidad de yield según sucursal y fecha.</FieldHint>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
           <label>
@@ -443,194 +478,233 @@ export default function RecipeDetailPage() {
           <button type="button" onClick={handleCalculateCost}>Calcular costo</button>
         </div>
 
-        {costingError ? <p style={{ color: 'crimson' }}>{costingError}</p> : null}
+        {costingError ? (
+          <div style={{ marginTop: 12 }}>
+            <InlineAlert tone="warning">{costingError}</InlineAlert>
+          </div>
+        ) : null}
 
         {costingResult ? (
           <>
-            <p>
-              <strong>Costo total (CLP): </strong>
-              {Math.round(costingResult.totalCostClp).toLocaleString('es-CL')}
-            </p>
-            <p>
-              <strong>Costo por unidad de yield (CLP): </strong>
-              {Math.round(costingResult.costPerYieldUnitClp).toLocaleString('es-CL')}
-            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginTop: 14, marginBottom: 14 }}>
+              <article style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#f9fafb' }}>
+                <small style={{ color: '#6b7280' }}>Costo total (CLP)</small>
+                <p style={{ margin: '6px 0 0', fontSize: 22, fontWeight: 700 }}>
+                  {Math.round(costingResult.totalCostClp).toLocaleString('es-CL')}
+                </p>
+              </article>
+              <article style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#f9fafb' }}>
+                <small style={{ color: '#6b7280' }}>Costo por unidad de yield (CLP)</small>
+                <p style={{ margin: '6px 0 0', fontSize: 22, fontWeight: 700 }}>
+                  {Math.round(costingResult.costPerYieldUnitClp).toLocaleString('es-CL')}
+                </p>
+              </article>
+            </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Tipo</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Cantidad</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Unidad</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Costo unitario efectivo</th>
-                  <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Costo línea</th>
-                </tr>
-              </thead>
-              <tbody>
-                {costingResult.rows.map((row) => (
-                  <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.type}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.name}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.unit}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
-                    <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
-                  </tr>
-                ))}
-                {costingResult.rows.length === 0 ? (
+            <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+                <thead style={{ background: '#f9fafb' }}>
                   <tr>
-                    <td colSpan={6} style={{ padding: 8 }}>Sin líneas para costear.</td>
+                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Tipo</th>
+                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Nombre</th>
+                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid #ddd' }}>Cantidad</th>
+                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Unidad</th>
+                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid #ddd' }}>Costo unitario efectivo</th>
+                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid #ddd' }}>Costo línea</th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {costingResult.rows.map((row) => (
+                    <tr key={row.id}>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{row.type === 'item' ? 'Item' : 'Sub-receta'}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{row.name}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee', textAlign: 'right' }}>{row.qty.toLocaleString('es-CL')}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{row.unit}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee', textAlign: 'right' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 600 }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
+                    </tr>
+                  ))}
+                  {costingResult.rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 10 }}>Sin líneas para costear.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </>
         ) : null}
       </section>
 
-      <section style={{ border: '1px solid #ddd', padding: 16 }}>
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16 }}>
         <h2>Líneas de receta</h2>
-        {lineError ? <p style={{ color: 'crimson' }}>{lineError}</p> : null}
+        <FieldHint>Primero agrega ingredientes (items) y luego sub-recetas según corresponda.</FieldHint>
+        {lineError ? <InlineAlert tone="error">{lineError}</InlineAlert> : null}
 
-        <article style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
-          <h3>Agregar línea ITEM</h3>
-          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr 1fr' }}>
-            <label>
-              Item
-              <br />
-              <select
-                value={itemId}
-                onChange={(event) => {
-                  const nextItemId = event.target.value;
-                  setItemId(nextItemId);
-                  const nextItem = allItems.find((entry) => entry.id === nextItemId);
-                  if (nextItem) {
-                    setItemUnit(itemUnits(nextItem.baseUnit)[0]);
-                  }
-                }}
-                style={{ width: '100%' }}
-              >
-                <option value="">Selecciona item</option>
-                {allItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} ({item.baseUnit})
-                  </option>
-                ))}
-              </select>
-            </label>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', marginTop: 12 }}>
+          <article style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+            <h3 style={{ marginTop: 0 }}>Agregar línea de item</h3>
+            <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr 1fr' }}>
+              <label>
+                Item
+                <br />
+                <select
+                  value={itemId}
+                  onChange={(event) => {
+                    const nextItemId = event.target.value;
+                    setItemId(nextItemId);
+                    const nextItem = allItems.find((entry) => entry.id === nextItemId);
+                    if (nextItem) {
+                      setItemUnit(itemUnits(nextItem.baseUnit)[0]);
+                    }
+                  }}
+                  style={{ width: '100%' }}
+                >
+                  <option value="">Selecciona item</option>
+                  {allItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({item.baseUnit})
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Cantidad
-              <br />
-              <input
-                type="number"
-                min="0.0001"
-                step="0.0001"
-                value={itemQty}
-                onChange={(event) => setItemQty(event.target.value)}
-              />
-            </label>
+              <label>
+                Cantidad
+                <br />
+                <input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={itemQty}
+                  onChange={(event) => setItemQty(event.target.value)}
+                />
+              </label>
 
-            <label>
-              Unidad
-              <br />
-              <select
-                value={itemUnit}
-                onChange={(event) => setItemUnit(event.target.value as ItemInputUnit)}
-              >
-                {(selectedItem ? itemUnits(selectedItem.baseUnit) : ['g']).map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p>
-            <button type="button" onClick={handleAddItemLine}>
-              Agregar línea item
-            </button>
-          </p>
-        </article>
+              <label>
+                Unidad
+                <br />
+                <select
+                  value={itemUnit}
+                  onChange={(event) => setItemUnit(event.target.value as ItemInputUnit)}
+                >
+                  {(selectedItem ? itemUnits(selectedItem.baseUnit) : ['g']).map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p>
+              <button type="button" onClick={handleAddItemLine}>
+                Agregar línea item
+              </button>
+            </p>
+          </article>
 
-        <article style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
-          <h3>Agregar línea SUB-RECETA</h3>
-          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr' }}>
-            <label>
-              Sub-receta (solo activas)
-              <br />
-              <select
-                value={subRecipeId}
-                onChange={(event) => setSubRecipeId(event.target.value)}
-                style={{ width: '100%' }}
-              >
-                <option value="">Selecciona sub-receta</option>
-                {selectableSubRecipes.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {entry.name} ({entry.yieldUnit})
-                  </option>
-                ))}
-              </select>
-            </label>
+          <article style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+            <h3 style={{ marginTop: 0 }}>Agregar línea de sub-receta</h3>
+            <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr' }}>
+              <label>
+                Sub-receta (solo activas)
+                <br />
+                <select
+                  value={subRecipeId}
+                  onChange={(event) => setSubRecipeId(event.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="">Selecciona sub-receta</option>
+                  {selectableSubRecipes.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name} ({entry.yieldUnit})
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Qty en yield de sub-receta
-              <br />
-              <input
-                type="number"
-                min="0.0001"
-                step="0.0001"
-                value={subQty}
-                onChange={(event) => setSubQty(event.target.value)}
-              />
-            </label>
-          </div>
+              <label>
+                Cantidad en yield de sub-receta
+                <br />
+                <input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={subQty}
+                  onChange={(event) => setSubQty(event.target.value)}
+                />
+              </label>
+            </div>
 
-          <p>
-            <button type="button" onClick={handleAddSubRecipeLine}>
-              Agregar sub-receta
-            </button>
-          </p>
-        </article>
+            <p>
+              <button type="button" onClick={handleAddSubRecipeLine}>
+                Agregar sub-receta
+              </button>
+            </p>
+          </article>
+        </div>
 
         <article style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
           <h3>Listado de líneas</h3>
-          <ul>
-            {lines.map((line) => {
-              if (line.lineType === 'item') {
-                const item = allItems.find((entry) => entry.id === line.itemId);
-                return (
-                  <li key={line.id}>
-                    ITEM: {item?.name ?? line.itemId} | qtyInBase: {line.qtyInBase}
-                    <button
-                      type="button"
-                      style={{ marginLeft: 8 }}
-                      onClick={() => handleDeleteLine(line.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </li>
-                );
-              }
+          <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
+              <thead style={{ background: '#f9fafb' }}>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Tipo</th>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Nombre</th>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Cantidad</th>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Referencia</th>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((line) => {
+                  if (line.lineType === 'item') {
+                    const item = allItems.find((entry) => entry.id === line.itemId);
+                    return (
+                      <tr key={line.id}>
+                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>Item</td>
+                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{item?.name ?? line.itemId}</td>
+                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{line.qtyInBase.toLocaleString('es-CL')}</td>
+                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>qtyInBase</td>
+                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLine(line.id)}
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
 
-              const sub = allRecipes.find((entry) => entry.id === line.subRecipeId);
-              return (
-                <li key={line.id}>
-                  SUB-RECETA: {sub?.name ?? line.subRecipeId} | qtyInSubYield:{' '}
-                  {line.qtyInSubYield}
-                  <button
-                    type="button"
-                    style={{ marginLeft: 8 }}
-                    onClick={() => handleDeleteLine(line.id)}
-                  >
-                    Eliminar
-                  </button>
-                </li>
-              );
-            })}
-            {lines.length === 0 ? <li>Sin líneas aún.</li> : null}
-          </ul>
+                  const sub = allRecipes.find((entry) => entry.id === line.subRecipeId);
+                  return (
+                    <tr key={line.id}>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>Sub-receta</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{sub?.name ?? line.subRecipeId}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{line.qtyInSubYield.toLocaleString('es-CL')}</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>qtyInSubYield</td>
+                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLine(line.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {lines.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: 10 }}>Sin líneas aún.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
         </article>
       </section>
     </main>
