@@ -9,69 +9,66 @@ type Section = {
   cta: string;
 };
 
-const primarySections: Section[] = [
+const salesFlowSections: Section[] = [
   {
-    title: 'Ver ventas',
-    description: 'Pantalla unificada de ventas por sucursal y rango de fechas.',
+    title: 'Registrar ventas',
+    description: 'Carga y revisa ventas por sucursal en el período operativo.',
     href: '/sales',
-    cta: 'Ir a ventas',
+    cta: 'Abrir ventas',
   },
   {
     title: 'Importar ventas FU.DO',
-    description: 'Importación estándar de ventas con selección de sucursal.',
+    description: 'Importación estándar para dejar el flujo diario al día.',
     href: '/sales/import',
-    cta: 'Ir a importador FU.DO',
+    cta: 'Abrir importador FU.DO',
   },
 ];
 
-const sections: Section[] = [
-  {
-    title: 'Items',
-    description: 'Catálogo base de insumos con unidad y rendimiento.',
-    href: '/items',
-    cta: 'Ir a items',
-  },
+const masterDataSections: Section[] = [
   {
     title: 'Productos',
-    description: 'Productos vendibles y su estado activo/inactivo.',
+    description: 'Gestiona el catálogo vendible y el estado activo/inactivo.',
     href: '/products',
     cta: 'Ir a productos',
   },
   {
-    title: 'Costos & Recetas (Mockup 1)',
-    description: 'Vista de costeo unitario teórico por producto, sucursal y fecha.',
-    href: '/products/costing',
-    cta: 'Ir a costos & recetas',
-  },
-  {
     title: 'Recetas',
-    description: 'Recetas productivas y de sub-receta con costeo.',
+    description: 'Administra recetas productivas y sub-recetas con su costeo.',
     href: '/recipes',
     cta: 'Ir a recetas',
   },
   {
-    title: 'Pendientes (Setup)',
-    description: 'Centro mensual para detectar brechas de costo, precio, receta e insumos.',
+    title: 'Items',
+    description: 'Mantén insumos, unidad de compra y rendimiento operacional.',
+    href: '/items',
+    cta: 'Ir a items',
+  },
+  {
+    title: 'Pendientes de setup',
+    description: 'Detecta brechas mensuales de costo, precio, receta e insumos.',
     href: '/setup',
     cta: 'Ir a setup',
   },
   {
-    title: 'Importar Base',
-    description: 'Carga base consolidada XLSX para productos, ingredientes y recetas.',
+    title: 'Importar base',
+    description: 'Carga consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
-    cta: 'Ir a importar base',
+    cta: 'Abrir importar base',
+  },
+];
+
+const controlSections: Section[] = [
+  {
+    title: 'Dashboard de rentabilidad',
+    description: 'Analiza rentabilidad teórica con ventas reales por sucursal y período.',
+    href: '/dashboard',
+    cta: 'Abrir dashboard',
   },
   {
     title: 'Auditoría',
-    description: 'Revisión de audit log y utilidades de export/import.',
+    description: 'Revisa audit log y utilidades de exportación/importación.',
     href: '/audit',
     cta: 'Ir a auditoría',
-  },
-  {
-    title: 'Dashboard',
-    description: 'Rentabilidad teórica basada en ventas reales por rango y sucursal.',
-    href: '/dashboard',
-    cta: 'Ir a dashboard',
   },
 ];
 
@@ -80,37 +77,38 @@ const adminFallbackSections: Section[] = [
     title: 'Ventas Temuco (manual)',
     description: 'Carga y edición manual de ventas por día/producto (fallback).',
     href: '/sales/temuco',
-    cta: 'Ir a ventas Temuco (manual)',
+    cta: 'Ir a ventas Temuco',
   },
   {
     title: 'Ventas Santiago (legacy)',
-    description: 'Vista read-only histórica de ventas importadas por día/producto.',
+    description: 'Vista histórica de ventas importadas por día/producto.',
     href: '/sales/santiago',
     cta: 'Ir a ventas Santiago',
   },
   {
     title: 'Importar Santiago (legacy)',
-    description: 'Carga de planilla XLSX y conciliación de ventas.',
+    description: 'Carga planilla XLSX y concilia ventas históricas.',
     href: '/sales/santiago/import',
-    cta: 'Ir a importador',
+    cta: 'Importar Santiago',
   },
   {
     title: 'Importar Temuco (legacy)',
-    description: 'Carga de planilla XLSX y conciliación de ventas Temuco.',
+    description: 'Carga planilla XLSX y concilia ventas de Temuco.',
     href: '/sales/temuco/import',
-    cta: 'Ir a importador Temuco',
+    cta: 'Importar Temuco',
   },
 ];
 
 function renderSectionCards(items: Section[]) {
   return items.map((section) => (
-    <article
-      key={section.href}
-      className="card"
-    >
-      <h2 className="cardTitle">{section.title}</h2>
-      <p className="muted" style={{ marginBottom: 12 }}>{section.description}</p>
-      <Link className="btnSecondary" href={section.href}>{section.cta}</Link>
+    <article key={section.href} className="card">
+      <h3 className="cardTitle">{section.title}</h3>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        {section.description}
+      </p>
+      <Link className="btnSecondary" href={section.href}>
+        {section.cta}
+      </Link>
     </article>
   ));
 }
@@ -118,25 +116,41 @@ function renderSectionCards(items: Section[]) {
 export default function HomePage() {
   return (
     <main>
-      <header className="card">
-        <h1 style={{ marginBottom: 8 }}>Cafetería 678 Dashboard</h1>
-        <p className="muted">
-          MVP A operativo en LocalStorage. Usa este panel raíz para navegar módulos del sistema.
+      <header className="card" style={{ marginBottom: 20 }}>
+        <span className="badge badge--info" style={{ marginBottom: 10 }}>
+          Inicio operativo
+        </span>
+        <h1 style={{ margin: '0 0 8px 0' }}>Panel de operación Cafetería 678</h1>
+        <p className="muted" style={{ marginBottom: 14 }}>
+          Prioriza el costeo, revisa rentabilidad y continúa con el flujo de ventas del día.
         </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link className="btn" href="/products/costing">
+            Ir a Costeo de productos
+          </Link>
+          <Link className="btnSecondary" href="/dashboard">
+            Ver dashboard de rentabilidad
+          </Link>
+        </div>
       </header>
 
-      <section aria-label="Flujo principal" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginBottom: 12 }}>Flujo principal de ventas</h2>
-        <div className="grid">{renderSectionCards(primarySections)}</div>
+      <section aria-label="Flujo de ventas" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 12 }}>Flujo de ventas</h2>
+        <div className="grid">{renderSectionCards(salesFlowSections)}</div>
       </section>
 
-      <section aria-label="Módulos del sistema" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginBottom: 12 }}>Módulos del sistema</h2>
-        <div className="grid">{renderSectionCards(sections)}</div>
+      <section aria-label="Maestros y configuración" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 12 }}>Maestros y configuración</h2>
+        <div className="grid">{renderSectionCards(masterDataSections)}</div>
+      </section>
+
+      <section aria-label="Control y seguimiento" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 12 }}>Control y seguimiento</h2>
+        <div className="grid">{renderSectionCards(controlSections)}</div>
       </section>
 
       <section aria-label="Admin y fallback">
-        <h2 style={{ marginBottom: 12 }}>Admin / Fallback</h2>
+        <h2 style={{ marginBottom: 12 }}>Admin y fallback</h2>
         <div className="grid">{renderSectionCards(adminFallbackSections)}</div>
       </section>
     </main>
