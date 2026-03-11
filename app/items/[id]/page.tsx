@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
 import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type { Branch, Item, ItemCostVersion } from '@/src/domain/types';
 import {
@@ -89,6 +90,14 @@ export default function ItemDetailPage() {
   const params = useParams<{ id: string }>();
   const itemId = useMemo(() => String(params.id), [params.id]);
 
+  const searchParams = useSearchParams();
+  const focus = searchParams.get('focus');
+  const branchParam = searchParams.get('branch');
+  const returnTo = searchParams.get('returnTo');
+
+  const costSectionRef = useRef<HTMLElement | null>(null);
+  const [isCostFocusActive, setIsCostFocusActive] = useState(false);
+
   const [item, setItem] = useState<Item | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [costError, setCostError] = useState<string | null>(null);
@@ -110,6 +119,20 @@ export default function ItemDetailPage() {
     });
   }, [itemId]);
 
+
+  useEffect(() => {
+    if (focus !== 'cost') {
+      setIsCostFocusActive(false);
+      return;
+    }
+
+    setIsCostFocusActive(true);
+    const timer = window.setTimeout(() => setIsCostFocusActive(false), 2400);
+    costSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    return () => window.clearTimeout(timer);
+  }, [focus]);
+
   if (!item) {
     return (
       <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
@@ -117,6 +140,7 @@ export default function ItemDetailPage() {
         <p>
           <Link href="/items">Volver a items</Link>
         </p>
+        <ReturnToLink returnTo={returnTo} />
       </main>
     );
   }
@@ -214,6 +238,7 @@ export default function ItemDetailPage() {
       <p>
         <Link href="/items">Volver a items</Link>
       </p>
+      <ReturnToLink returnTo={returnTo} />
 
       <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
         <h2>Datos del item</h2>
@@ -259,14 +284,14 @@ export default function ItemDetailPage() {
         </form>
       </section>
 
-      <section>
+      <section ref={costSectionRef} style={{ background: isCostFocusActive ? 'rgba(214, 186, 232, 0.2)' : undefined, borderRadius: 8, padding: isCostFocusActive ? 12 : 0 }}>
         <h2>Costos por sucursal</h2>
         {costError ? <p style={{ color: 'crimson' }}>{costError}</p> : null}
 
         {BRANCHES.map((branch) => (
           <article
             key={branch}
-            style={{ border: '1px solid #ddd', padding: 16, marginBottom: 16 }}
+            style={{ border: branchParam === branch ? '2px solid var(--brand-green)' : '1px solid #ddd', padding: 16, marginBottom: 16, background: branchParam === branch ? 'rgba(72, 102, 48, 0.08)' : undefined }}
           >
             <h3>{branch}</h3>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>

@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
 import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type {
   Branch,
@@ -39,6 +40,12 @@ const EMPTY_FORM: MoneyVersionForm = {
   validFrom: '',
   amount: '',
 };
+
+type ProductFocusTarget = 'base' | 'price' | 'manualCost' | 'recipePreview';
+
+function isProductFocusTarget(value: string | null): value is ProductFocusTarget {
+  return value === 'base' || value === 'price' || value === 'manualCost' || value === 'recipePreview';
+}
 
 function formatDate(value: Date | null): string {
   return value ? value.toISOString().slice(0, 10) : 'abierta';
@@ -93,6 +100,17 @@ export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const productId = useMemo(() => String(params.id), [params.id]);
 
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  const focus = searchParams.get('focus');
+  const branchParam = searchParams.get('branch');
+
+  const baseSectionRef = useRef<HTMLElement | null>(null);
+  const priceSectionRef = useRef<HTMLElement | null>(null);
+  const manualCostSectionRef = useRef<HTMLElement | null>(null);
+  const recipePreviewSectionRef = useRef<HTMLElement | null>(null);
+  const [activeFocus, setActiveFocus] = useState<ProductFocusTarget | null>(null);
+
   const [product, setProduct] = useState<Product | null>(null);
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
@@ -144,6 +162,30 @@ export default function ProductDetailPage() {
       Temuco: initialCosts.Temuco[0]?.validFrom.toISOString().slice(0, 10) ?? '',
     });
   }, [productId]);
+
+
+  useEffect(() => {
+    if (!isProductFocusTarget(focus)) {
+      setActiveFocus(null);
+      return;
+    }
+
+    setActiveFocus(focus);
+    const timer = window.setTimeout(() => setActiveFocus(null), 2400);
+
+    const targetRef =
+      focus === 'base'
+        ? baseSectionRef
+        : focus === 'price'
+          ? priceSectionRef
+          : focus === 'manualCost'
+            ? manualCostSectionRef
+            : recipePreviewSectionRef;
+
+    targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    return () => window.clearTimeout(timer);
+  }, [focus]);
 
   const costingPreviewByBranch = useMemo(() => {
     if (!product) {
@@ -450,8 +492,9 @@ export default function ProductDetailPage() {
       <p>
         <Link href="/products">Volver a productos</Link>
       </p>
+      <ReturnToLink returnTo={returnTo} />
 
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
+      <section ref={baseSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'base' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
         <h2>Datos base</h2>
         <form onSubmit={onProductSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
@@ -507,7 +550,7 @@ export default function ProductDetailPage() {
         </form>
       </section>
 
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
+      <section ref={recipePreviewSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'recipePreview' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
         <h2>Preview teórico de margen</h2>
         <label>
           Fecha (asOf)
@@ -523,7 +566,7 @@ export default function ProductDetailPage() {
           {BRANCHES.map((branch) => {
             const preview = costingPreviewByBranch[branch];
             return (
-              <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
+              <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12, background: branchParam === branch && activeFocus === 'recipePreview' ? 'rgba(72, 102, 48, 0.08)' : undefined }}>
                 <h3>{branch}</h3>
                 <p>
                   Costo teórico:{' '}
@@ -540,12 +583,12 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
+      <section ref={priceSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'price' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
         <h2>Precios por sucursal</h2>
         {priceError ? <p style={{ color: 'crimson' }}>{priceError}</p> : null}
 
         {BRANCHES.map((branch) => (
-          <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
+          <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12, background: branchParam === branch && activeFocus === 'price' ? 'rgba(72, 102, 48, 0.08)' : undefined }}>
             <h3>{branch}</h3>
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
@@ -589,12 +632,12 @@ export default function ProductDetailPage() {
         ))}
       </section>
 
-      <section style={{ border: '1px solid #ddd', padding: 16 }}>
+      <section ref={manualCostSectionRef} style={{ border: '1px solid #ddd', padding: 16, background: activeFocus === 'manualCost' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
         <h2>Costo manual por sucursal</h2>
         {costError ? <p style={{ color: 'crimson' }}>{costError}</p> : null}
 
         {BRANCHES.map((branch) => (
-          <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
+          <article key={branch} style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12, background: branchParam === branch && activeFocus === 'manualCost' ? 'rgba(72, 102, 48, 0.08)' : undefined }}>
             <h3>{branch}</h3>
 
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
