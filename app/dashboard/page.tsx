@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
@@ -110,18 +109,11 @@ function findEffectiveManualCost(versions: ProductCostVersion[], asOfDate: Date)
 }
 
 export default function DashboardPage() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [selectedBranch, setSelectedBranch] = useState<DashboardBranch>('Consolidado');
-
-  const dashboardReturnTo = useMemo(() => {
-    const query = searchParams.toString();
-    return query ? `${pathname}?${query}` : pathname;
-  }, [pathname, searchParams]);
 
   function buildProductHref(productId: string, focus?: 'base' | 'price' | 'manualCost' | 'recipePreview') {
     const params = new URLSearchParams();
-    params.set('returnTo', dashboardReturnTo);
+    params.set('returnTo', '/dashboard');
 
     if (focus) {
       params.set('focus', focus);
