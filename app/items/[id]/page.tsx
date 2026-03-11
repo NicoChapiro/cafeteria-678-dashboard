@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import FieldHint from '@/src/components/feedback/FieldHint';
+import InlineAlert from '@/src/components/feedback/InlineAlert';
+import Toast from '@/src/components/feedback/Toast';
 import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
 import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type { Branch, Item, ItemCostVersion } from '@/src/domain/types';
@@ -15,6 +18,7 @@ import {
 } from '@/src/storage/local/store';
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
+type ItemPageState = 'loading' | 'ready' | 'missing';
 
 type CostFormState = {
   packQtyInBase: string;
@@ -99,8 +103,10 @@ export default function ItemDetailPage() {
   const [isCostFocusActive, setIsCostFocusActive] = useState(false);
 
   const [item, setItem] = useState<Item | null>(null);
+  const [pageState, setPageState] = useState<ItemPageState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [costError, setCostError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [costForms, setCostForms] = useState<Record<Branch, CostFormState>>({
     Santiago: EMPTY_COST_FORM,
     Temuco: EMPTY_COST_FORM,
@@ -111,8 +117,10 @@ export default function ItemDetailPage() {
   });
 
   useEffect(() => {
+    setPageState('loading');
     const found = getItem(itemId);
     setItem(found ?? null);
+    setPageState(found ? 'ready' : 'missing');
     setCostsByBranch({
       Santiago: listItemCosts(itemId, 'Santiago'),
       Temuco: listItemCosts(itemId, 'Temuco'),
@@ -133,16 +141,30 @@ export default function ItemDetailPage() {
     return () => window.clearTimeout(timer);
   }, [focus]);
 
-  if (!item) {
+  if (pageState === 'loading') {
     return (
       <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>Item no encontrado</h1>
+        <h1>Cargando item…</h1>
+        <p>Estamos preparando la información para edición.</p>
+      </main>
+    );
+  }
+
+  if (pageState === 'missing') {
+    return (
+      <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
+        <h1>No encontramos este item</h1>
+        <p>Puede que haya sido eliminado o que el enlace esté incompleto.</p>
         <p>
           <Link href="/items">Volver a items</Link>
         </p>
         <ReturnToLink returnTo={returnTo} />
       </main>
     );
+  }
+
+  if (!item) {
+    return null;
   }
 
   function onItemSubmit(event: FormEvent<HTMLFormElement>) {
@@ -170,6 +192,7 @@ export default function ItemDetailPage() {
       });
 
       setItem(updated);
+      setSuccessMessage('Datos base guardados correctamente.');
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Error al actualizar item');
     }
@@ -227,6 +250,7 @@ export default function ItemDetailPage() {
         ...prev,
         [branch]: { ...EMPTY_COST_FORM },
       }));
+      setSuccessMessage(`Costo agregado en ${branch}.`);
     } catch (submitError) {
       setCostError(submitError instanceof Error ? `${branch}: ${submitError.message}` : `${branch}: error al agregar costo`);
     }
@@ -234,6 +258,7 @@ export default function ItemDetailPage() {
 
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 900 }}>
+      {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
       <h1>Item: {item.name}</h1>
       <p>
         <Link href="/items">Volver a items</Link>
@@ -242,21 +267,22 @@ export default function ItemDetailPage() {
 
       <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
         <h2>Datos del item</h2>
+        <FieldHint>Actualiza la información base del item para mantener consistencia de costeo.</FieldHint>
         <form onSubmit={onItemSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
-            Name *
+            Nombre *
             <br />
             <input name="name" defaultValue={item.name} required style={{ width: '100%' }} />
           </label>
 
           <label>
-            Category
+            Categoría
             <br />
             <input name="category" defaultValue={item.category ?? ''} style={{ width: '100%' }} />
           </label>
 
           <label>
-            Base Unit *
+            Unidad base *
             <br />
             <select name="baseUnit" defaultValue={item.baseUnit} style={{ width: '100%' }}>
               <option value="g">g</option>
@@ -266,7 +292,7 @@ export default function ItemDetailPage() {
           </label>
 
           <label>
-            Yield Rate Default (0-1)
+            Rendimiento por defecto (0-1)
             <br />
             <input
               name="yieldRateDefault"
@@ -278,7 +304,7 @@ export default function ItemDetailPage() {
             />
           </label>
 
-          {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
           <button type="submit">Guardar cambios</button>
         </form>
@@ -286,17 +312,18 @@ export default function ItemDetailPage() {
 
       <section ref={costSectionRef} style={{ background: isCostFocusActive ? 'rgba(214, 186, 232, 0.2)' : undefined, borderRadius: 8, padding: isCostFocusActive ? 12 : 0 }}>
         <h2>Costos por sucursal</h2>
-        {costError ? <p style={{ color: 'crimson' }}>{costError}</p> : null}
+        <FieldHint>Registra costos brutos por pack y su vigencia para cada sucursal.</FieldHint>
+        {costError ? <InlineAlert tone="error">{costError}</InlineAlert> : null}
 
         {BRANCHES.map((branch) => (
           <article
             key={branch}
-            style={{ border: branchParam === branch ? '2px solid var(--brand-green)' : '1px solid #ddd', padding: 16, marginBottom: 16, background: branchParam === branch ? 'rgba(72, 102, 48, 0.08)' : undefined }}
+            style={{ border: branchParam === branch ? '2px solid var(--brand-green)' : '1px solid #ddd', borderRadius: 8, padding: 16, marginBottom: 16, background: branchParam === branch ? 'rgba(72, 102, 48, 0.08)' : undefined }}
           >
             <h3>{branch}</h3>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
               <label>
-                packQtyInBase
+                Cantidad del pack en unidad base
                 <br />
                 <input
                   value={costForms[branch].packQtyInBase}
@@ -310,7 +337,7 @@ export default function ItemDetailPage() {
               </label>
 
               <label>
-                packCostGrossClp
+                Costo bruto del pack (CLP)
                 <br />
                 <input
                   value={costForms[branch].packCostGrossClp}
@@ -324,7 +351,7 @@ export default function ItemDetailPage() {
               </label>
 
               <label>
-                yieldRateOverride (0-1)
+                Rendimiento override (0-1)
                 <br />
                 <input
                   value={costForms[branch].yieldRateOverride}
@@ -351,7 +378,7 @@ export default function ItemDetailPage() {
             />
 
             <h4>Historial</h4>
-            <ul>
+            <ul style={{ display: 'grid', gap: 6, paddingLeft: 18 }}>
               {[...costsByBranch[branch]]
                 .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime())
                 .map((version) => (
