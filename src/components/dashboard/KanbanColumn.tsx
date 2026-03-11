@@ -1,13 +1,32 @@
 import type { ProductWithCosting } from '@/src/view-models/productCostingDashboard';
 import { ProductCard } from './ProductCard';
 
-export function KanbanColumn({ title, items, selectedProductId, onOpen }: { title: string; items: ProductWithCosting[]; selectedProductId: string | null; onOpen: (id: string) => void }) {
+type KanbanTone = 'healthy' | 'warn' | 'critical';
+
+function getEmptyMessage(title: string): string {
+  if (title === 'Saludable') return 'No hay productos saludables en este filtro.';
+  if (title === 'Sin precio') return 'No hay productos sin precio vigente.';
+  if (title === 'Costos faltantes') return 'No hay productos con costos pendientes.';
+  return 'No hay productos con sub-recetas pendientes de revisión.';
+}
+
+export function KanbanColumn({ title, tone, items, selectedProductId, onOpen }: { title: string; tone: KanbanTone; items: ProductWithCosting[]; selectedProductId: string | null; onOpen: (id: string) => void }) {
   return (
-    <section className="card" style={{ marginBottom: 0 }}>
-      <h3 style={{ marginTop: 0 }}>{title} ({items.length})</h3>
-      <div style={{ display: 'grid', gap: 8 }}>
-        {items.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => onOpen(entry.product.id)} />)}
-      </div>
+    <section className={`card kanbanColumn kanbanColumn--${tone}`} style={{ marginBottom: 0 }}>
+      <header className="kanbanColumn__header">
+        <h3 style={{ margin: 0 }}>{title}</h3>
+        <span className={`badge ${tone === 'healthy' ? 'badge--info' : 'badge--warn'}`}>{items.length}</span>
+      </header>
+
+      {items.length === 0 ? (
+        <div className="kanbanColumn__empty">
+          <p className="muted" style={{ margin: 0 }}>{getEmptyMessage(title)}</p>
+        </div>
+      ) : (
+        <div className="kanbanColumn__items">
+          {items.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => onOpen(entry.product.id)} />)}
+        </div>
+      )}
     </section>
   );
 }

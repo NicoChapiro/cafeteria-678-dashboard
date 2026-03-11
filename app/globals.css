@@ -448,3 +448,69 @@ a:hover { color: var(--brand-orange); }
   gap: 8px;
   background: #fff;
 }
+
+
+.kanbanBoard {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.kanbanBoard__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kanbanBoard__grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  overflow-x: auto;
+}
+
+.kanbanColumn {
+  min-height: 160px;
+}
+
+.kanbanColumn--healthy {
+  border-top: 3px solid rgba(72, 102, 48, 0.6);
+}
+
+.kanbanColumn--warn {
+  border-top: 3px solid rgba(244, 144, 34, 0.7);
+}
+
+.kanbanColumn--critical {
+  border-top: 3px solid rgba(176, 0, 32, 0.6);
+}
+
+.kanbanColumn__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kanbanColumn__items {
+  display: grid;
+  gap: 8px;
+}
+
+.kanbanColumn__empty {
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.costingKpiStrip {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin-bottom: 12px;
+}
