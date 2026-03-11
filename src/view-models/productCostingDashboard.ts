@@ -11,6 +11,7 @@ export type IssueType = 'any' | 'missingPrice' | 'missingCosts' | 'missingCostIt
 export type ViewMode = 'cards' | 'kanban' | 'table';
 export type DrawerQuickNavSection = 'actions' | 'breakdown' | 'missingItems';
 export type MarginStatusTone = 'ok' | 'attention' | 'critical' | 'na';
+export type ProductCardHealth = 'healthy' | 'missingPrice' | 'missingCosts' | 'missingItemCosts' | 'unsupportedRecipe';
 
 export const DRAWER_QUICK_NAV_LABELS: Record<DrawerQuickNavSection, string> = {
   actions: 'Acciones',
@@ -58,6 +59,22 @@ export function hasMissingCostItems(costing: ProductAsOfResult): boolean {
 
 export function hasIssuesCosting(costing: ProductAsOfResult): boolean {
   return hasMissingPrice(costing) || hasMissingCosts(costing) || hasMissingCostItems(costing) || hasUnsupportedRecipe(costing);
+}
+
+export function getProductCardHealth(costing: ProductAsOfResult): ProductCardHealth {
+  if (hasUnsupportedRecipe(costing)) return 'unsupportedRecipe';
+  if (hasMissingCostItems(costing)) return 'missingItemCosts';
+  if (hasMissingPrice(costing)) return 'missingPrice';
+  if (hasMissingCosts(costing)) return 'missingCosts';
+  return 'healthy';
+}
+
+export function getProductCardHealthLabel(health: ProductCardHealth): string {
+  if (health === 'unsupportedRecipe') return 'Receta no soportada';
+  if (health === 'missingItemCosts') return 'Faltan costos de ítems';
+  if (health === 'missingPrice') return 'Falta precio';
+  if (health === 'missingCosts') return 'Falta costo';
+  return 'Saludable';
 }
 
 export function getCardActionLabel(costing: ProductAsOfResult): string {
