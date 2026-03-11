@@ -1,6 +1,6 @@
 import { type RefObject } from 'react';
 
-import type { DrawerQuickNavSection, ProductWithCosting } from '@/src/view-models/productCostingDashboard';
+import { DRAWER_QUICK_NAV_LABELS, type DrawerQuickNavSection, type ProductWithCosting } from '@/src/view-models/productCostingDashboard';
 import type { DrawerAction } from './DrawerActions';
 import { DrawerActions } from './DrawerActions';
 import { DrawerBreakdown } from './DrawerBreakdown';
@@ -27,9 +27,9 @@ export function ProductDrawer(props: {
         <button ref={props.closeButtonRef} type="button" className="btnSecondary" onClick={props.onClose}>Cerrar</button>
       </div>
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-        <button type="button" className="btnSecondary" aria-pressed={props.activeDrawerSection === 'actions'} onClick={() => props.onGoSection('actions')}>Acciones</button>
-        <button type="button" className="btnSecondary" aria-pressed={props.activeDrawerSection === 'breakdown'} onClick={() => props.onGoSection('breakdown')}>Breakdown</button>
-        <button type="button" className="btnSecondary" aria-pressed={props.activeDrawerSection === 'missingItems'} onClick={() => props.onGoSection('missingItems')}>Faltantes</button>
+        <button type="button" className="btnSecondary" aria-pressed={props.activeDrawerSection === 'actions'} onClick={() => props.onGoSection('actions')}>{DRAWER_QUICK_NAV_LABELS.actions}</button>
+        <button type="button" className="btnSecondary" aria-pressed={props.activeDrawerSection === 'breakdown'} onClick={() => props.onGoSection('breakdown')}>{DRAWER_QUICK_NAV_LABELS.breakdown}</button>
+        <button type="button" className="btnSecondary" aria-pressed={props.activeDrawerSection === 'missingItems'} onClick={() => props.onGoSection('missingItems')}>{DRAWER_QUICK_NAV_LABELS.missingItems}</button>
       </div>
       <div style={{ marginTop: 10 }}><DrawerSummaryCards selected={props.selected} /></div>
       <section ref={props.actionsSectionRef} style={{ scrollMarginTop: 110, marginTop: 10 }}><DrawerActions actions={props.actions} /></section>

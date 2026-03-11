@@ -12,6 +12,12 @@ export type ViewMode = 'cards' | 'kanban' | 'table';
 export type DrawerQuickNavSection = 'actions' | 'breakdown' | 'missingItems';
 export type MarginStatusTone = 'ok' | 'attention' | 'critical' | 'na';
 
+export const DRAWER_QUICK_NAV_LABELS: Record<DrawerQuickNavSection, string> = {
+  actions: 'Acciones',
+  breakdown: 'Desglose',
+  missingItems: 'Faltantes',
+};
+
 export function formatClp(value: number | null): string {
   if (value === null) return 'N/D';
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(value);
