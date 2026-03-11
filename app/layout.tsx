@@ -1,5 +1,8 @@
-import './globals.css';
 import type { Metadata } from 'next';
+
+import AppShell from '@/src/components/app/AppShell';
+
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Cafetería 678 Dashboard',
@@ -13,7 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="appBody"><div className="container">{children}</div></body>
+      <body className="appBody">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }
