@@ -29,142 +29,102 @@ export default function RecipesPage() {
   }, [recipes, search]);
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1200, margin: '0 auto' }}>
-      <header
+    <main>
+      <div
         style={{
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: 20,
+          gap: 12,
+          marginBottom: 14,
           flexWrap: 'wrap',
         }}
       >
         <div>
-          <h1 style={{ marginBottom: 8 }}>Recetas</h1>
-          <p style={{ margin: 0, color: '#4b5563' }}>
+          <h1 style={{ marginBottom: 8 }}>Gestión de recetas</h1>
+          <p className="muted" style={{ marginBottom: 8 }}>
             Consulta el catálogo, revisa estado y entra al detalle de cada receta.
           </p>
+          <span className="badge badge--info">Total: {recipes.length}</span>
         </div>
-        <Link
-          href="/recipes/new"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '10px 14px',
-            borderRadius: 8,
-            background: '#111827',
-            color: '#fff',
-            textDecoration: 'none',
-            fontWeight: 600,
-          }}
-        >
-          Nueva receta
+        <Link href="/recipes/new" className="btn" style={{ alignSelf: 'center' }}>
+          + Nueva receta
         </Link>
-      </header>
+      </div>
 
-      <section
-        style={{
-          marginBottom: 16,
-          padding: 12,
-          border: '1px solid #e5e7eb',
-          borderRadius: 10,
-          background: '#f9fafb',
-        }}
-      >
+      <div className="card" style={{ marginBottom: 12 }}>
         <label htmlFor="recipes-search" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>
           Buscar por nombre
         </label>
         <input
           id="recipes-search"
           type="search"
+          className="input"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Ej: Latte, Masa madre..."
-          style={{
-            width: '100%',
-            maxWidth: 420,
-            padding: '10px 12px',
-            borderRadius: 8,
-            border: '1px solid #d1d5db',
-            fontSize: 14,
-          }}
         />
-      </section>
+      </div>
 
-      <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 10 }}>
-        <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 900 }}>
+      <div className="tableWrap">
+        <table className="table" style={{ minWidth: 900 }}>
           <thead>
             <tr>
-              <th style={{ borderBottom: '1px solid #d1d5db', textAlign: 'left', padding: 12, background: '#f3f4f6' }}>
-                Nombre
-              </th>
-              <th style={{ borderBottom: '1px solid #d1d5db', textAlign: 'left', padding: 12, background: '#f3f4f6' }}>
-                Tipo
-              </th>
-              <th style={{ borderBottom: '1px solid #d1d5db', textAlign: 'left', padding: 12, background: '#f3f4f6' }}>
-                Yield
-              </th>
-              <th style={{ borderBottom: '1px solid #d1d5db', textAlign: 'left', padding: 12, background: '#f3f4f6' }}>
-                Activa
-              </th>
-              <th style={{ borderBottom: '1px solid #d1d5db', textAlign: 'left', padding: 12, background: '#f3f4f6' }}>
-                Actualizado
-              </th>
-              <th style={{ borderBottom: '1px solid #d1d5db', textAlign: 'left', padding: 12, background: '#f3f4f6' }}>
-                Acción
-              </th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Yield</th>
+              <th>Activa</th>
+              <th>Actualizado</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
-            {filteredRecipes.map((recipe, index) => (
-              <tr key={recipe.id} style={{ background: index % 2 === 0 ? '#fff' : '#fcfcfd' }}>
-                <td style={{ borderBottom: '1px solid #f3f4f6', padding: 12, fontWeight: 600 }}>{recipe.name}</td>
-                <td style={{ borderBottom: '1px solid #f3f4f6', padding: 12 }}>{recipe.type}</td>
-                <td style={{ borderBottom: '1px solid #f3f4f6', padding: 12 }}>
+            {filteredRecipes.map((recipe) => (
+              <tr key={recipe.id}>
+                <td style={{ fontWeight: 600 }}>{recipe.name}</td>
+                <td>{recipe.type}</td>
+                <td>
                   {recipe.yieldQty} {recipe.yieldUnit}
                 </td>
-                <td style={{ borderBottom: '1px solid #f3f4f6', padding: 12 }}>
+                <td>
                   <span
-                    style={{
-                      display: 'inline-flex',
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: recipe.active ? '#166534' : '#991b1b',
-                      background: recipe.active ? '#dcfce7' : '#fee2e2',
-                    }}
+                    className={`badge ${recipe.active ? 'badge--info' : 'badge--warn'}`}
+                    style={{ minWidth: 76, justifyContent: 'center' }}
                   >
                     {recipe.active ? 'Activa' : 'Inactiva'}
                   </span>
                 </td>
-                <td style={{ borderBottom: '1px solid #f3f4f6', padding: 12 }}>
-                  {formatDate(recipe.updatedAt)}
-                </td>
-                <td style={{ borderBottom: '1px solid #f3f4f6', padding: 12 }}>
-                  <Link href={`/recipes/${recipe.id}`}>Ver detalle</Link>
+                <td>{formatDate(recipe.updatedAt)}</td>
+                <td>
+                  <Link href={`/recipes/${recipe.id}`} className="btnSecondary">
+                    Ver detalle →
+                  </Link>
                 </td>
               </tr>
             ))}
-            {recipes.length === 0 ? (
+            {filteredRecipes.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontWeight: 700 }}>Aún no tienes recetas creadas.</p>
-                  <p style={{ margin: '8px 0 0', color: '#4b5563' }}>
-                    Comienza registrando tu primera receta para gestionar costos y producción.
-                  </p>
-                </td>
-              </tr>
-            ) : null}
-            {recipes.length > 0 && filteredRecipes.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontWeight: 700 }}>No encontramos recetas con ese nombre.</p>
-                  <p style={{ margin: '8px 0 0', color: '#4b5563' }}>
-                    Prueba con otro término de búsqueda.
-                  </p>
+                <td colSpan={6} style={{ padding: 18 }}>
+                  <div className="calloutInfo">
+                    {recipes.length === 0 ? (
+                      <>
+                        <strong>No hay recetas creadas todavía.</strong>
+                        <p className="muted" style={{ marginTop: 8 }}>
+                          Crea tu primera receta para comenzar a gestionar costos y producción.
+                        </p>
+                        <Link href="/recipes/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
+                          + Nueva receta
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <strong>Sin resultados para la búsqueda actual.</strong>
+                        <p className="muted" style={{ marginTop: 8 }}>
+                          Ajusta el nombre buscado para encontrar otras recetas.
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ) : null}

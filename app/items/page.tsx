@@ -25,48 +25,31 @@ export default function ItemsPage() {
   );
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000, margin: '0 auto' }}>
-      <header
+    <main>
+      <div
         style={{
           display: 'flex',
+          alignItems: 'flex-start',
           flexWrap: 'wrap',
           justifyContent: 'space-between',
-          alignItems: 'center',
           gap: 12,
-          marginBottom: 20,
+          marginBottom: 14,
         }}
       >
         <div>
-          <h1 style={{ margin: 0 }}>Items</h1>
-          <p style={{ margin: '6px 0 0', color: '#555' }}>
+          <h1 style={{ marginBottom: 8 }}>Gestión de items</h1>
+          <p className="muted" style={{ marginBottom: 8 }}>
             Revisa rápidamente tus insumos, su rendimiento y fecha de actualización.
           </p>
+          <span className="badge badge--info">Total: {items.length}</span>
         </div>
-        <Link
-          href="/items/new"
-          style={{
-            background: '#111827',
-            color: '#fff',
-            textDecoration: 'none',
-            borderRadius: 8,
-            padding: '10px 14px',
-            fontWeight: 600,
-          }}
-        >
+        <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
           + Nuevo item
         </Link>
-      </header>
+      </div>
 
-      <section
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 10,
-          padding: 14,
-          marginBottom: 14,
-          background: '#fafafa',
-        }}
-      >
-        <label htmlFor="items-search" style={{ display: 'block', fontSize: 14, fontWeight: 600 }}>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <label htmlFor="items-search" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
           Buscar por nombre
         </label>
         <input
@@ -76,68 +59,64 @@ export default function ItemsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Ej: Harina, Leche, Azúcar..."
-          style={{
-            marginTop: 8,
-            width: '100%',
-            maxWidth: 380,
-            padding: '8px 10px',
-            border: '1px solid #ccc',
-            borderRadius: 8,
-          }}
+          className="input"
         />
-      </section>
+      </div>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 10, overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', minWidth: 760, width: '100%' }}>
+      <div className="tableWrap">
+        <table className="table" style={{ minWidth: 760 }}>
           <thead>
-            <tr style={{ background: '#f3f4f6' }}>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '10px 12px' }}>
-                Nombre
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '10px 12px' }}>
-                Unidad base
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'right', padding: '10px 12px' }}>
-                Rendimiento
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '10px 12px' }}>
-                Actualizado
-              </th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '10px 12px' }}>
-                Acción
-              </th>
+            <tr>
+              <th>Nombre</th>
+              <th>Unidad base</th>
+              <th style={{ textAlign: 'right' }}>Rendimiento</th>
+              <th>Actualizado</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
             {filteredItems.map((item) => (
               <tr key={item.id}>
-                <td style={{ borderBottom: '1px solid #eee', padding: '10px 12px', fontWeight: 600 }}>
-                  {item.name}
-                </td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '10px 12px' }}>{item.baseUnit}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '10px 12px', textAlign: 'right' }}>
-                  {item.yieldRateDefault ?? '-'}
-                </td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '10px 12px' }}>
-                  {formatDate(item.updatedAt)}
-                </td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '10px 12px' }}>
-                  <Link href={`/items/${item.id}`}>Ver detalle</Link>
+                <td style={{ fontWeight: 600 }}>{item.name}</td>
+                <td>{item.baseUnit}</td>
+                <td style={{ textAlign: 'right' }}>{item.yieldRateDefault ?? '-'}</td>
+                <td>{formatDate(item.updatedAt)}</td>
+                <td>
+                  <Link href={`/items/${item.id}`} className="btnSecondary">
+                    Ver detalle →
+                  </Link>
                 </td>
               </tr>
             ))}
             {filteredItems.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: 16, color: '#555' }}>
-                  {items.length === 0
-                    ? 'Aún no hay items cargados. Crea uno nuevo para comenzar a gestionar costos.'
-                    : 'No encontramos items que coincidan con tu búsqueda. Prueba con otro nombre.'}
+                <td colSpan={5} style={{ padding: 18 }}>
+                  <div className="calloutInfo">
+                    {items.length === 0 ? (
+                      <>
+                        <strong>No hay items creados todavía.</strong>
+                        <p className="muted" style={{ marginTop: 8 }}>
+                          Crea tu primer item para comenzar a gestionar insumos y costos.
+                        </p>
+                        <Link href="/items/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
+                          + Nuevo item
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <strong>Sin resultados para la búsqueda actual.</strong>
+                        <p className="muted" style={{ marginTop: 8 }}>
+                          Ajusta el nombre buscado para encontrar otros items.
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ) : null}
           </tbody>
         </table>
-      </section>
+      </div>
     </main>
   );
 }
