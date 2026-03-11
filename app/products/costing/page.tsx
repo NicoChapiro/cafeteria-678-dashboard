@@ -68,18 +68,20 @@ function buildDrawerActions(
 
   if (hasMissingPrice(costing)) {
     actions.push({
-      label: 'Edit price',
+      label: 'Editar precio',
       href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'price' }),
       tone: 'warn',
+      ctaLabel: 'Editar precio',
       description: `Falta precio vigente para ${branch} al ${asOfDate}.`,
     });
   }
 
   if (hasMissingCosts(costing) && costing.badges.includes('Sin receta')) {
     actions.push({
-      label: 'Edit manual cost',
+      label: 'Editar costo manual',
       href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'manualCost' }),
       tone: 'warn',
+      ctaLabel: 'Editar costo manual',
       description: `Producto sin receta: falta un costo manual vigente para ${branch} al ${asOfDate}.`,
     });
   }
@@ -87,33 +89,37 @@ function buildDrawerActions(
   if (costing.missingItems.length > 0) {
     const firstMissing = costing.missingItems[0];
     actions.push({
-      label: 'Edit missing item cost',
+      label: 'Editar costo faltante',
       href: buildEditorHref(`/items/${firstMissing.id}`, { ...baseParams, focus: 'cost' }),
       tone: 'warn',
+      ctaLabel: 'Editar costo faltante',
       description: `Primer item sin costo: ${firstMissing.name}.`,
     });
   }
 
   if (hasUnsupportedRecipe(costing)) {
     actions.push({
-      label: 'Review recipe',
+      label: 'Revisar receta',
       href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'recipePreview' }),
       tone: 'warn',
+      ctaLabel: 'Revisar receta',
       description: 'La receta incluye sub-recetas.',
     });
   }
 
   actions.push({
-    label: 'Edit product',
+    label: 'Editar producto',
     href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'base' }),
     tone: actions.length > 0 ? 'warn' : 'info',
+    ctaLabel: 'Editar producto',
     description: 'Editar datos base y configuración del producto.',
   });
 
   actions.push({
-    label: 'Open full product',
+    label: 'Abrir ficha completa',
     href: buildEditorHref(`/products/${productId}`, baseParams),
     tone: 'info',
+    ctaLabel: 'Abrir ficha completa',
     description: 'Abrir ficha completa del producto.',
   });
 
