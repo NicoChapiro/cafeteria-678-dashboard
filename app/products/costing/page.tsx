@@ -144,7 +144,22 @@ export default function ProductCostingPage() {
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
   const [activeDrawerSection, setActiveDrawerSection] = useState<DrawerQuickNavSection | null>(null);
 
-  const scrollDrawerSection = useCallback((ref: RefObject<HTMLElement | null>) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), []);
+  const scrollDrawerSection = useCallback((ref: RefObject<HTMLElement | null>) => {
+    const drawerElement = drawerRef.current;
+    const sectionElement = ref.current;
+
+    if (!drawerElement || !sectionElement) {
+      return;
+    }
+
+    const stickyHeaderOffset = 104;
+    const drawerRect = drawerElement.getBoundingClientRect();
+    const sectionRect = sectionElement.getBoundingClientRect();
+    const relativeTop = sectionRect.top - drawerRect.top + drawerElement.scrollTop;
+    const nextTop = Math.max(0, relativeTop - stickyHeaderOffset);
+
+    drawerElement.scrollTo({ top: nextTop, behavior: 'smooth' });
+  }, []);
   const restoreLastFocus = useCallback(() => {
     const lastFocusedElement = lastFocusedElementRef.current;
     if (lastFocusedElement && document.contains(lastFocusedElement)) lastFocusedElement.focus();
@@ -267,6 +282,16 @@ export default function ProductCostingPage() {
   const selected = selectedProductId === null ? null : filteredSortedProducts.find(({ product }) => product.id === selectedProductId) ?? productComputed.find(({ product }) => product.id === selectedProductId) ?? null;
   const returnTo = typeof window === 'undefined' ? '/products/costing' : `${window.location.pathname}${window.location.search}`;
   const drawerActions = selected ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate, returnTo) : [];
+
+  useEffect(() => {
+    const drawerElement = drawerRef.current;
+    if (!drawerElement) {
+      return;
+    }
+
+    drawerElement.style.maxHeight = 'calc(100vh - 110px)';
+    drawerElement.style.overflowY = 'auto';
+  }, [selectedProductId]);
 
   useEffect(() => {
     if (!selectedProductId) return;
