@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
+import InlineAlert from '@/src/components/feedback/InlineAlert';
 import { upsertProduct } from '@/src/storage/local/store';
 
 export default function NewProductPage() {
@@ -43,39 +44,56 @@ export default function NewProductPage() {
   }
 
   return (
-    <main className="card" style={{ maxWidth: 640 }}>
-      <h1>Nuevo Producto</h1>
-      <p>
-        <Link href="/products">Volver a productos</Link>
+    <main style={{ display: 'grid', gap: 16 }}>
+      <p style={{ margin: 0 }}>
+        <Link href="/products">← Volver a productos</Link>
       </p>
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          Name *
-          <br />
-          <input className="input" name="name" required style={{ width: '100%' }} />
-        </label>
+      <section className="card" style={{ maxWidth: 720, display: 'grid', gap: 16 }}>
+        <header style={{ display: 'grid', gap: 6 }}>
+          <h1 style={{ margin: 0 }}>Nuevo producto</h1>
+          <p style={{ margin: 0, color: '#4b5563' }}>
+            Registra los datos base para crear un producto y continuar con su configuración.
+          </p>
+        </header>
 
-        <label>
-          Category
-          <br />
-          <input className="input" name="category" style={{ width: '100%' }} />
-        </label>
+        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 14 }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Nombre *</span>
+            <input className="input" name="name" required style={{ width: '100%' }} />
+          </label>
 
-        <label>
-          Merma (%)
-          <br />
-          <input name="wasteRatePct" type="number" min="0" max="30" step="0.1" defaultValue="3" style={{ width: '100%' }} />
-        </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Categoría</span>
+            <input className="input" name="category" style={{ width: '100%' }} />
+          </label>
 
-        <label>
-          <input name="active" type="checkbox" defaultChecked /> Active
-        </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Merma (%)</span>
+            <input
+              className="input"
+              name="wasteRatePct"
+              type="number"
+              min="0"
+              max="30"
+              step="0.1"
+              defaultValue="3"
+              style={{ width: '100%' }}
+            />
+          </label>
 
-        {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input name="active" type="checkbox" defaultChecked />
+            <span>Activo</span>
+          </label>
 
-        <button className="btn" type="submit">Guardar</button>
-      </form>
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+
+          <div>
+            <button className="btn" type="submit">Guardar</button>
+          </div>
+        </form>
+      </section>
     </main>
   );
 }
