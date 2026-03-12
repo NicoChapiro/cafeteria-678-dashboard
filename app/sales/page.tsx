@@ -103,15 +103,16 @@ export default function SalesPage() {
   const [toDate, setToDate] = useState<string>(todayIsoDate());
 
   const [rows, setRows] = useState<SalesRow[]>([]);
+  const isInvalidRange = fromDate > toDate;
 
   useEffect(() => {
-    if (fromDate > toDate) {
+    if (isInvalidRange) {
       setRows([]);
       return;
     }
 
     setRows(loadRows(branch, fromDate, toDate));
-  }, [branch, fromDate, toDate]);
+  }, [branch, fromDate, isInvalidRange, toDate]);
 
   const totals = useMemo(
     () => ({
@@ -131,11 +132,13 @@ export default function SalesPage() {
       />
 
       <section className="card" style={{ marginBottom: 0 }}>
-        <h2 style={{ marginTop: 0 }}>Filtros</h2>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-          <label>
+        <h2 style={{ marginTop: 0, marginBottom: 4 }}>Filtros</h2>
+        <p style={{ marginTop: 0, marginBottom: 12, color: '#4b5563', fontSize: 14 }}>
+          Define sucursal y rango de fechas para revisar el detalle de ventas.
+        </p>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+          <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
             Sucursal
-            <br />
             <select className="select" value={branch} onChange={(event) => setBranch(event.target.value as BranchFilter)}>
               <option value="Santiago">Santiago</option>
               <option value="Temuco">Temuco</option>
@@ -143,27 +146,41 @@ export default function SalesPage() {
             </select>
           </label>
 
-          <label>
+          <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
             Desde
-            <br />
             <input className="input" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
           </label>
 
-          <label>
+          <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
             Hasta
-            <br />
             <input className="input" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
           </label>
         </div>
       </section>
 
       <section className="card" style={{ marginBottom: 0 }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: '#f3f4f6',
+            color: '#1f2937',
+            padding: '6px 10px',
+            borderRadius: 999,
+            marginBottom: 12,
+            fontSize: 14,
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>Rango seleccionado</span>
+          <span>{`${fromDate} → ${toDate}`}</span>
+        </div>
+
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
         <div className="grid">
-          <KpiCard label="Total gross (CLP)" value={totals.totalGrossSalesClp.toLocaleString('es-CL')} />
-          <KpiCard label="Total qty" value={totals.totalQty.toLocaleString('es-CL')} />
-          <KpiCard label="# filas mostradas" value={rows.length.toLocaleString('es-CL')} />
-          <KpiCard label="Rango seleccionado" value={`${fromDate} → ${toDate}`} />
+          <KpiCard label="Venta bruta total (CLP)" value={`$ ${totals.totalGrossSalesClp.toLocaleString('es-CL')}`} />
+          <KpiCard label="Cantidad total" value={totals.totalQty.toLocaleString('es-CL')} />
+          <KpiCard label="Filas mostradas" value={rows.length.toLocaleString('es-CL')} />
         </div>
       </section>
 
@@ -172,10 +189,10 @@ export default function SalesPage() {
         <div className="tableWrap"><table className="table">
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>fecha</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>producto</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>gross</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Fecha</th>
+              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>Producto</th>
+              <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #ccc' }}>Cantidad</th>
+              <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #ccc' }}>Venta bruta</th>
             </tr>
           </thead>
           <tbody>
@@ -183,16 +200,34 @@ export default function SalesPage() {
               <tr key={`${row.date}:${branch}:${row.productId}`}>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.grossSalesClp.toLocaleString('es-CL')}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {row.qty.toLocaleString('es-CL')}
+                </td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {row.grossSalesClp.toLocaleString('es-CL')}
+                </td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: 8 }}>
-                  {fromDate > toDate
-                    ? 'Rango inválido: la fecha Desde debe ser menor o igual a Hasta.'
-                    : 'No hay ventas para los filtros seleccionados.'}
+                <td colSpan={4} style={{ padding: 16 }}>
+                  <div
+                    style={{
+                      border: '1px dashed #d1d5db',
+                      borderRadius: 8,
+                      padding: 16,
+                      background: isInvalidRange ? '#fef2f2' : '#f9fafb',
+                    }}
+                  >
+                    <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+                      {isInvalidRange ? 'Rango de fechas inválido' : 'Sin resultados para esta búsqueda'}
+                    </p>
+                    <p style={{ margin: 0, color: '#4b5563' }}>
+                      {isInvalidRange
+                        ? 'La fecha “Desde” debe ser menor o igual a la fecha “Hasta”.'
+                        : 'No hay ventas para los filtros seleccionados. Prueba con otro rango o sucursal.'}
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : null}
