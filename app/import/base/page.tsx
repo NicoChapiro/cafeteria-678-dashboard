@@ -549,17 +549,28 @@ export default function ImportBasePage() {
     setMessage({ type: 'success', text: 'Importación base v3 completada. salesDaily se preservó.' });
   }
 
+  const fileStateLabel = file ? `Archivo seleccionado: ${file.name}` : 'Sin archivo seleccionado';
+  const fileStateTone = file ? '#0f5132' : '#6b7280';
+
   return (
     <PageShell>
-      <PageHeader title="Importar Base Consolidada v3" backNav={<BackNav />} />
+      <PageHeader
+        title="Importar Base Consolidada v3"
+        description="Carga tu planilla consolidada, revisa la previsualización y confirma la importación con control total sobre las actualizaciones."
+        backNav={<BackNav />}
+      />
 
       <section className="card" style={{ marginBottom: 0 }}>
-        <h2 style={{ marginTop: 0 }}>Filtros</h2>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+        <h2 style={{ marginTop: 0, marginBottom: 4 }}>1) Archivo y vigencia</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Selecciona el archivo <strong>.xlsx</strong>, valida su contenido en la previsualización y luego ejecuta la importación.
+        </p>
+
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'minmax(240px, 1.5fr) minmax(180px, 1fr)', alignItems: 'end' }}>
           <label>
             Archivo .xlsx
-            <br />
-            <input className="input"
+            <input
+              className="input"
               type="file"
               accept=".xlsx"
               onChange={(event) => {
@@ -573,48 +584,102 @@ export default function ImportBasePage() {
 
           <label>
             Vigencia desde
-            <br />
             <input className="input" type="date" value={validFrom} onChange={(event) => setValidFrom(event.target.value)} />
           </label>
+        </div>
 
-          <button className="btn" type="button" onClick={handlePreview}>Previsualizar</button>
-          <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>Importar</button>
+        <p
+          style={{
+            margin: '10px 0 0',
+            fontSize: 13,
+            color: fileStateTone,
+            fontWeight: file ? 600 : 500,
+          }}
+        >
+          {fileStateLabel}
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          <button className="btn" type="button" onClick={handlePreview}>Previsualizar archivo</button>
+          <button className="btnSecondary" type="button" onClick={handleImport} disabled={!preview}>Importar base</button>
+        </div>
+
+        <div className="calloutInfo" style={{ marginTop: 12 }}>
+          <strong>Guía rápida:</strong> la previsualización no escribe datos; la importación sí aplica cambios según las opciones seleccionadas.
         </div>
       </section>
 
       <section className="card" style={{ marginBottom: 0 }}>
-        <h2 style={{ marginTop: 0 }}>Opciones de actualización</h2>
-        <label style={{ display: 'block', marginBottom: 6 }}>
-          <input type="checkbox" checked={updatePrices} onChange={(event) => setUpdatePrices(event.target.checked)} /> Actualizar precios
-        </label>
-        <label style={{ display: 'block', marginBottom: 6 }}>
-          <input type="checkbox" checked={updateIngredientCosts} onChange={(event) => setUpdateIngredientCosts(event.target.checked)} /> Actualizar costos ingredientes
-        </label>
-        <label style={{ display: 'block', marginBottom: 6 }}>
-          <input type="checkbox" checked={updateRecipes} onChange={(event) => setUpdateRecipes(event.target.checked)} /> Actualizar recetas
-        </label>
-        <label style={{ display: 'block', marginBottom: 6 }}>
-          <input type="checkbox" checked={replaceRecipeLines} onChange={(event) => setReplaceRecipeLines(event.target.checked)} /> Reemplazar líneas de receta (elimina ingredientes no presentes)
-        </label>
-        <label style={{ display: 'block' }}>
-          <input type="checkbox" checked={updateProductManualCosts} onChange={(event) => setUpdateProductManualCosts(event.target.checked)} /> Actualizar costo manual productos
-        </label>
+        <h2 style={{ marginTop: 0, marginBottom: 4 }}>2) Opciones de actualización</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Activa solo los bloques que quieras actualizar durante la importación.
+        </p>
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          <label className="calloutSuccess" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px' }}>
+            <input type="checkbox" checked={updatePrices} onChange={(event) => setUpdatePrices(event.target.checked)} />
+            <span>Actualizar precios</span>
+          </label>
+          <label className="calloutSuccess" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px' }}>
+            <input type="checkbox" checked={updateIngredientCosts} onChange={(event) => setUpdateIngredientCosts(event.target.checked)} />
+            <span>Actualizar costos ingredientes</span>
+          </label>
+          <label className="calloutSuccess" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px' }}>
+            <input type="checkbox" checked={updateRecipes} onChange={(event) => setUpdateRecipes(event.target.checked)} />
+            <span>Actualizar recetas</span>
+          </label>
+          <label className="calloutInfo" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px' }}>
+            <input type="checkbox" checked={replaceRecipeLines} onChange={(event) => setReplaceRecipeLines(event.target.checked)} />
+            <span>Reemplazar líneas de receta (elimina ingredientes no presentes)</span>
+          </label>
+          <label className="calloutSuccess" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px' }}>
+            <input type="checkbox" checked={updateProductManualCosts} onChange={(event) => setUpdateProductManualCosts(event.target.checked)} />
+            <span>Actualizar costo manual productos</span>
+          </label>
+        </div>
       </section>
 
-      {message ? <p style={{ color: message.type === 'error' ? '#b00020' : '#0f5132' }}>{message.text}</p> : null}
+      {message ? (
+        <section className={message.type === 'error' ? 'alert' : 'calloutSuccess'} style={{ marginBottom: 0 }}>
+          <strong>{message.type === 'error' ? 'No se pudo completar la acción.' : 'Acción completada.'}</strong>
+          <p style={{ margin: '6px 0 0' }}>{message.text}</p>
+        </section>
+      ) : null}
 
       {preview ? (
         <section className="card" style={{ marginBottom: 0 }}>
-          <h2 style={{ marginTop: 0 }}>Resumen</h2>
-          <ul>
-            <li>Ingredientes leídos/válidos: {preview.rowsRead.items} / {preview.rowsValid.items}</li>
-            <li>Productos leídos/válidos: {preview.rowsRead.products} / {preview.rowsValid.products}</li>
-            <li>Recetas leídas/válidas: {preview.rowsRead.recipes} / {preview.rowsValid.recipes}</li>
-            <li>Errores: {preview.errors.length}</li>
-          </ul>
+          <h2 style={{ marginTop: 0, marginBottom: 4 }}>3) Revisión de previsualización</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Verifica el volumen leído, los registros válidos y errores detectados antes de importar.
+          </p>
+
+          <div className="grid" style={{ marginBottom: 12 }}>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Ingredientes</h3>
+              <p style={{ margin: '4px 0 0', fontWeight: 700 }}>{preview.rowsValid.items} válidos</p>
+              <p className="muted" style={{ marginTop: 2, fontSize: 12 }}>{preview.rowsRead.items} leídos</p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Productos</h3>
+              <p style={{ margin: '4px 0 0', fontWeight: 700 }}>{preview.rowsValid.products} válidos</p>
+              <p className="muted" style={{ marginTop: 2, fontSize: 12 }}>{preview.rowsRead.products} leídos</p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Recetas</h3>
+              <p style={{ margin: '4px 0 0', fontWeight: 700 }}>{preview.rowsValid.recipes} válidos</p>
+              <p className="muted" style={{ marginTop: 2, fontSize: 12 }}>{preview.rowsRead.recipes} leídos</p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Errores</h3>
+              <p style={{ margin: '4px 0 0', fontWeight: 700, color: preview.errors.length > 0 ? '#b00020' : '#0f5132' }}>
+                {preview.errors.length}
+              </p>
+              <p className="muted" style={{ marginTop: 2, fontSize: 12 }}>Detectados en la previsualización</p>
+            </article>
+          </div>
 
           {preview.errors.length > 0 ? (
-            <details>
+            <details className="calloutWarning">
               <summary>Ver errores (máximo 20)</summary>
               <ul>
                 {preview.errors.slice(0, 20).map((error) => (
@@ -628,15 +693,43 @@ export default function ImportBasePage() {
 
       {summary ? (
         <section className="card" style={{ marginBottom: 0 }}>
-          <h2 style={{ marginTop: 0 }}>Detalle</h2>
-          <ul>
-            <li>Items creados/actualizados: {summary.created.items} / {summary.updated.items}</li>
-            <li>Productos creados/actualizados: {summary.created.products} / {summary.updated.products}</li>
-            <li>Recetas creadas/actualizadas: {summary.created.recipes} / {summary.updated.recipes}</li>
-            <li>Líneas receta creadas/actualizadas: {summary.created.recipeLines} / {summary.updated.recipeLines}</li>
-            <li>Versiones omitidas por misma vigencia: {summary.skippedVersions}</li>
-            <li>Errores totales: {summary.errors}</li>
-          </ul>
+          <h2 style={{ marginTop: 0, marginBottom: 4 }}>4) Resultado de importación</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Resumen operativo de registros creados, actualizados y observaciones del proceso.
+          </p>
+
+          <div className="grid">
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Items</h3>
+              <p style={{ margin: '6px 0 0' }}>Creados: <strong>{summary.created.items}</strong></p>
+              <p style={{ margin: '2px 0 0' }}>Actualizados: <strong>{summary.updated.items}</strong></p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Productos</h3>
+              <p style={{ margin: '6px 0 0' }}>Creados: <strong>{summary.created.products}</strong></p>
+              <p style={{ margin: '2px 0 0' }}>Actualizados: <strong>{summary.updated.products}</strong></p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Recetas</h3>
+              <p style={{ margin: '6px 0 0' }}>Creadas: <strong>{summary.created.recipes}</strong></p>
+              <p style={{ margin: '2px 0 0' }}>Actualizadas: <strong>{summary.updated.recipes}</strong></p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Líneas de receta</h3>
+              <p style={{ margin: '6px 0 0' }}>Creadas: <strong>{summary.created.recipeLines}</strong></p>
+              <p style={{ margin: '2px 0 0' }}>Actualizadas: <strong>{summary.updated.recipeLines}</strong></p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Versiones omitidas</h3>
+              <p style={{ margin: '6px 0 0', fontWeight: 700 }}>{summary.skippedVersions}</p>
+              <p className="muted" style={{ marginTop: 2, fontSize: 12 }}>Coinciden con la misma fecha de vigencia</p>
+            </article>
+            <article className="card" style={{ marginBottom: 0, padding: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 14 }}>Errores totales</h3>
+              <p style={{ margin: '6px 0 0', fontWeight: 700, color: summary.errors > 0 ? '#b00020' : '#0f5132' }}>{summary.errors}</p>
+              <p className="muted" style={{ marginTop: 2, fontSize: 12 }}>Incluye errores de previsualización y resolución</p>
+            </article>
+          </div>
         </section>
       ) : null}
     </PageShell>
