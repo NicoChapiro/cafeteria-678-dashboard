@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
+import FieldHint from '@/src/components/feedback/FieldHint';
+import InlineAlert from '@/src/components/feedback/InlineAlert';
 import type { RecipeType, YieldUnit } from '@/src/domain/types';
 import { upsertRecipe } from '@/src/storage/local/store';
 
@@ -56,57 +58,67 @@ export default function NewRecipePage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 680 }}>
-      <h1>Nueva Receta</h1>
-      <p>
-        <Link href="/recipes">Volver a recetas</Link>
-      </p>
+    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
+      <header style={{ marginBottom: 20 }}>
+        <h1>Nueva receta</h1>
+        <p style={{ marginTop: 0, color: '#4b5563' }}>
+          Crea una receta base y luego completa sus líneas de composición desde el detalle.
+        </p>
+        <p style={{ marginBottom: 0 }}>
+          <Link href="/recipes">← Volver al listado de recetas</Link>
+        </p>
+      </header>
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          Name *
-          <br />
-          <input name="name" required style={{ width: '100%' }} />
-        </label>
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16 }}>
+        <h2 style={{ marginTop: 0 }}>Metadatos</h2>
+        <FieldHint>Completa los campos obligatorios para poder crear la receta.</FieldHint>
 
-        <label>
-          Type *
-          <br />
-          <select name="type" defaultValue="fria" style={{ width: '100%' }}>
-            {RECIPE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </label>
+        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, marginTop: 12 }}>
+          <label>
+            Nombre *
+            <br />
+            <input name="name" required style={{ width: '100%' }} />
+          </label>
 
-        <label>
-          Yield Qty *
-          <br />
-          <input name="yieldQty" type="number" min="0.0001" step="0.0001" required />
-        </label>
+          <label>
+            Tipo *
+            <br />
+            <select name="type" defaultValue="fria" style={{ width: '100%' }}>
+              {RECIPE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Yield Unit *
-          <br />
-          <select name="yieldUnit" defaultValue="portion" style={{ width: '100%' }}>
-            {YIELD_UNITS.map((unit) => (
-              <option key={unit} value={unit}>
-                {unit}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Cantidad de yield *
+            <br />
+            <input name="yieldQty" type="number" min="0.0001" step="0.0001" required />
+          </label>
 
-        <label>
-          <input name="active" type="checkbox" defaultChecked /> Active
-        </label>
+          <label>
+            Unidad de yield *
+            <br />
+            <select name="yieldUnit" defaultValue="portion" style={{ width: '100%' }}>
+              {YIELD_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
+          <label>
+            <input name="active" type="checkbox" defaultChecked /> Activa
+          </label>
 
-        <button type="submit">Guardar</button>
-      </form>
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+
+          <button type="submit">Guardar</button>
+        </form>
+      </section>
     </main>
   );
 }
