@@ -7,12 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "lint:file": "eslint",
+    "lint:file": "next lint --file",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "test": "vitest run",
-    "lint:file": "next lint --file"
+    "test": "vitest run"
   },
   "dependencies": {
     "@prisma/client": "^7.4.1",
