@@ -98,20 +98,19 @@ export default function AuditPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-      <h1>Audit logs</h1>
+    <main style={{ padding: 24, fontFamily: 'sans-serif', display: 'grid', gap: 16 }}>
+      <h1 style={{ margin: 0 }}>Auditoría</h1>
 
       <section
         style={{
           border: '1px solid #ddd',
           borderRadius: 8,
           padding: 12,
-          marginBottom: 16,
           display: 'grid',
-          gap: 8,
+          gap: 10,
         }}
       >
-        <h2 style={{ margin: 0 }}>Datos</h2>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Acciones de datos</h2>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
           <button type="button" onClick={handleExport}>
@@ -134,6 +133,14 @@ export default function AuditPage() {
           <button type="button" onClick={handleImport}>
             Importar JSON
           </button>
+
+          <button type="button" onClick={refresh}>
+            Refrescar
+          </button>
+
+          <button type="button" onClick={handleClear}>
+            Limpiar auditoría
+          </button>
         </div>
 
         {dataMessage ? (
@@ -148,15 +155,27 @@ export default function AuditPage() {
         ) : null}
       </section>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'end', marginBottom: 16 }}>
+      <section
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          padding: 12,
+          display: 'flex',
+          gap: 12,
+          alignItems: 'end',
+          flexWrap: 'wrap',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 18, width: '100%' }}>Filtros</h2>
+
         <label>
-          Entity type
+          Tipo de entidad
           <br />
           <select
             value={entityTypeFilter}
             onChange={(event) => setEntityTypeFilter(event.target.value)}
           >
-            <option value="all">all</option>
+            <option value="all">Todos</option>
             {entityTypes.map((entityType) => (
               <option key={entityType} value={entityType}>
                 {entityType}
@@ -166,10 +185,10 @@ export default function AuditPage() {
         </label>
 
         <label>
-          Action
+          Acción
           <br />
           <select value={actionFilter} onChange={(event) => setActionFilter(event.target.value)}>
-            <option value="all">all</option>
+            <option value="all">Todas</option>
             {actions.map((action) => (
               <option key={action} value={action}>
                 {action}
@@ -177,63 +196,93 @@ export default function AuditPage() {
             ))}
           </select>
         </label>
+      </section>
 
-        <button type="button" onClick={refresh}>
-          Refresh
-        </button>
+      <section
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}
+      >
+        <h2 style={{ margin: 0, padding: 12, fontSize: 18, borderBottom: '1px solid #ddd' }}>
+          Tabla de logs
+        </h2>
 
-        <button type="button" onClick={handleClear}>
-          Clear audit logs
-        </button>
-      </div>
-
-      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 16 }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
-              createdAt
-            </th>
-            <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
-              action
-            </th>
-            <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
-              entityType
-            </th>
-            <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
-              entityId
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredLogs.map((log) => (
-            <tr
-              key={log.id}
-              onClick={() => setSelectedLogId(log.id)}
-              style={{
-                cursor: 'pointer',
-                backgroundColor: selectedLogId === log.id ? '#f2f2f2' : 'transparent',
-              }}
-            >
-              <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{formatDate(log.createdAt)}</td>
-              <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.action}</td>
-              <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.entityType}</td>
-              <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.entityId}</td>
-            </tr>
-          ))}
-          {filteredLogs.length === 0 ? (
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead style={{ background: '#f6f7f9' }}>
             <tr>
-              <td colSpan={4} style={{ padding: 8 }}>
-                Sin logs
-              </td>
+              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+                Fecha
+              </th>
+              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+                Acción
+              </th>
+              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+                Tipo de entidad
+              </th>
+              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+                ID de entidad
+              </th>
             </tr>
-          ) : null}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredLogs.map((log) => {
+              const isSelected = selectedLogId === log.id;
 
-      <h2>diffJson</h2>
-      <pre style={{ background: '#111', color: '#e9e9e9', padding: 12, overflowX: 'auto' }}>
-        {selectedLog ? JSON.stringify(selectedLog.diffJson, null, 2) : 'Selecciona un log'}
-      </pre>
+              return (
+                <tr
+                  key={log.id}
+                  onClick={() => setSelectedLogId(log.id)}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: isSelected ? '#e9f2ff' : 'transparent',
+                    boxShadow: isSelected ? 'inset 3px 0 0 #0d6efd' : 'none',
+                  }}
+                >
+                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>
+                    {formatDate(log.createdAt)}
+                  </td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.action}</td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.entityType}</td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.entityId}</td>
+                </tr>
+              );
+            })}
+            {filteredLogs.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: 12, color: '#666' }}>
+                  No hay logs para los filtros seleccionados.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </section>
+
+      <section
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}
+      >
+        <h2 style={{ margin: 0, padding: 12, fontSize: 18, borderBottom: '1px solid #ddd' }}>
+          Detalle del cambio
+        </h2>
+        <pre
+          style={{
+            margin: 0,
+            background: '#111',
+            color: '#e9e9e9',
+            padding: 12,
+            overflowX: 'auto',
+            minHeight: 160,
+          }}
+        >
+          {selectedLog ? JSON.stringify(selectedLog.diffJson, null, 2) : 'Selecciona un log'}
+        </pre>
+      </section>
     </main>
   );
 }
