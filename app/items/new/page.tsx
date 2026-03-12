@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
+import FieldHint from '@/src/components/feedback/FieldHint';
+import InlineAlert from '@/src/components/feedback/InlineAlert';
+import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
 import type { BaseUnit } from '@/src/domain/types';
 import { upsertItem } from '@/src/storage/local/store';
 
@@ -51,45 +54,52 @@ export default function NewItemPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 640 }}>
-      <h1>Nuevo Item</h1>
+    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 900 }}>
+      <h1>Crear nuevo item</h1>
+      <p>Completa los datos base para registrar un item en la plataforma de costeo.</p>
       <p>
-        <Link href="/items">Volver a items</Link>
+        <Link href="/items">← Volver al listado de items</Link>
       </p>
+      <ReturnToLink returnTo="/items" />
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          Name *
-          <br />
-          <input name="name" required style={{ width: '100%' }} />
-        </label>
+      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16 }}>
+        <h2>Datos del item</h2>
+        <FieldHint>Estos datos serán la base para cargar costos y calcular rendimientos.</FieldHint>
 
-        <label>
-          Category
-          <br />
-          <input name="category" style={{ width: '100%' }} />
-        </label>
+        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
+          <label>
+            Nombre *
+            <br />
+            <input name="name" required style={{ width: '100%' }} />
+          </label>
 
-        <label>
-          Base Unit *
-          <br />
-          <select name="baseUnit" defaultValue="g" style={{ width: '100%' }}>
-            <option value="g">g</option>
-            <option value="ml">ml</option>
-            <option value="unit">unit</option>
-          </select>
-        </label>
+          <label>
+            Categoría
+            <br />
+            <input name="category" style={{ width: '100%' }} />
+          </label>
 
-        <label>
-          Yield Rate Default (0-1)
-          <br />
-          <input name="yieldRateDefault" type="number" min="0.0001" max="1" step="0.0001" />
-        </label>
+          <label>
+            Unidad base *
+            <br />
+            <select name="baseUnit" defaultValue="g" style={{ width: '100%' }}>
+              <option value="g">g</option>
+              <option value="ml">ml</option>
+              <option value="unit">unit</option>
+            </select>
+          </label>
 
-        {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
+          <label>
+            Rendimiento por defecto (0-1)
+            <br />
+            <input name="yieldRateDefault" type="number" min="0.0001" max="1" step="0.0001" />
+          </label>
 
-        <button type="submit">Guardar</button>
-      </form>
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+
+          <button type="submit">Guardar item</button>
+        </form>
+      </section>
     </main>
   );
 }
