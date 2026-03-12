@@ -327,59 +327,89 @@ export default function SetupPendingPage() {
   }, [refreshCount, selectedBranch, selectedMonth]);
 
   return (
-    <main>
-      <h1>Pendientes (Setup)</h1>
+    <main style={{ display: 'grid', gap: 16 }}>
+      <section className="card" style={{ display: 'grid', gap: 8 }}>
+        <p style={{ margin: 0, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', opacity: 0.75 }}>Control operativo</p>
+        <h1 style={{ margin: 0 }}>Panel de pendientes de setup</h1>
+        <p style={{ margin: 0, opacity: 0.85 }}>
+          Revisa cobertura de costeo, brechas de precio y pendientes críticos por período para priorizar acciones.
+        </p>
+      </section>
 
-      <section className="card" style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-        <label>
-          Sucursal
-          <br />
-          <select className="select" value={selectedBranch} onChange={(event) => setSelectedBranch(event.target.value as SetupBranch)}>
-            <option value="Santiago">Santiago</option>
-            <option value="Temuco">Temuco</option>
-            <option value="Consolidado">Consolidado</option>
-          </select>
-        </label>
+      <section className="card" style={{ display: 'grid', gap: 12 }}>
+        <h2 style={{ margin: 0 }}>Filtros</h2>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'end', flexWrap: 'wrap' }}>
+          <label style={{ display: 'grid', gap: 6, minWidth: 180 }}>
+            <span style={{ fontSize: 12, opacity: 0.8 }}>Sucursal</span>
+            <select className="select" value={selectedBranch} onChange={(event) => setSelectedBranch(event.target.value as SetupBranch)}>
+              <option value="Santiago">Santiago</option>
+              <option value="Temuco">Temuco</option>
+              <option value="Consolidado">Consolidado</option>
+            </select>
+          </label>
 
-        <div>
-          Mes
-          <br />
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btnSecondary" type="button" onClick={() => setSelectedMonth(currentMonth)}>Este mes</button>
-            <button className="btnSecondary" type="button" onClick={() => setSelectedMonth(previousMonth)}>Mes pasado</button>
+          <label style={{ display: 'grid', gap: 6, minWidth: 220 }}>
+            <span style={{ fontSize: 12, opacity: 0.8 }}>Mes de análisis</span>
+            <select className="select" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)}>
+              {options.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <div style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: 12, opacity: 0.8 }}>Atajos</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btnSecondary" type="button" onClick={() => setSelectedMonth(currentMonth)}>Este mes</button>
+              <button className="btnSecondary" type="button" onClick={() => setSelectedMonth(previousMonth)}>Mes pasado</button>
+            </div>
           </div>
+
+          <button className="btn" type="button" onClick={() => setRefreshCount((prev) => prev + 1)}>Actualizar panel</button>
         </div>
-
-        <label>
-          Seleccionar mes
-          <br />
-          <select className="select" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)}>
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <button className="btn" type="button" onClick={() => setRefreshCount((prev) => prev + 1)}>Refrescar</button>
       </section>
 
       {report ? (
         <>
-          <section className="card">
-            <h2 style={{ marginTop: 0 }}>Estado de base</h2>
-            <p style={{ margin: '4px 0' }}><strong>Rango:</strong> {report.range.start} a {report.range.end}</p>
-            <p style={{ margin: '4px 0' }}><strong>Ventas reales (CLP):</strong> {report.ventasTotales.toLocaleString('es-CL')}</p>
-            <p style={{ margin: '4px 0' }}>
-              <strong>Cobertura de costeo:</strong> {report.ventasConCosto.toLocaleString('es-CL')} / {report.ventasTotales.toLocaleString('es-CL')} ({report.coverage.toFixed(2)}%)
-            </p>
-            <p style={{ margin: '4px 0' }}><strong>Productos vendidos sin costo:</strong> {report.sinCosto.length}</p>
-            <p style={{ margin: '4px 0' }}><strong>Productos vendidos sin precio vigente:</strong> {report.sinPrecio.length}</p>
-            <p style={{ margin: '4px 0' }}><strong>Productos vendidos sin receta (con costo manual):</strong> {report.sinRecetaConManual.length}</p>
-            <p style={{ margin: '4px 0' }}><strong>Productos vendidos sin receta (sin costo manual):</strong> {report.sinRecetaSinManual.length}</p>
+          <section className="card" style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <h2 style={{ margin: 0 }}>KPIs operativos</h2>
+              <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Rango: {report.range.start} a {report.range.end}</p>
+            </div>
+            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+              <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Ventas reales (CLP)</p>
+                <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.ventasTotales.toLocaleString('es-CL')}</p>
+              </article>
+              <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Cobertura de costeo</p>
+                <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.coverage.toFixed(2)}%</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, opacity: 0.8 }}>
+                  {report.ventasConCosto.toLocaleString('es-CL')} / {report.ventasTotales.toLocaleString('es-CL')}
+                </p>
+              </article>
+              <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Productos sin costo</p>
+                <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.sinCosto.length}</p>
+              </article>
+              <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Productos sin precio vigente</p>
+                <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.sinPrecio.length}</p>
+              </article>
+              <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Sin receta + costo manual</p>
+                <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.sinRecetaConManual.length}</p>
+              </article>
+              <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Sin receta + sin costo manual</p>
+                <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.sinRecetaSinManual.length}</p>
+              </article>
+            </div>
           </section>
 
-          <section className="card">
-            <h2 style={{ marginTop: 0 }}>Top 10 productos sin costo</h2>
+          <section className="card" style={{ display: 'grid', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>Top 10 productos sin costo</h2>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Priorizados por ventas reales del período.</p>
             <div className="tableWrap"><table className="table">
               <thead>
                 <tr>
@@ -397,18 +427,19 @@ export default function SetupPendingPage() {
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
                     <td>{row.costReason}</td>
-                    <td><Link href={`/products/${row.productId}`}>Ver producto</Link></td>
+                    <td><Link href={`/products/${row.productId}`}>Abrir producto →</Link></td>
                   </tr>
                 ))}
                 {report.sinCosto.length === 0 ? (
-                  <tr><td colSpan={5}>Sin pendientes</td></tr>
+                  <tr><td colSpan={5}>✅ No hay productos vendidos con costo pendiente en este período.</td></tr>
                 ) : null}
               </tbody>
             </table></div>
           </section>
 
-          <section className="card">
-            <h2 style={{ marginTop: 0 }}>Top 10 productos sin precio vigente</h2>
+          <section className="card" style={{ display: 'grid', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>Top 10 productos sin precio vigente</h2>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Estos productos se vendieron sin versión de precio efectiva.</p>
             <div className="tableWrap"><table className="table">
               <thead>
                 <tr>
@@ -424,18 +455,19 @@ export default function SetupPendingPage() {
                     <td>{row.productName}</td>
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td><Link href={`/products/${row.productId}`}>Ver producto</Link></td>
+                    <td><Link href={`/products/${row.productId}`}>Revisar precio →</Link></td>
                   </tr>
                 ))}
                 {report.sinPrecio.length === 0 ? (
-                  <tr><td colSpan={4}>Sin pendientes</td></tr>
+                  <tr><td colSpan={4}>✅ No hay brechas de precio vigente para productos vendidos.</td></tr>
                 ) : null}
               </tbody>
             </table></div>
           </section>
 
-          <section className="card">
-            <h2 style={{ marginTop: 0 }}>Top 10 productos sin receta y sin costo manual (críticos)</h2>
+          <section className="card" style={{ display: 'grid', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>Top 10 productos sin receta y sin costo manual (críticos)</h2>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Pendientes prioritarios que impiden costear ventas.</p>
             <div className="tableWrap"><table className="table">
               <thead>
                 <tr>
@@ -451,18 +483,19 @@ export default function SetupPendingPage() {
                     <td>{row.productName}</td>
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td><Link href={`/products/${row.productId}`}>Ver producto</Link></td>
+                    <td><Link href={`/products/${row.productId}`}>Crear receta/costo →</Link></td>
                   </tr>
                 ))}
                 {report.sinRecetaSinManual.length === 0 ? (
-                  <tr><td colSpan={4}>Sin pendientes críticos</td></tr>
+                  <tr><td colSpan={4}>✅ No hay pendientes críticos de receta/costo manual.</td></tr>
                 ) : null}
               </tbody>
             </table></div>
           </section>
 
-          <section className="card">
-            <h2 style={{ marginTop: 0 }}>Ingredientes sin costo vigente (Top 10)</h2>
+          <section className="card" style={{ display: 'grid', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>Ingredientes sin costo vigente (Top 10)</h2>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Insumos que bloquean el costeo de recetas y productos vendidos.</p>
             <div className="tableWrap"><table className="table">
               <thead>
                 <tr>
@@ -478,11 +511,11 @@ export default function SetupPendingPage() {
                     <td>{row.itemName}</td>
                     <td>{row.recipeIds.size}</td>
                     <td>{row.productIds.size}</td>
-                    <td><Link href={`/items/${row.itemId}`}>Ver ingrediente</Link></td>
+                    <td><Link href={`/items/${row.itemId}`}>Actualizar costo →</Link></td>
                   </tr>
                 ))}
                 {report.ingredientesSinCosto.length === 0 ? (
-                  <tr><td colSpan={4}>Sin pendientes</td></tr>
+                  <tr><td colSpan={4}>✅ Todos los ingredientes usados en ventas tienen costo vigente.</td></tr>
                 ) : null}
               </tbody>
             </table></div>
