@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
-import FieldHint from '@/src/components/feedback/FieldHint';
 import InlineAlert from '@/src/components/feedback/InlineAlert';
 import type { RecipeType, YieldUnit } from '@/src/domain/types';
 import { upsertRecipe } from '@/src/storage/local/store';
@@ -58,32 +57,28 @@ export default function NewRecipePage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
-      <header style={{ marginBottom: 20 }}>
-        <h1>Nueva receta</h1>
-        <p style={{ marginTop: 0, color: '#4b5563' }}>
-          Crea una receta base y luego completa sus líneas de composición desde el detalle.
-        </p>
-        <p style={{ marginBottom: 0 }}>
-          <Link href="/recipes">← Volver al listado de recetas</Link>
-        </p>
-      </header>
+    <main style={{ display: 'grid', gap: 16 }}>
+      <p style={{ margin: 0 }}>
+        <Link href="/recipes">← Volver a recetas</Link>
+      </p>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Metadatos</h2>
-        <FieldHint>Completa los campos obligatorios para poder crear la receta.</FieldHint>
+      <section className="card" style={{ maxWidth: 720, display: 'grid', gap: 16 }}>
+        <header style={{ display: 'grid', gap: 6 }}>
+          <h1 style={{ margin: 0 }}>Nueva receta</h1>
+          <p style={{ margin: 0, color: '#4b5563' }}>
+            Completa los datos base para crear una receta y continuar con su configuración.
+          </p>
+        </header>
 
-        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, marginTop: 12 }}>
-          <label>
-            Nombre *
-            <br />
-            <input name="name" required style={{ width: '100%' }} />
+        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 14 }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Nombre *</span>
+            <input className="input" name="name" required style={{ width: '100%' }} />
           </label>
 
-          <label>
-            Tipo *
-            <br />
-            <select name="type" defaultValue="fria" style={{ width: '100%' }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Tipo *</span>
+            <select className="input" name="type" defaultValue="fria" style={{ width: '100%' }}>
               {RECIPE_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -92,16 +87,22 @@ export default function NewRecipePage() {
             </select>
           </label>
 
-          <label>
-            Cantidad de yield *
-            <br />
-            <input name="yieldQty" type="number" min="0.0001" step="0.0001" required />
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Cantidad de yield *</span>
+            <input
+              className="input"
+              name="yieldQty"
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              required
+              style={{ width: '100%' }}
+            />
           </label>
 
-          <label>
-            Unidad de yield *
-            <br />
-            <select name="yieldUnit" defaultValue="portion" style={{ width: '100%' }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Unidad de yield *</span>
+            <select className="input" name="yieldUnit" defaultValue="portion" style={{ width: '100%' }}>
               {YIELD_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
                   {unit}
@@ -110,13 +111,16 @@ export default function NewRecipePage() {
             </select>
           </label>
 
-          <label>
-            <input name="active" type="checkbox" defaultChecked /> Activa
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input name="active" type="checkbox" defaultChecked />
+            <span>Activa</span>
           </label>
 
-          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+          {error ? <InlineAlert tone="error">No se pudo guardar: {error}</InlineAlert> : null}
 
-          <button type="submit">Guardar</button>
+          <div>
+            <button className="btn" type="submit">Guardar y continuar</button>
+          </div>
         </form>
       </section>
     </main>

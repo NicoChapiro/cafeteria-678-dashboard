@@ -53,7 +53,7 @@ export default function NewProductPage() {
         <header style={{ display: 'grid', gap: 6 }}>
           <h1 style={{ margin: 0 }}>Nuevo producto</h1>
           <p style={{ margin: 0, color: '#4b5563' }}>
-            Registra los datos base para crear un producto y continuar con su configuración.
+            Completa los datos base para crear un producto y continuar con su configuración.
           </p>
         </header>
 
@@ -87,10 +87,10 @@ export default function NewProductPage() {
             <span>Activo</span>
           </label>
 
-          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+          {error ? <InlineAlert tone="error">No se pudo guardar: {error}</InlineAlert> : null}
 
           <div>
-            <button className="btn" type="submit">Guardar</button>
+            <button className="btn" type="submit">Guardar y continuar</button>
           </div>
         </form>
       </section>
