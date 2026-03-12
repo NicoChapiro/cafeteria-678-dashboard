@@ -196,9 +196,9 @@ export default function SalesPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.date}:${branch}:${row.productId}`}>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.date}</td>
+            {rows.map((row, index) => (
+              <tr key={`${row.date}:${branch}:${row.productId}`} style={{ background: index % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{row.date}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.productName}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {row.qty.toLocaleString('es-CL')}
