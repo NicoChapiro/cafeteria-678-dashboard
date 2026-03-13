@@ -99,9 +99,14 @@ export default function AuditPage() {
 
   return (
     <main className="pageStack" style={{ gap: 12 }}>
-      <h1 style={{ margin: 0 }}>Auditoría</h1>
+      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 6 }}>
+        <h1 style={{ margin: 0 }}>Auditoría</h1>
+        <p className="muted" style={{ margin: 0 }}>
+          Revisa trazabilidad de cambios y ejecuta respaldo/importación de datos.
+        </p>
+      </section>
 
-      <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120 }}>
+      <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120, padding: 14 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>Acciones de datos</h2>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
@@ -109,7 +114,7 @@ export default function AuditPage() {
             Exportar JSON
           </button>
 
-          <label>
+          <label style={{ minWidth: 260 }}>
             Archivo JSON
             <br />
             <input
@@ -148,10 +153,10 @@ export default function AuditPage() {
         ) : null}
       </section>
 
-      <section className="card" style={{ display: 'flex', gap: 10, alignItems: 'end', flexWrap: 'wrap', marginBottom: 0, maxWidth: 1120 }}>
+      <section className="card" style={{ display: 'flex', gap: 10, alignItems: 'end', flexWrap: 'wrap', marginBottom: 0, maxWidth: 1120, padding: 14 }}>
         <h2 style={{ margin: 0, fontSize: 18, width: '100%' }}>Filtros</h2>
 
-        <label>
+        <label style={{ minWidth: 220 }}>
           Tipo de entidad
           <br />
           <select
@@ -168,7 +173,7 @@ export default function AuditPage() {
           </select>
         </label>
 
-        <label>
+        <label style={{ minWidth: 220 }}>
           Acción
           <br />
           <select className="select" value={actionFilter} onChange={(event) => setActionFilter(event.target.value)}>
@@ -182,10 +187,10 @@ export default function AuditPage() {
         </label>
       </section>
 
-      <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120, padding: 12 }}>
+      <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120, padding: 14 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>Tabla de logs</h2>
 
-        <div className="tableWrap listPageTable"><table className="table">
+        <div className="tableWrap listPageTable"><table className="table" style={{ minWidth: 860 }}>
           <thead>
             <tr>
               <th>
@@ -212,8 +217,8 @@ export default function AuditPage() {
                   onClick={() => setSelectedLogId(log.id)}
                   style={{
                     cursor: 'pointer',
-                    backgroundColor: isSelected ? '#e9f2ff' : 'transparent',
-                    boxShadow: isSelected ? 'inset 3px 0 0 #0d6efd' : 'none',
+                    backgroundColor: isSelected ? 'rgba(214, 186, 232, 0.25)' : 'transparent',
+                    boxShadow: isSelected ? 'inset 3px 0 0 #6f4e8b' : 'none',
                   }}
                 >
                   <td>
@@ -236,7 +241,7 @@ export default function AuditPage() {
         </table></div>
       </section>
 
-      <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120, padding: 12 }}>
+      <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120, padding: 14 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>
           Detalle del cambio
         </h2>
