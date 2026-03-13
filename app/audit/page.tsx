@@ -113,7 +113,7 @@ export default function AuditPage() {
         <h2 style={{ margin: 0, fontSize: 18 }}>Acciones de datos</h2>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-          <button type="button" onClick={handleExport}>
+          <button className="btnSecondary" type="button" onClick={handleExport}>
             Exportar JSON
           </button>
 
@@ -121,6 +121,7 @@ export default function AuditPage() {
             Archivo JSON
             <br />
             <input
+              className="input"
               type="file"
               accept="application/json,.json"
               onChange={(event) => {
@@ -130,15 +131,15 @@ export default function AuditPage() {
             />
           </label>
 
-          <button type="button" onClick={handleImport}>
+          <button className="btn" type="button" onClick={handleImport}>
             Importar JSON
           </button>
 
-          <button type="button" onClick={refresh}>
+          <button className="btnSecondary" type="button" onClick={refresh}>
             Refrescar
           </button>
 
-          <button type="button" onClick={handleClear}>
+          <button className="btnSecondary" type="button" onClick={handleClear}>
             Limpiar auditoría
           </button>
         </div>
@@ -172,6 +173,7 @@ export default function AuditPage() {
           Tipo de entidad
           <br />
           <select
+            className="select"
             value={entityTypeFilter}
             onChange={(event) => setEntityTypeFilter(event.target.value)}
           >
@@ -187,7 +189,7 @@ export default function AuditPage() {
         <label>
           Acción
           <br />
-          <select value={actionFilter} onChange={(event) => setActionFilter(event.target.value)}>
+          <select className="select" value={actionFilter} onChange={(event) => setActionFilter(event.target.value)}>
             <option value="all">Todas</option>
             {actions.map((action) => (
               <option key={action} value={action}>

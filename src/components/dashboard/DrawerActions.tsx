@@ -13,11 +13,11 @@ export function DrawerActions({ actions }: { actions: DrawerAction[] }) {
             <article key={`${action.href}-${action.label}`} className={isPrimary ? 'calloutWarning costingDrawerAction costingDrawerAction--primary' : 'calloutInfo costingDrawerAction'}>
               <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 8 }}>
                 <strong>{action.label}</strong>
-                <span className={`badge ${isPrimary ? 'badge--warn' : 'badge--info'}`}>{isPrimary ? 'Prioritaria' : 'Secundaria'}</span>
+                <span className={`badge badgeSmall ${isPrimary ? 'badge--warn' : 'badge--info'}`}>{isPrimary ? 'Prioritaria' : 'Secundaria'}</span>
               </div>
               {action.description ? <p className="muted" style={{ marginTop: 4 }}>{action.description}</p> : null}
               <div style={{ marginTop: 8 }}>
-                <Link className={isPrimary ? 'btn' : 'btnSecondary'} href={action.href}>{action.ctaLabel ?? 'Abrir'}</Link>
+                <Link className={isPrimary ? 'btn btnSmall' : 'btnSecondary btnSmall'} href={action.href}>{action.ctaLabel ?? 'Abrir'}</Link>
               </div>
             </article>
           );

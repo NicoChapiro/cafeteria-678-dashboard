@@ -18,7 +18,7 @@ export function ProductCard({ entry, selected, onOpen }: { entry: ProductWithCos
           <h3 style={{ margin: 0 }}>{entry.product.name}</h3>
           <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>{entry.product.category || 'Sin categoría'}</p>
         </div>
-        <span className="badge badge--info">{getCardActionLabel(entry.costing)}</span>
+        <span className="badge badge--neutral badgeSmall">{getCardActionLabel(entry.costing)}</span>
       </div>
       <div style={{ marginTop: 8 }}><ProductCardBadges badges={entry.costing.badges} /></div>
       <div style={{ marginTop: 10 }}><ProductCardMeta entry={entry} /></div>

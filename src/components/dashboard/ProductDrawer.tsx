@@ -51,7 +51,7 @@ export function ProductDrawer(props: {
           <h2 style={{ margin: '2px 0 0', fontSize: 20 }}>{props.selected.product.name}</h2>
           <p className="costingDrawer__context">{context.branch} · al {context.asOf}</p>
         </div>
-        <button ref={props.closeButtonRef} type="button" className="btnSecondary" onClick={props.onClose}>Cerrar</button>
+        <button ref={props.closeButtonRef} type="button" className="btnSecondary btnSmall" onClick={props.onClose}>Cerrar</button>
       </header>
 
       <div className="costingDrawer__statusRow">
