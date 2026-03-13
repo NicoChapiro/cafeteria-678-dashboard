@@ -14,13 +14,13 @@ const salesFlowSections: Section[] = [
     title: 'Registrar ventas',
     description: 'Carga y revisa ventas por sucursal en el período operativo.',
     href: '/sales',
-    cta: 'Abrir ventas',
+    cta: 'Ir a ventas',
   },
   {
     title: 'Importar ventas FU.DO',
     description: 'Importación estándar para dejar el flujo diario al día.',
     href: '/sales/import',
-    cta: 'Abrir importador FU.DO',
+    cta: 'Ir a importador FU.DO',
   },
 ];
 
@@ -38,10 +38,10 @@ const masterDataSections: Section[] = [
     cta: 'Ir a recetas',
   },
   {
-    title: 'Items',
+    title: 'Ítems',
     description: 'Mantén insumos, unidad de compra y rendimiento operacional.',
     href: '/items',
-    cta: 'Ir a items',
+    cta: 'Ir a ítems',
   },
   {
     title: 'Pendientes de setup',
@@ -53,7 +53,7 @@ const masterDataSections: Section[] = [
     title: 'Importar base',
     description: 'Carga consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
-    cta: 'Abrir importar base',
+    cta: 'Ir a importar base',
   },
 ];
 
@@ -62,7 +62,7 @@ const controlSections: Section[] = [
     title: 'Dashboard de rentabilidad',
     description: 'Analiza rentabilidad teórica con ventas reales por sucursal y período.',
     href: '/dashboard',
-    cta: 'Abrir dashboard',
+    cta: 'Ir a dashboard',
   },
   {
     title: 'Auditoría',
@@ -120,7 +120,7 @@ export default function HomePage() {
     <main style={{ display: 'grid', gap: 12 }}>
       <header className="card" style={{ marginBottom: 0, padding: 12 }}>
         <span className="badge badge--info" style={{ marginBottom: 8 }}>
-          Inicio operativo
+          Inicio de operación
         </span>
         <h1 style={{ margin: '0 0 6px 0', fontSize: 26, lineHeight: 1.2 }}>Panel de operación Cafetería 678</h1>
         <p className="muted" style={{ marginBottom: 10, maxWidth: 76 * 8, lineHeight: 1.35 }}>
@@ -128,7 +128,7 @@ export default function HomePage() {
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link className="btn" href="/products/costing">
-            Ir a Costeo de productos
+            Ir a costeo de productos
           </Link>
           <Link className="btnSecondary" href="/dashboard">
             Ver dashboard de rentabilidad

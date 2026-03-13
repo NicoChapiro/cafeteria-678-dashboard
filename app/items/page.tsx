@@ -37,14 +37,14 @@ export default function ItemsPage() {
         }}
       >
         <div>
-          <h1 style={{ marginBottom: 8 }}>Gestión de items</h1>
+          <h1 style={{ marginBottom: 8 }}>Gestión de ítems</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
             Revisa rápidamente tus insumos, su rendimiento y fecha de actualización.
           </p>
           <span className="badge badge--info">Total: {items.length}</span>
         </div>
         <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
-          + Nuevo item
+          + Crear nuevo ítem
         </Link>
       </div>
 
@@ -83,7 +83,7 @@ export default function ItemsPage() {
                 <td>{formatDate(item.updatedAt)}</td>
                 <td>
                   <Link href={`/items/${item.id}`} className="btnSecondary">
-                    Ver detalle →
+                    Editar →
                   </Link>
                 </td>
               </tr>
@@ -94,19 +94,19 @@ export default function ItemsPage() {
                   <div className="calloutInfo">
                     {items.length === 0 ? (
                       <>
-                        <strong>No hay items creados todavía.</strong>
+                        <strong>No hay ítems creados todavía.</strong>
                         <p className="muted" style={{ marginTop: 8 }}>
-                          Crea tu primer item para comenzar a gestionar insumos y costos.
+                          Crea tu primer ítem para comenzar a gestionar insumos y costos.
                         </p>
                         <Link href="/items/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
-                          + Nuevo item
+                          + Crear nuevo ítem
                         </Link>
                       </>
                     ) : (
                       <>
                         <strong>Sin resultados para la búsqueda actual.</strong>
                         <p className="muted" style={{ marginTop: 8 }}>
-                          Ajusta el nombre buscado para encontrar otros items.
+                          Ajusta el nombre buscado para encontrar otros ítems.
                         </p>
                       </>
                     )}

@@ -194,7 +194,7 @@ export default function SalesTemucoPage() {
         </label>
 
         <button className="btn" type="button" onClick={handleSave}>
-          Guardar
+          Guardar cambios
         </button>
         <button className="btnSecondary" type="button" onClick={handleDuplicatePrevious}>
           Duplicar día anterior

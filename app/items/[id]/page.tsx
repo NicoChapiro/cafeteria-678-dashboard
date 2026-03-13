@@ -144,7 +144,7 @@ export default function ItemDetailPage() {
   if (pageState === 'loading') {
     return (
       <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>Cargando item…</h1>
+        <h1>Cargando ítem…</h1>
         <p>Estamos preparando la información para edición.</p>
       </main>
     );
@@ -153,10 +153,10 @@ export default function ItemDetailPage() {
   if (pageState === 'missing') {
     return (
       <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>No encontramos este item</h1>
+        <h1>No encontramos este ítem</h1>
         <p>Puede que haya sido eliminado o que el enlace esté incompleto.</p>
         <p>
-          <Link href="/items">Volver a items</Link>
+          <Link href="/items">Volver a ítems</Link>
         </p>
         <ReturnToLink returnTo={returnTo} />
       </main>
@@ -180,7 +180,7 @@ export default function ItemDetailPage() {
       }
 
       if (!item) {
-        throw new Error('item no encontrado');
+        throw new Error('ítem no encontrado');
       }
 
       const updated = upsertItem({
@@ -194,7 +194,7 @@ export default function ItemDetailPage() {
       setItem(updated);
       setSuccessMessage('Datos base guardados correctamente.');
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Error al actualizar item');
+      setError(submitError instanceof Error ? submitError.message : 'Error al actualizar ítem');
     }
   }
 
@@ -239,7 +239,7 @@ export default function ItemDetailPage() {
 
     try {
       if (!item) {
-        throw new Error('item no encontrado');
+        throw new Error('ítem no encontrado');
       }
 
       const parsed = parseCostForm(costForms[branch]);
@@ -259,15 +259,15 @@ export default function ItemDetailPage() {
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 900 }}>
       {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
-      <h1>Item: {item.name}</h1>
+      <h1>Ítem: {item.name}</h1>
       <p>
-        <Link href="/items">Volver a items</Link>
+        <Link href="/items">Volver a ítems</Link>
       </p>
       <ReturnToLink returnTo={returnTo} />
 
       <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
-        <h2>Datos del item</h2>
-        <FieldHint>Actualiza la información base del item para mantener consistencia de costeo.</FieldHint>
+        <h2>Datos del ítem</h2>
+        <FieldHint>Actualiza la información base del ítem para mantener consistencia de costeo.</FieldHint>
         <form onSubmit={onItemSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
             Nombre *

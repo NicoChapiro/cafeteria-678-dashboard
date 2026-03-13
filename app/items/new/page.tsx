@@ -54,14 +54,14 @@ export default function NewItemPage() {
   return (
     <main style={{ display: 'grid', gap: 16 }}>
       <p style={{ margin: 0 }}>
-        <Link href="/items">← Volver a items</Link>
+        <Link href="/items">← Volver a ítems</Link>
       </p>
 
       <section className="card" style={{ maxWidth: 720, display: 'grid', gap: 16 }}>
         <header style={{ display: 'grid', gap: 6 }}>
-          <h1 style={{ margin: 0 }}>Nuevo item</h1>
+          <h1 style={{ margin: 0 }}>Crear nuevo ítem</h1>
           <p style={{ margin: 0, color: '#4b5563' }}>
-            Completa los datos base para crear un item y continuar con su configuración.
+            Completa los datos base para crear un ítem y continuar con su configuración.
           </p>
         </header>
 
@@ -101,7 +101,7 @@ export default function NewItemPage() {
           {error ? <InlineAlert tone="error">No se pudo guardar: {error}</InlineAlert> : null}
 
           <div>
-            <button className="btn" type="submit">Guardar y continuar</button>
+            <button className="btn" type="submit">Guardar</button>
           </div>
         </form>
       </section>

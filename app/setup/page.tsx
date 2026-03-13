@@ -427,7 +427,7 @@ export default function SetupPendingPage() {
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
                     <td>{row.costReason}</td>
-                    <td><Link href={`/products/${row.productId}`}>Abrir producto →</Link></td>
+                    <td><Link href={`/products/${row.productId}`}>Editar producto →</Link></td>
                   </tr>
                 ))}
                 {report.sinCosto.length === 0 ? (
@@ -511,7 +511,7 @@ export default function SetupPendingPage() {
                     <td>{row.itemName}</td>
                     <td>{row.recipeIds.size}</td>
                     <td>{row.productIds.size}</td>
-                    <td><Link href={`/items/${row.itemId}`}>Actualizar costo →</Link></td>
+                    <td><Link href={`/items/${row.itemId}`}>Editar costo →</Link></td>
                   </tr>
                 ))}
                 {report.ingredientesSinCosto.length === 0 ? (
