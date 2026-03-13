@@ -327,8 +327,8 @@ export default function SetupPendingPage() {
   }, [refreshCount, selectedBranch, selectedMonth]);
 
   return (
-    <main style={{ display: 'grid', gap: 16 }}>
-      <section className="card" style={{ display: 'grid', gap: 8 }}>
+    <main className="pageStack" style={{ gap: 14 }}>
+      <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120 }}>
         <p style={{ margin: 0, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', opacity: 0.75 }}>Control operativo</p>
         <h1 style={{ margin: 0 }}>Panel de pendientes de setup</h1>
         <p style={{ margin: 0, opacity: 0.85 }}>
@@ -336,7 +336,7 @@ export default function SetupPendingPage() {
         </p>
       </section>
 
-      <section className="card" style={{ display: 'grid', gap: 12 }}>
+      <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120 }}>
         <h2 style={{ margin: 0 }}>Filtros</h2>
         <div style={{ display: 'flex', gap: 10, alignItems: 'end', flexWrap: 'wrap' }}>
           <label style={{ display: 'grid', gap: 6, minWidth: 180 }}>
@@ -371,12 +371,12 @@ export default function SetupPendingPage() {
 
       {report ? (
         <>
-          <section className="card" style={{ display: 'grid', gap: 12 }}>
+          <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0 }}>KPIs operativos</h2>
               <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Rango: {report.range.start} a {report.range.end}</p>
             </div>
-            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
               <article style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
                 <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>Ventas reales (CLP)</p>
                 <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{report.ventasTotales.toLocaleString('es-CL')}</p>
@@ -407,10 +407,10 @@ export default function SetupPendingPage() {
             </div>
           </section>
 
-          <section className="card" style={{ display: 'grid', gap: 8 }}>
+          <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120 }}>
             <h2 style={{ margin: 0 }}>Top 10 productos sin costo</h2>
             <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Priorizados por ventas reales del período.</p>
-            <div className="tableWrap"><table className="table">
+            <div className="tableWrap listPageTable"><table className="table">
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -437,10 +437,10 @@ export default function SetupPendingPage() {
             </table></div>
           </section>
 
-          <section className="card" style={{ display: 'grid', gap: 8 }}>
+          <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120 }}>
             <h2 style={{ margin: 0 }}>Top 10 productos sin precio vigente</h2>
             <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Estos productos se vendieron sin versión de precio efectiva.</p>
-            <div className="tableWrap"><table className="table">
+            <div className="tableWrap listPageTable"><table className="table">
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -465,10 +465,10 @@ export default function SetupPendingPage() {
             </table></div>
           </section>
 
-          <section className="card" style={{ display: 'grid', gap: 8 }}>
+          <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120 }}>
             <h2 style={{ margin: 0 }}>Top 10 productos sin receta y sin costo manual (críticos)</h2>
             <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Pendientes prioritarios que impiden costear ventas.</p>
-            <div className="tableWrap"><table className="table">
+            <div className="tableWrap listPageTable"><table className="table">
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -493,10 +493,10 @@ export default function SetupPendingPage() {
             </table></div>
           </section>
 
-          <section className="card" style={{ display: 'grid', gap: 8 }}>
+          <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120 }}>
             <h2 style={{ margin: 0 }}>Ingredientes sin costo vigente (Top 10)</h2>
             <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Insumos que bloquean el costeo de recetas y productos vendidos.</p>
-            <div className="tableWrap"><table className="table">
+            <div className="tableWrap listPageTable"><table className="table">
               <thead>
                 <tr>
                   <th>Ingrediente</th>

@@ -9,12 +9,12 @@ export default function PageShell({ children }: PageShellProps) {
     <main
       style={{
         width: '100%',
-        maxWidth: 1180,
+        maxWidth: 1280,
         margin: '0 auto',
-        padding: 24,
+        padding: 20,
         display: 'flex',
         flexDirection: 'column',
-        gap: 16,
+        gap: 14,
       }}
     >
       {children}

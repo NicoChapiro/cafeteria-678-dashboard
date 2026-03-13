@@ -30,16 +30,9 @@ export default function RecipesPage() {
   }, [recipes, search]);
 
   return (
-    <main>
+    <main className="pageStack">
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 12,
-          marginBottom: 14,
-          flexWrap: 'wrap',
-        }}
+        className="listPageHeader"
       >
         <div>
           <h1 style={{ marginBottom: 8 }}>Gestión de recetas</h1>
@@ -53,7 +46,7 @@ export default function RecipesPage() {
         </Link>
       </div>
 
-      <div className="card" style={{ marginBottom: 12 }}>
+      <div className="card" style={{ marginBottom: 0, maxWidth: 760 }}>
         <label htmlFor="recipes-search" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>
           Buscar por nombre
         </label>
@@ -67,7 +60,7 @@ export default function RecipesPage() {
         />
       </div>
 
-      <div className="tableWrap">
+      <div className="tableWrap listPageTable">
         <table className="table" style={{ minWidth: 900 }}>
           <thead>
             <tr>
