@@ -34,7 +34,8 @@ export default function InlineAlert({ tone = 'info', children }: InlineAlertProp
   const style = toneStyles[tone];
 
   return (
-    <p
+    <div
+      role={tone === 'error' || tone === 'warning' ? 'alert' : 'status'}
       style={{
         margin: 0,
         padding: '10px 12px',
@@ -42,9 +43,11 @@ export default function InlineAlert({ tone = 'info', children }: InlineAlertProp
         border: `1px solid ${style.border}`,
         background: style.background,
         color: style.color,
+        display: 'grid',
+        gap: 4,
       }}
     >
       {children}
-    </p>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import EmptyState from '@/src/components/feedback/EmptyState';
 import KpiCard from '@/src/components/KpiCard';
 import PageHeader from '@/src/components/PageHeader';
 import PageShell from '@/src/components/PageShell';
@@ -211,23 +212,15 @@ export default function SalesPage() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={4} style={{ padding: 16 }}>
-                  <div
-                    style={{
-                      border: '1px dashed #d1d5db',
-                      borderRadius: 8,
-                      padding: 16,
-                      background: isInvalidRange ? '#fef2f2' : '#f9fafb',
-                    }}
-                  >
-                    <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
-                      {isInvalidRange ? 'Rango de fechas inválido' : 'Sin resultados para esta búsqueda'}
-                    </p>
-                    <p style={{ margin: 0, color: '#4b5563' }}>
-                      {isInvalidRange
+                  <EmptyState
+                    tone={isInvalidRange ? 'error' : 'neutral'}
+                    title={isInvalidRange ? 'Rango de fechas inválido' : 'Sin resultados para esta búsqueda'}
+                    description={
+                      isInvalidRange
                         ? 'La fecha “Desde” debe ser menor o igual a la fecha “Hasta”.'
-                        : 'No hay ventas para los filtros seleccionados. Prueba con otro rango o sucursal.'}
-                    </p>
-                  </div>
+                        : 'No hay ventas para los filtros seleccionados. Prueba con otro rango o sucursal.'
+                    }
+                  />
                 </td>
               </tr>
             ) : null}

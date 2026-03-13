@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import BackNav from '@/src/components/BackNav';
+import EmptyState from '@/src/components/feedback/EmptyState';
 import KpiCard from '@/src/components/KpiCard';
 import PageHeader from '@/src/components/PageHeader';
 import PageShell from '@/src/components/PageShell';
@@ -507,7 +508,7 @@ export default function DashboardPage() {
             {dashboard.rows.length === 0 ? (
               <tr>
                 <td colSpan={11} style={{ padding: 8 }}>
-                  No hay ventas para el rango seleccionado.
+                  <EmptyState compact title="No hay ventas para el rango seleccionado." description="Ajusta el rango de fechas o la sucursal para ver resultados." />
                 </td>
               </tr>
             ) : null}

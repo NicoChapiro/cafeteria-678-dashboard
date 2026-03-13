@@ -264,6 +264,51 @@ a:hover { color: var(--brand-orange); }
   padding: 10px;
 }
 
+.emptyState {
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f8fafc;
+  display: grid;
+  gap: 6px;
+}
+
+.emptyState--compact {
+  padding: 10px;
+}
+
+.emptyState--info {
+  border-color: rgba(147, 197, 253, 0.8);
+  background: #eff6ff;
+}
+
+.emptyState--warning {
+  border-color: rgba(251, 191, 36, 0.8);
+  background: #fffbeb;
+}
+
+.emptyState--error {
+  border-color: rgba(248, 113, 113, 0.8);
+  background: #fef2f2;
+}
+
+.emptyState__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.emptyState__description {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.emptyState__action {
+  margin-top: 2px;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
