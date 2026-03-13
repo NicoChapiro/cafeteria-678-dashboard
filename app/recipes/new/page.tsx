@@ -64,7 +64,7 @@ export default function NewRecipePage() {
 
       <section className="card" style={{ maxWidth: 720, display: 'grid', gap: 16 }}>
         <header style={{ display: 'grid', gap: 6 }}>
-          <h1 style={{ margin: 0 }}>Nueva receta</h1>
+          <h1 style={{ margin: 0 }}>Crear nueva receta</h1>
           <p style={{ margin: 0, color: '#4b5563' }}>
             Completa los datos base para crear una receta y continuar con su configuración.
           </p>
@@ -119,7 +119,7 @@ export default function NewRecipePage() {
           {error ? <InlineAlert tone="error">No se pudo guardar: {error}</InlineAlert> : null}
 
           <div>
-            <button className="btn" type="submit">Guardar y continuar</button>
+            <button className="btn" type="submit">Guardar</button>
           </div>
         </form>
       </section>

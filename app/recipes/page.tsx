@@ -48,7 +48,7 @@ export default function RecipesPage() {
           <span className="badge badge--info">Total: {recipes.length}</span>
         </div>
         <Link href="/recipes/new" className="btn" style={{ alignSelf: 'center' }}>
-          + Nueva receta
+          + Crear nueva receta
         </Link>
       </div>
 
@@ -72,7 +72,7 @@ export default function RecipesPage() {
             <tr>
               <th>Nombre</th>
               <th>Tipo</th>
-              <th>Yield</th>
+              <th>Rendimiento</th>
               <th>Activa</th>
               <th>Actualizado</th>
               <th>Acción</th>
@@ -97,7 +97,7 @@ export default function RecipesPage() {
                 <td>{formatDate(recipe.updatedAt)}</td>
                 <td>
                   <Link href={`/recipes/${recipe.id}`} className="btnSecondary">
-                    Ver detalle →
+                    Editar →
                   </Link>
                 </td>
               </tr>
@@ -113,7 +113,7 @@ export default function RecipesPage() {
                           Crea tu primera receta para comenzar a gestionar costos y producción.
                         </p>
                         <Link href="/recipes/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
-                          + Nueva receta
+                          + Crear nueva receta
                         </Link>
                       </>
                     ) : (

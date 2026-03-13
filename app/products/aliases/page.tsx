@@ -127,7 +127,7 @@ export default function ProductAliasesPage() {
           </label>
 
           <button className="btnSecondary" type="submit">
-            Guardar alias
+            Guardar cambios
           </button>
 
           {message ? <p style={{ margin: 0 }}>{message}</p> : null}

@@ -82,7 +82,7 @@ export function getCardActionLabel(costing: ProductAsOfResult): string {
   if (costing.missingItems.length > 0) return 'Completar costos';
   if (costing.priceClp === null) return 'Definir precio';
   if (costing.costClp === null) return 'Definir costo';
-  return 'Ver detalle';
+  return 'Editar';
 }
 
 export function getBadgeTone(badge: string): 'warn' | 'info' {

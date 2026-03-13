@@ -286,7 +286,7 @@ export default function ProductDetailPage() {
           result[branch] = {
             cost: null,
             margin: null,
-            warning: 'Faltan costos vigentes de algún item',
+            warning: 'Faltan costos vigentes de algún ítem',
           };
           return;
         }
@@ -575,7 +575,7 @@ export default function ProductDetailPage() {
 
           {baseError ? <InlineAlert tone="error">{baseError}</InlineAlert> : null}
 
-          <button className="btn" type="submit">Guardar datos base</button>
+          <button className="btn" type="submit">Guardar cambios</button>
         </form>
       </section>
 

@@ -14,8 +14,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Productos', href: '/products' },
   { label: 'Recetas', href: '/recipes' },
-  { label: 'Items', href: '/items' },
-  { label: 'Setup', href: '/setup' },
+  { label: 'Ítems', href: '/items' },
+  { label: 'Configuración', href: '/setup' },
   { label: 'Auditoría', href: '/audit' },
 ];
 

@@ -43,7 +43,7 @@ export default function ProductsPage() {
           <span className="badge badge--info">Total: {products.length}</span>
         </div>
         <Link href="/products/new" className="btn" style={{ alignSelf: 'center' }}>
-          + Nuevo producto
+          + Crear nuevo producto
         </Link>
       </div>
 
@@ -85,7 +85,7 @@ export default function ProductsPage() {
               <td>{formatDate(product.updatedAt)}</td>
               <td>
                 <Link href={`/products/${product.id}`} className="btnSecondary">
-                  Ver detalle →
+                  Editar →
                 </Link>
               </td>
             </tr>
@@ -101,7 +101,7 @@ export default function ProductsPage() {
                         Crea tu primer producto para comenzar a operar el catálogo.
                       </p>
                       <Link href="/products/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
-                        + Nuevo producto
+                        + Crear nuevo producto
                       </Link>
                     </>
                   ) : (

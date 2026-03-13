@@ -51,7 +51,7 @@ export default function NewProductPage() {
 
       <section className="card" style={{ maxWidth: 720, display: 'grid', gap: 16 }}>
         <header style={{ display: 'grid', gap: 6 }}>
-          <h1 style={{ margin: 0 }}>Nuevo producto</h1>
+          <h1 style={{ margin: 0 }}>Crear nuevo producto</h1>
           <p style={{ margin: 0, color: '#4b5563' }}>
             Completa los datos base para crear un producto y continuar con su configuración.
           </p>
@@ -90,7 +90,7 @@ export default function NewProductPage() {
           {error ? <InlineAlert tone="error">No se pudo guardar: {error}</InlineAlert> : null}
 
           <div>
-            <button className="btn" type="submit">Guardar y continuar</button>
+            <button className="btn" type="submit">Guardar</button>
           </div>
         </form>
       </section>
