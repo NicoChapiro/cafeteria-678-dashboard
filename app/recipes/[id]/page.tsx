@@ -416,53 +416,56 @@ export default function RecipeDetailPage() {
       <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
         <h2 className="cardTitle">Metadatos</h2>
         <FieldHint>Define los datos base de la receta antes de editar sus líneas y costos.</FieldHint>
-        <form onSubmit={handleMetaSubmit} style={{ display: 'grid', gap: 12 }}>
-          <label>
-            Nombre *
-            <br />
-            <input className="input" name="name" defaultValue={recipe.name} required style={{ width: '100%' }} />
-          </label>
+        <form onSubmit={handleMetaSubmit} className="sectionStack" style={{ gap: 14 }}>
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+            <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+              <span>Nombre *</span>
+              <input className="input" name="name" defaultValue={recipe.name} required style={{ width: '100%' }} />
+              <small className="muted" style={{ fontSize: 12 }}>Nombre visible para búsqueda y uso en recetas hijas.</small>
+            </label>
 
-          <label>
-            Tipo *
-            <br />
-            <select className="input" name="type" defaultValue={recipe.type} style={{ width: '100%' }}>
-              {RECIPE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+              <span>Tipo *</span>
+              <select className="input" name="type" defaultValue={recipe.type} style={{ width: '100%' }}>
+                {RECIPE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              <small className="muted" style={{ fontSize: 12 }}>Clasifica la receta para mantener consistencia del catálogo.</small>
+            </label>
 
-          <label>
-            Cantidad de yield *
-            <br />
-            <input
-              className="input"
-              name="yieldQty"
-              type="number"
-              min="0.0001"
-              step="0.0001"
-              defaultValue={recipe.yieldQty}
-              required
-            />
-          </label>
+            <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+              <span>Cantidad de yield *</span>
+              <input
+                className="input"
+                name="yieldQty"
+                type="number"
+                min="0.0001"
+                step="0.0001"
+                defaultValue={recipe.yieldQty}
+                required
+              />
+              <small className="muted" style={{ fontSize: 12 }}>Define el rendimiento total producido por la receta.</small>
+            </label>
 
-          <label>
-            Unidad de yield *
-            <br />
-            <select className="input" name="yieldUnit" defaultValue={recipe.yieldUnit} style={{ width: '100%' }}>
-              {YIELD_UNITS.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+              <span>Unidad de yield *</span>
+              <select className="input" name="yieldUnit" defaultValue={recipe.yieldUnit} style={{ width: '100%' }}>
+                {YIELD_UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+              <small className="muted" style={{ fontSize: 12 }}>Unidad usada para costeo por porción y sub-recetas.</small>
+            </label>
+          </div>
 
-          <label>
-            <input name="active" type="checkbox" defaultChecked={recipe.active} /> Activa
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+            <input name="active" type="checkbox" defaultChecked={recipe.active} />
+            Receta activa
           </label>
 
           {metaError ? <InlineAlert tone="error">{metaError}</InlineAlert> : null}
@@ -475,10 +478,9 @@ export default function RecipeDetailPage() {
         <h2 className="cardTitle">Costeo teórico</h2>
         <FieldHint>Calcula una vista rápida del costo total y por unidad de yield según sucursal y fecha.</FieldHint>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-          <label>
-            Sucursal
-            <br />
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', alignItems: 'end' }}>
+          <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+            <span>Sucursal</span>
             <select className="input" value={costingBranch} onChange={(event) => setCostingBranch(event.target.value as Branch)}>
               {BRANCHES.map((branch) => (
                 <option key={branch} value={branch}>{branch}</option>
@@ -486,13 +488,14 @@ export default function RecipeDetailPage() {
             </select>
           </label>
 
-          <label>
-            Fecha (as-of)
-            <br />
+          <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+            <span>Fecha (as-of)</span>
             <input className="input" type="date" value={costingAsOfDate} onChange={(event) => setCostingAsOfDate(event.target.value)} />
           </label>
 
-          <button className="btn" type="button" onClick={handleCalculateCost}>Calcular costo</button>
+          <div style={{ display: 'flex', alignItems: 'end' }}>
+            <button className="btn" type="button" onClick={handleCalculateCost}>Calcular costo</button>
+          </div>
         </div>
 
         {costingError ? (
@@ -503,14 +506,14 @@ export default function RecipeDetailPage() {
 
         {costingResult ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginTop: 14, marginBottom: 14 }}>
-              <article style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#f9fafb' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginTop: 14, marginBottom: 14 }}>
+              <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#f9fafb' }}>
                 <small style={{ color: '#6b7280' }}>Costo total (CLP)</small>
                 <p style={{ margin: '6px 0 0', fontSize: 22, fontWeight: 700 }}>
                   {Math.round(costingResult.totalCostClp).toLocaleString('es-CL')}
                 </p>
               </article>
-              <article style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#f9fafb' }}>
+              <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#f9fafb' }}>
                 <small style={{ color: '#6b7280' }}>Costo por unidad de yield (CLP)</small>
                 <p style={{ margin: '6px 0 0', fontSize: 22, fontWeight: 700 }}>
                   {Math.round(costingResult.costPerYieldUnitClp).toLocaleString('es-CL')}
@@ -518,32 +521,32 @@ export default function RecipeDetailPage() {
               </article>
             </div>
 
-            <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
-                <thead style={{ background: '#f9fafb' }}>
+            <div className="tableWrap" style={{ borderRadius: 10 }}>
+              <table className="table" style={{ minWidth: 760 }}>
+                <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Tipo</th>
-                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Nombre</th>
-                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid #ddd' }}>Cantidad</th>
-                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Unidad</th>
-                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid #ddd' }}>Costo unitario efectivo</th>
-                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid #ddd' }}>Costo línea</th>
+                    <th>Tipo</th>
+                    <th>Nombre</th>
+                    <th style={{ textAlign: 'right' }}>Cantidad</th>
+                    <th>Unidad</th>
+                    <th style={{ textAlign: 'right' }}>Costo unitario efectivo</th>
+                    <th style={{ textAlign: 'right' }}>Costo línea</th>
                   </tr>
                 </thead>
                 <tbody>
                   {costingResult.rows.map((row) => (
                     <tr key={row.id}>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{row.type === 'item' ? 'Item' : 'Sub-receta'}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{row.name}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee', textAlign: 'right' }}>{row.qty.toLocaleString('es-CL')}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{row.unit}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee', textAlign: 'right' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 600 }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
+                      <td>{row.type === 'item' ? 'Item' : 'Sub-receta'}</td>
+                      <td>{row.name}</td>
+                      <td style={{ textAlign: 'right' }}>{row.qty.toLocaleString('es-CL')}</td>
+                      <td>{row.unit}</td>
+                      <td style={{ textAlign: 'right' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
                     </tr>
                   ))}
                   {costingResult.rows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ padding: 10 }}>Sin líneas para costear.</td>
+                      <td colSpan={6}>Sin líneas para costear.</td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -559,12 +562,12 @@ export default function RecipeDetailPage() {
         {lineError ? <InlineAlert tone="error">{lineError}</InlineAlert> : null}
 
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', marginTop: 12 }}>
-          <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd' }}>
-            <h3 style={{ marginTop: 0 }}>Agregar línea de item</h3>
+          <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd', display: 'grid', gap: 10 }}>
+            <h3 style={{ margin: 0 }}>Agregar línea de item</h3>
+            <FieldHint>Usa una unidad compatible con el item; se convertirá automáticamente a unidad base.</FieldHint>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr 1fr' }}>
-              <label>
-                Item
-                <br />
+              <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+                <span>Item</span>
                 <select
                   value={itemId}
                   onChange={(event) => {
@@ -587,9 +590,8 @@ export default function RecipeDetailPage() {
                 </select>
               </label>
 
-              <label>
-                Cantidad
-                <br />
+              <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+                <span>Cantidad</span>
                 <input
                   className="input"
                   type="number"
@@ -600,9 +602,8 @@ export default function RecipeDetailPage() {
                 />
               </label>
 
-              <label>
-                Unidad
-                <br />
+              <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+                <span>Unidad</span>
                 <select
                   className="input"
                   value={itemUnit}
@@ -616,19 +617,19 @@ export default function RecipeDetailPage() {
                 </select>
               </label>
             </div>
-            <p>
+            <p style={{ margin: 0 }}>
               <button className="btn" type="button" onClick={handleAddItemLine}>
                 Agregar línea item
               </button>
             </p>
           </article>
 
-          <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd' }}>
-            <h3 style={{ marginTop: 0 }}>Agregar línea de sub-receta</h3>
+          <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd', display: 'grid', gap: 10 }}>
+            <h3 style={{ margin: 0 }}>Agregar línea de sub-receta</h3>
+            <FieldHint>Solo se muestran sub-recetas activas y distintas de la receta actual.</FieldHint>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr' }}>
-              <label>
-                Sub-receta (solo activas)
-                <br />
+              <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+                <span>Sub-receta (solo activas)</span>
                 <select
                   className="input"
                   value={subRecipeId}
@@ -644,9 +645,8 @@ export default function RecipeDetailPage() {
                 </select>
               </label>
 
-              <label>
-                Cantidad en yield de sub-receta
-                <br />
+              <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+                <span>Cantidad en yield de sub-receta</span>
                 <input
                   className="input"
                   type="number"
@@ -658,7 +658,7 @@ export default function RecipeDetailPage() {
               </label>
             </div>
 
-            <p>
+            <p style={{ margin: 0 }}>
               <button className="btn" type="button" onClick={handleAddSubRecipeLine}>
                 Agregar sub-receta
               </button>
@@ -666,17 +666,18 @@ export default function RecipeDetailPage() {
           </article>
         </div>
 
-        <article style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>
-          <h3>Listado de líneas</h3>
-          <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
-              <thead style={{ background: '#f9fafb' }}>
+        <article style={{ borderTop: '1px solid #e5e7eb', paddingTop: 14, marginTop: 2, display: 'grid', gap: 10 }}>
+          <h3 style={{ margin: 0 }}>Listado de líneas</h3>
+          <FieldHint>Revisa y elimina líneas según tipo. La eliminación impacta el próximo cálculo teórico.</FieldHint>
+          <div className="tableWrap" style={{ borderRadius: 10 }}>
+            <table className="table" style={{ minWidth: 680 }}>
+              <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Tipo</th>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Cantidad</th>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Referencia</th>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ddd' }}>Acción</th>
+                  <th>Tipo</th>
+                  <th>Nombre</th>
+                  <th>Cantidad</th>
+                  <th>Referencia</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -685,11 +686,11 @@ export default function RecipeDetailPage() {
                     const item = allItems.find((entry) => entry.id === line.itemId);
                     return (
                       <tr key={line.id}>
-                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>Item</td>
-                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{item?.name ?? line.itemId}</td>
-                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{line.qtyInBase.toLocaleString('es-CL')}</td>
-                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>qtyInBase</td>
-                        <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
+                        <td>Item</td>
+                        <td>{item?.name ?? line.itemId}</td>
+                        <td>{line.qtyInBase.toLocaleString('es-CL')}</td>
+                        <td>qtyInBase</td>
+                        <td>
                           <button
                             className="btnSecondary"
                             type="button"
@@ -705,11 +706,11 @@ export default function RecipeDetailPage() {
                   const sub = allRecipes.find((entry) => entry.id === line.subRecipeId);
                   return (
                     <tr key={line.id}>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>Sub-receta</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{sub?.name ?? line.subRecipeId}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{line.qtyInSubYield.toLocaleString('es-CL')}</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>qtyInSubYield</td>
-                      <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
+                      <td>Sub-receta</td>
+                      <td>{sub?.name ?? line.subRecipeId}</td>
+                      <td>{line.qtyInSubYield.toLocaleString('es-CL')}</td>
+                      <td>qtyInSubYield</td>
+                      <td>
                         <button
                           className="btnSecondary"
                           type="button"
@@ -723,7 +724,7 @@ export default function RecipeDetailPage() {
                 })}
                 {lines.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 10 }}>Sin líneas aún.</td>
+                    <td colSpan={5}>Sin líneas aún.</td>
                   </tr>
                 ) : null}
               </tbody>
