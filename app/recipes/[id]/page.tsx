@@ -167,22 +167,26 @@ export default function RecipeDetailPage() {
 
   if (pageState === 'loading') {
     return (
-      <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>Cargando receta…</h1>
-        <p>Estamos preparando la información para edición.</p>
+      <main className="pageStack" style={{ maxWidth: 1040 }}>
+        <section className="card" style={{ marginBottom: 0 }}>
+          <h1 style={{ marginTop: 0, marginBottom: 8 }}>Cargando receta…</h1>
+          <p className="muted" style={{ margin: 0 }}>Estamos preparando la información para edición.</p>
+        </section>
       </main>
     );
   }
 
   if (pageState === 'missing') {
     return (
-      <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>No encontramos esta receta</h1>
-        <p>Puede que haya sido eliminada o que el enlace esté incompleto.</p>
-        <p>
-          <Link href="/recipes">Volver a recetas</Link>
-        </p>
-        <ReturnToLink returnTo={returnTo} />
+      <main className="pageStack" style={{ maxWidth: 1040 }}>
+        <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 10 }}>
+          <h1 style={{ margin: 0 }}>No encontramos esta receta</h1>
+          <p className="muted" style={{ margin: 0 }}>Puede que haya sido eliminada o que el enlace esté incompleto.</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link href="/recipes" className="btnSecondary">Volver a recetas</Link>
+            <ReturnToLink returnTo={returnTo} />
+          </div>
+        </section>
       </main>
     );
   }
@@ -389,28 +393,40 @@ export default function RecipeDetailPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 1000 }}>
+    <main className="pageStack" style={{ maxWidth: 1040 }}>
       {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
-      <h1>Receta: {recipe.name}</h1>
-      <p>
-        <Link href="/recipes">Volver a recetas</Link>
-      </p>
-      <ReturnToLink returnTo={returnTo} />
+      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 10 }}>
+        <div className="listPageHeader" style={{ marginBottom: 0 }}>
+          <div>
+            <h1 style={{ margin: 0 }}>Receta: {recipe.name}</h1>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Actualiza metadatos, líneas y costeo en una sola vista.
+            </p>
+          </div>
+          <span className={`badge ${recipe.active ? 'badge--success' : 'badge--warn'}`}>
+            {recipe.active ? 'Activa' : 'Inactiva'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/recipes" className="btnSecondary">Volver a recetas</Link>
+          <ReturnToLink returnTo={returnTo} />
+        </div>
+      </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16, marginBottom: 20 }}>
-        <h2>Metadatos</h2>
+      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
+        <h2 className="cardTitle">Metadatos</h2>
         <FieldHint>Define los datos base de la receta antes de editar sus líneas y costos.</FieldHint>
         <form onSubmit={handleMetaSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
             Nombre *
             <br />
-            <input name="name" defaultValue={recipe.name} required style={{ width: '100%' }} />
+            <input className="input" name="name" defaultValue={recipe.name} required style={{ width: '100%' }} />
           </label>
 
           <label>
             Tipo *
             <br />
-            <select name="type" defaultValue={recipe.type} style={{ width: '100%' }}>
+            <select className="input" name="type" defaultValue={recipe.type} style={{ width: '100%' }}>
               {RECIPE_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -423,6 +439,7 @@ export default function RecipeDetailPage() {
             Cantidad de yield *
             <br />
             <input
+              className="input"
               name="yieldQty"
               type="number"
               min="0.0001"
@@ -435,7 +452,7 @@ export default function RecipeDetailPage() {
           <label>
             Unidad de yield *
             <br />
-            <select name="yieldUnit" defaultValue={recipe.yieldUnit} style={{ width: '100%' }}>
+            <select className="input" name="yieldUnit" defaultValue={recipe.yieldUnit} style={{ width: '100%' }}>
               {YIELD_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
                   {unit}
@@ -450,19 +467,19 @@ export default function RecipeDetailPage() {
 
           {metaError ? <InlineAlert tone="error">{metaError}</InlineAlert> : null}
 
-          <button type="submit">Guardar cambios</button>
+          <button className="btn" type="submit">Guardar cambios</button>
         </form>
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16, marginBottom: 20 }}>
-        <h2>Costeo teórico</h2>
+      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
+        <h2 className="cardTitle">Costeo teórico</h2>
         <FieldHint>Calcula una vista rápida del costo total y por unidad de yield según sucursal y fecha.</FieldHint>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
           <label>
             Sucursal
             <br />
-            <select value={costingBranch} onChange={(event) => setCostingBranch(event.target.value as Branch)}>
+            <select className="input" value={costingBranch} onChange={(event) => setCostingBranch(event.target.value as Branch)}>
               {BRANCHES.map((branch) => (
                 <option key={branch} value={branch}>{branch}</option>
               ))}
@@ -472,10 +489,10 @@ export default function RecipeDetailPage() {
           <label>
             Fecha (as-of)
             <br />
-            <input type="date" value={costingAsOfDate} onChange={(event) => setCostingAsOfDate(event.target.value)} />
+            <input className="input" type="date" value={costingAsOfDate} onChange={(event) => setCostingAsOfDate(event.target.value)} />
           </label>
 
-          <button type="button" onClick={handleCalculateCost}>Calcular costo</button>
+          <button className="btn" type="button" onClick={handleCalculateCost}>Calcular costo</button>
         </div>
 
         {costingError ? (
@@ -536,13 +553,13 @@ export default function RecipeDetailPage() {
         ) : null}
       </section>
 
-      <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16 }}>
-        <h2>Líneas de receta</h2>
+      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
+        <h2 className="cardTitle">Líneas de receta</h2>
         <FieldHint>Primero agrega ingredientes (items) y luego sub-recetas según corresponda.</FieldHint>
         {lineError ? <InlineAlert tone="error">{lineError}</InlineAlert> : null}
 
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', marginTop: 12 }}>
-          <article style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+          <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd' }}>
             <h3 style={{ marginTop: 0 }}>Agregar línea de item</h3>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr 1fr' }}>
               <label>
@@ -558,6 +575,7 @@ export default function RecipeDetailPage() {
                       setItemUnit(itemUnits(nextItem.baseUnit)[0]);
                     }
                   }}
+                  className="input"
                   style={{ width: '100%' }}
                 >
                   <option value="">Selecciona item</option>
@@ -573,6 +591,7 @@ export default function RecipeDetailPage() {
                 Cantidad
                 <br />
                 <input
+                  className="input"
                   type="number"
                   min="0.0001"
                   step="0.0001"
@@ -585,6 +604,7 @@ export default function RecipeDetailPage() {
                 Unidad
                 <br />
                 <select
+                  className="input"
                   value={itemUnit}
                   onChange={(event) => setItemUnit(event.target.value as ItemInputUnit)}
                 >
@@ -597,19 +617,20 @@ export default function RecipeDetailPage() {
               </label>
             </div>
             <p>
-              <button type="button" onClick={handleAddItemLine}>
+              <button className="btn" type="button" onClick={handleAddItemLine}>
                 Agregar línea item
               </button>
             </p>
           </article>
 
-          <article style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+          <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd' }}>
             <h3 style={{ marginTop: 0 }}>Agregar línea de sub-receta</h3>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr' }}>
               <label>
                 Sub-receta (solo activas)
                 <br />
                 <select
+                  className="input"
                   value={subRecipeId}
                   onChange={(event) => setSubRecipeId(event.target.value)}
                   style={{ width: '100%' }}
@@ -627,6 +648,7 @@ export default function RecipeDetailPage() {
                 Cantidad en yield de sub-receta
                 <br />
                 <input
+                  className="input"
                   type="number"
                   min="0.0001"
                   step="0.0001"
@@ -637,14 +659,14 @@ export default function RecipeDetailPage() {
             </div>
 
             <p>
-              <button type="button" onClick={handleAddSubRecipeLine}>
+              <button className="btn" type="button" onClick={handleAddSubRecipeLine}>
                 Agregar sub-receta
               </button>
             </p>
           </article>
         </div>
 
-        <article style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 12 }}>
+        <article style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>
           <h3>Listado de líneas</h3>
           <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
@@ -669,6 +691,7 @@ export default function RecipeDetailPage() {
                         <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>qtyInBase</td>
                         <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
                           <button
+                            className="btnSecondary"
                             type="button"
                             onClick={() => handleDeleteLine(line.id)}
                           >
@@ -688,6 +711,7 @@ export default function RecipeDetailPage() {
                       <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>qtyInSubYield</td>
                       <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
                         <button
+                          className="btnSecondary"
                           type="button"
                           onClick={() => handleDeleteLine(line.id)}
                         >
