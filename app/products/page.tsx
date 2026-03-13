@@ -25,16 +25,9 @@ export default function ProductsPage() {
   );
 
   return (
-    <main>
+    <main className="pageStack">
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 12,
-          marginBottom: 14,
-          flexWrap: 'wrap',
-        }}
+        className="listPageHeader"
       >
         <div>
           <h1 style={{ marginBottom: 8 }}>Gestión de productos</h1>
@@ -48,7 +41,7 @@ export default function ProductsPage() {
         </Link>
       </div>
 
-      <div className="card" style={{ marginBottom: 12 }}>
+      <div className="card" style={{ marginBottom: 0, maxWidth: 760 }}>
         <label htmlFor="product-search" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
           Buscar producto
         </label>
@@ -62,7 +55,7 @@ export default function ProductsPage() {
         />
       </div>
 
-      <div className="tableWrap"><table className="table" style={{ minWidth: 700 }}>
+      <div className="tableWrap listPageTable"><table className="table" style={{ minWidth: 700 }}>
         <thead>
           <tr>
             <th>Nombre</th>

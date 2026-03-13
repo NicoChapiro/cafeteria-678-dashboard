@@ -59,6 +59,39 @@ a:hover { color: var(--brand-orange); }
   margin-bottom: 16px;
 }
 
+.pageStack {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionStack {
+  display: grid;
+  gap: 10px;
+}
+
+.listPageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.listPageTable {
+  width: min(100%, 1120px);
+}
+
+@media (min-width: 1200px) {
+  .pageStack {
+    gap: 12px;
+  }
+
+  .sectionStack {
+    gap: 8px;
+  }
+}
+
 .costingProductCard {
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
 }

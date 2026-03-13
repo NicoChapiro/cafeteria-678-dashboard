@@ -98,18 +98,10 @@ export default function AuditPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', display: 'grid', gap: 16 }}>
+    <main className="pageStack" style={{ gap: 12 }}>
       <h1 style={{ margin: 0 }}>Auditoría</h1>
 
-      <section
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          padding: 12,
-          display: 'grid',
-          gap: 10,
-        }}
-      >
+      <section className="card" style={{ display: 'grid', gap: 10, marginBottom: 0, maxWidth: 1120 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>Acciones de datos</h2>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
@@ -156,17 +148,7 @@ export default function AuditPage() {
         ) : null}
       </section>
 
-      <section
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          padding: 12,
-          display: 'flex',
-          gap: 12,
-          alignItems: 'end',
-          flexWrap: 'wrap',
-        }}
-      >
+      <section className="card" style={{ display: 'flex', gap: 10, alignItems: 'end', flexWrap: 'wrap', marginBottom: 0, maxWidth: 1120 }}>
         <h2 style={{ margin: 0, fontSize: 18, width: '100%' }}>Filtros</h2>
 
         <label>
@@ -200,30 +182,22 @@ export default function AuditPage() {
         </label>
       </section>
 
-      <section
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          overflow: 'hidden',
-        }}
-      >
-        <h2 style={{ margin: 0, padding: 12, fontSize: 18, borderBottom: '1px solid #ddd' }}>
-          Tabla de logs
-        </h2>
+      <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120, padding: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Tabla de logs</h2>
 
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead style={{ background: '#f6f7f9' }}>
+        <div className="tableWrap listPageTable"><table className="table">
+          <thead>
             <tr>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+              <th>
                 Fecha
               </th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+              <th>
                 Acción
               </th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+              <th>
                 Tipo de entidad
               </th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>
+              <th>
                 ID de entidad
               </th>
             </tr>
@@ -242,34 +216,28 @@ export default function AuditPage() {
                     boxShadow: isSelected ? 'inset 3px 0 0 #0d6efd' : 'none',
                   }}
                 >
-                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>
+                  <td>
                     {formatDate(log.createdAt)}
                   </td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.action}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.entityType}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{log.entityId}</td>
+                  <td>{log.action}</td>
+                  <td>{log.entityType}</td>
+                  <td>{log.entityId}</td>
                 </tr>
               );
             })}
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: 12, color: '#666' }}>
+                <td colSpan={4} style={{ color: '#666' }}>
                   No hay logs para los filtros seleccionados.
                 </td>
               </tr>
             ) : null}
           </tbody>
-        </table>
+        </table></div>
       </section>
 
-      <section
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          overflow: 'hidden',
-        }}
-      >
-        <h2 style={{ margin: 0, padding: 12, fontSize: 18, borderBottom: '1px solid #ddd' }}>
+      <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120, padding: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 18 }}>
           Detalle del cambio
         </h2>
         <pre
@@ -279,7 +247,8 @@ export default function AuditPage() {
             color: '#e9e9e9',
             padding: 12,
             overflowX: 'auto',
-            minHeight: 160,
+            minHeight: 150,
+            borderRadius: 8,
           }}
         >
           {selectedLog ? JSON.stringify(selectedLog.diffJson, null, 2) : 'Selecciona un log'}

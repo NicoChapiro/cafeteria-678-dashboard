@@ -373,7 +373,7 @@ export default function DashboardPage() {
         backNav={<BackNav />}
       />
 
-      <section className="card" style={{ marginBottom: 0 }}>
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
         <h2 style={{ marginTop: 0 }}>Filtros</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
           <label>
@@ -407,9 +407,9 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 0 }}>
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
         <h2 style={{ marginTop: 0 }}>Resumen</h2>
-        <div className="grid">
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
           <KpiCard label="Ventas reales (CLP)" value={dashboard.summary.ventasReales.toLocaleString('es-CL')} />
           <KpiCard label="Costo teórico (CLP)" value={dashboard.summary.costoTeorico.toLocaleString('es-CL')} />
           <KpiCard label="Margen teórico (CLP)" value={dashboard.summary.margenTeorico.toLocaleString('es-CL')} />
@@ -419,9 +419,9 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 0 }}>
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
         <h2 style={{ marginTop: 0 }}>Alertas</h2>
-        <div className="grid">
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10 }}>
           <article className="card" style={{ marginBottom: 0 }}>
             <p className="muted" style={{ marginBottom: 6 }}>Sin receta</p>
             <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinReceta.length.toLocaleString('es-CL')}</p>
@@ -469,45 +469,45 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 0 }}>
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
         <h2 style={{ marginTop: 0 }}>Detalle</h2>
-        <div className="tableWrap"><table className="table">
+        <div className="tableWrap listPageTable"><table className="table">
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>product</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>qty</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasReales</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>ventasLista</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>deltaLista</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoTeorico</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>costoUnitario</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenTeorico</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margenUnitario</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>margen%</th>
-              <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ccc' }}>alertas</th>
+              <th>product</th>
+              <th>qty</th>
+              <th>ventasReales</th>
+              <th>ventasLista</th>
+              <th>deltaLista</th>
+              <th>costoTeorico</th>
+              <th>costoUnitario</th>
+              <th>margenTeorico</th>
+              <th>margenUnitario</th>
+              <th>margen%</th>
+              <th>alertas</th>
             </tr>
           </thead>
           <tbody>
             {dashboard.rows.map((row) => (
               <tr key={row.productId}>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}><Link href={buildProductHref(row.productId)}>{row.productName}</Link></td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.qty.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasReales.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.ventasLista.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.deltaLista.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoTeorico.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.costoUnitario !== null ? row.costoUnitario.toLocaleString('es-CL') : '-'}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenTeorico.toLocaleString('es-CL')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenUnitario !== null ? row.margenUnitario.toLocaleString('es-CL') : '-'}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{row.margenPct.toFixed(2)}%</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                <td><Link href={buildProductHref(row.productId)}>{row.productName}</Link></td>
+                <td>{row.qty.toLocaleString('es-CL')}</td>
+                <td>{row.ventasReales.toLocaleString('es-CL')}</td>
+                <td>{row.ventasLista.toLocaleString('es-CL')}</td>
+                <td>{row.deltaLista.toLocaleString('es-CL')}</td>
+                <td>{row.costoTeorico.toLocaleString('es-CL')}</td>
+                <td>{row.costoUnitario !== null ? row.costoUnitario.toLocaleString('es-CL') : '-'}</td>
+                <td>{row.margenTeorico.toLocaleString('es-CL')}</td>
+                <td>{row.margenUnitario !== null ? row.margenUnitario.toLocaleString('es-CL') : '-'}</td>
+                <td>{row.margenPct.toFixed(2)}%</td>
+                <td>
                   {[...row.alertas].join(', ') || '-'}
                 </td>
               </tr>
             ))}
             {dashboard.rows.length === 0 ? (
               <tr>
-                <td colSpan={11} style={{ padding: 8 }}>
+                <td colSpan={11}>
                   <EmptyState compact title="No hay ventas para el rango seleccionado." description="Ajusta el rango de fechas o la sucursal para ver resultados." />
                 </td>
               </tr>
