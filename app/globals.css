@@ -177,15 +177,35 @@ a:hover { color: var(--brand-orange); }
 
 .btn,
 .btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 1px solid var(--brand-green);
   background: var(--brand-green);
   color: var(--text-on-dark);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, filter 120ms ease;
 }
-.btn:hover { filter: brightness(0.95); }
+
+.btn:hover {
+  filter: brightness(0.95);
+  text-decoration: none;
+  color: var(--text-on-dark);
+}
+
+.btn:disabled,
+.btnSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn:focus-visible,
 .btnSecondary:focus-visible,
 .input:focus-visible,
@@ -193,12 +213,23 @@ a:hover { color: var(--brand-orange); }
   outline: 2px solid var(--brand-lilac);
   outline-offset: 2px;
 }
+
 .btnSecondary {
-  border: 1px solid var(--brand-lilac);
-  background: transparent;
+  border: 1px solid rgba(72, 102, 48, 0.28);
+  background: rgba(72, 102, 48, 0.06);
   color: var(--brand-green);
 }
-.btnSecondary:hover { background: rgba(214, 186, 232, 0.18); }
+
+.btnSecondary:hover {
+  background: rgba(72, 102, 48, 0.12);
+  text-decoration: none;
+  color: var(--brand-green);
+}
+
+.btnSmall {
+  padding: 6px 10px;
+  font-size: 12px;
+}
 
 .input,
 .select {
@@ -312,20 +343,22 @@ a:hover { color: var(--brand-orange); }
 .badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   line-height: 1;
   white-space: nowrap;
   flex: 0 0 auto;
-  border: 1px solid rgba(214, 186, 232, 0.7);
-  border-radius: 999px;
+  border: 1px solid rgba(209, 213, 219, 0.9);
+  border-radius: var(--radius-pill);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #4b5563;
-  background: rgba(214, 186, 232, 0.2);
+  color: #374151;
+  background: #f3f4f6;
 }
 
 .badge--info {
-  border-color: rgba(214, 186, 232, 0.75);
+  border-color: rgba(214, 186, 232, 0.78);
+  color: #4b5563;
   background: rgba(214, 186, 232, 0.2);
 }
 
@@ -333,6 +366,23 @@ a:hover { color: var(--brand-orange); }
   border-color: rgba(244, 144, 34, 0.45);
   color: #7c3d00;
   background: rgba(255, 205, 80, 0.26);
+}
+
+.badge--success {
+  border-color: rgba(72, 102, 48, 0.3);
+  color: var(--brand-green);
+  background: rgba(72, 102, 48, 0.12);
+}
+
+.badge--neutral {
+  border-color: rgba(209, 213, 219, 0.9);
+  color: #4b5563;
+  background: #f3f4f6;
+}
+
+.badgeSmall {
+  padding: 2px 8px;
+  font-size: 11px;
 }
 
 

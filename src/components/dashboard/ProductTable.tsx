@@ -27,7 +27,7 @@ export function ProductTable({ products, onOpen }: { products: ProductWithCostin
                   <td>{formatClp(entry.costing.costClp)}</td>
                   <td>{formatPct(entry.costing.marginPct)}</td>
                   <td>{badges || 'Sin alertas'}</td>
-                  <td><button type="button" className="btnSecondary" onClick={() => onOpen(entry.product.id)}>Ver</button></td>
+                  <td><button type="button" className="btnSecondary btnSmall" onClick={() => onOpen(entry.product.id)}>Ver</button></td>
                 </tr>
               );
             })}

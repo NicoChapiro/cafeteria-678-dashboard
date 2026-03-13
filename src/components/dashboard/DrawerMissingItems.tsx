@@ -24,7 +24,7 @@ export function DrawerMissingItems({ selected }: { selected: ProductWithCosting 
               <p style={{ margin: 0, fontWeight: 600 }}>{item.name}</p>
               <p className="muted" style={{ fontSize: 12 }}>ID: {item.id}</p>
             </div>
-            <Link className="btnSecondary" href={`/items/${item.id}`}>Editar ítem</Link>
+            <Link className="btnSecondary btnSmall" href={`/items/${item.id}`}>Editar ítem</Link>
           </li>
         ))}
       </ul>

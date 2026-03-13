@@ -16,7 +16,7 @@ export function KanbanColumn({ title, tone, items, selectedProductId, onOpen }: 
     <section className={`card kanbanColumn kanbanColumn--${tone}`} style={{ marginBottom: 0 }}>
       <header className="kanbanColumn__header">
         <h3 style={{ margin: 0 }}>{title}</h3>
-        <span className={`badge ${tone === 'healthy' ? 'badge--info' : 'badge--warn'}`}>{items.length}</span>
+        <span className={`badge badgeSmall ${tone === 'healthy' ? 'badge--success' : 'badge--warn'}`}>{items.length}</span>
       </header>
 
       {items.length === 0 ? (

@@ -30,7 +30,7 @@ export function DrawerBreakdown({ selected }: { selected: ProductWithCosting }) 
                   <td>{line.itemName}</td>
                   <td>{formatClp(line.lineCostClp)}</td>
                   <td>
-                    <span className={`badge ${line.status === 'Falta costo' ? 'badge--warn' : 'badge--info'}`}>{line.status}</span>
+                    <span className={`badge badgeSmall ${line.status === 'Falta costo' ? 'badge--warn' : 'badge--info'}`}>{line.status}</span>
                   </td>
                 </tr>
               ))}
