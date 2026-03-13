@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import EmptyState from '@/src/components/feedback/EmptyState';
 import type { Item } from '@/src/domain/types';
 import { listItems } from '@/src/storage/local/store';
 
@@ -91,26 +92,22 @@ export default function ItemsPage() {
             {filteredItems.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ padding: 18 }}>
-                  <div className="calloutInfo">
-                    {items.length === 0 ? (
-                      <>
-                        <strong>No hay ítems creados todavía.</strong>
-                        <p className="muted" style={{ marginTop: 8 }}>
-                          Crea tu primer ítem para comenzar a gestionar insumos y costos.
-                        </p>
-                        <Link href="/items/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
+                  <EmptyState
+                    tone="info"
+                    title={items.length === 0 ? 'No hay ítems creados todavía.' : 'Sin resultados para la búsqueda actual.'}
+                    description={
+                      items.length === 0
+                        ? 'Crea tu primer ítem para comenzar a gestionar insumos y costos.'
+                        : 'Ajusta el nombre buscado para encontrar otros ítems.'
+                    }
+                    action={
+                      items.length === 0 ? (
+                        <Link href="/items/new" className="btn" style={{ display: 'inline-block' }}>
                           + Crear nuevo ítem
                         </Link>
-                      </>
-                    ) : (
-                      <>
-                        <strong>Sin resultados para la búsqueda actual.</strong>
-                        <p className="muted" style={{ marginTop: 8 }}>
-                          Ajusta el nombre buscado para encontrar otros ítems.
-                        </p>
-                      </>
-                    )}
-                  </div>
+                      ) : undefined
+                    }
+                  />
                 </td>
               </tr>
             ) : null}

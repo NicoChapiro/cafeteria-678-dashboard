@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import EmptyState from '@/src/components/feedback/EmptyState';
 import type { Product } from '@/src/domain/types';
 import { listProducts } from '@/src/storage/local/store';
 
@@ -93,26 +94,22 @@ export default function ProductsPage() {
           {filteredProducts.length === 0 ? (
             <tr>
               <td colSpan={4} style={{ padding: 18 }}>
-                <div className="calloutInfo">
-                  {products.length === 0 ? (
-                    <>
-                      <strong>No hay productos creados todavía.</strong>
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Crea tu primer producto para comenzar a operar el catálogo.
-                      </p>
-                      <Link href="/products/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
+                <EmptyState
+                  tone="info"
+                  title={products.length === 0 ? 'No hay productos creados todavía.' : 'Sin resultados para la búsqueda actual.'}
+                  description={
+                    products.length === 0
+                      ? 'Crea tu primer producto para comenzar a operar el catálogo.'
+                      : 'Ajusta el nombre buscado para ver otros productos.'
+                  }
+                  action={
+                    products.length === 0 ? (
+                      <Link href="/products/new" className="btn" style={{ display: 'inline-block' }}>
                         + Crear nuevo producto
                       </Link>
-                    </>
-                  ) : (
-                    <>
-                      <strong>Sin resultados para la búsqueda actual.</strong>
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Ajusta el nombre buscado para ver otros productos.
-                      </p>
-                    </>
-                  )}
-                </div>
+                    ) : undefined
+                  }
+                />
               </td>
             </tr>
           ) : null}

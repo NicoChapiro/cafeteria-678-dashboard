@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import EmptyState from '@/src/components/feedback/EmptyState';
+import InlineAlert from '@/src/components/feedback/InlineAlert';
 import { parseFudoProductsXlsx, type FudoParsedRow } from '@/src/services/fudoReport';
 import {
   importSalesSantiago,
@@ -395,25 +397,15 @@ export default function SalesImportFudo(props: Props) {
             ) : null}
           </section>
         ) : (
-          <p className="muted" style={{ margin: 0 }}>
-            Genera una previsualización para ver el resumen.
-          </p>
+          <EmptyState compact title="Genera una previsualización para ver el resumen." />
         )}
 
         {hasUnknownProducts ? (
-          <section
-            className="card"
-            style={{
-              border: '1px solid #d97706',
-              background: '#fff7ed',
-              display: 'grid',
-              gap: 8,
-            }}
-          >
+          <section className="card" style={{ display: 'grid', gap: 8 }}>
             <h3 style={{ margin: 0 }}>Productos no mapeados ({preview?.unknownProducts.size ?? 0})</h3>
-            <p style={{ margin: 0 }}>
+            <InlineAlert tone="warning">
               Crea aliases de FU.DO para continuar. <Link href="/products/aliases">Ir a aliases</Link>
-            </p>
+            </InlineAlert>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <button className="btnSecondary" type="button" onClick={copyUnknownList}>
                 Copiar lista
@@ -422,7 +414,7 @@ export default function SalesImportFudo(props: Props) {
                 Copiar con conteos
               </button>
               {copyMessage ? (
-                <span style={{ color: copyMessage.type === 'error' ? '#b00020' : '#0f5132' }}>
+                <span style={{ color: copyMessage.type === 'error' ? '#7f1d1d' : '#14532d', fontWeight: 600 }}>
                   {copyMessage.text}
                 </span>
               ) : null}
@@ -495,7 +487,7 @@ export default function SalesImportFudo(props: Props) {
         </div>
 
         {message ? (
-          <p style={{ color: message.type === 'error' ? '#b00020' : '#0f5132', margin: 0 }}>{message.text}</p>
+          <InlineAlert tone={message.type === 'error' ? 'error' : 'success'}>{message.text}</InlineAlert>
         ) : null}
       </section>
     </section>

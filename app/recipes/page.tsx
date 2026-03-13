@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import EmptyState from '@/src/components/feedback/EmptyState';
 import type { Recipe } from '@/src/domain/types';
 import { listRecipes } from '@/src/storage/local/store';
 
@@ -105,26 +106,22 @@ export default function RecipesPage() {
             {filteredRecipes.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: 18 }}>
-                  <div className="calloutInfo">
-                    {recipes.length === 0 ? (
-                      <>
-                        <strong>No hay recetas creadas todavía.</strong>
-                        <p className="muted" style={{ marginTop: 8 }}>
-                          Crea tu primera receta para comenzar a gestionar costos y producción.
-                        </p>
-                        <Link href="/recipes/new" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
+                  <EmptyState
+                    tone="info"
+                    title={recipes.length === 0 ? 'No hay recetas creadas todavía.' : 'Sin resultados para la búsqueda actual.'}
+                    description={
+                      recipes.length === 0
+                        ? 'Crea tu primera receta para comenzar a gestionar costos y producción.'
+                        : 'Ajusta el nombre buscado para encontrar otras recetas.'
+                    }
+                    action={
+                      recipes.length === 0 ? (
+                        <Link href="/recipes/new" className="btn" style={{ display: 'inline-block' }}>
                           + Crear nueva receta
                         </Link>
-                      </>
-                    ) : (
-                      <>
-                        <strong>Sin resultados para la búsqueda actual.</strong>
-                        <p className="muted" style={{ marginTop: 8 }}>
-                          Ajusta el nombre buscado para encontrar otras recetas.
-                        </p>
-                      </>
-                    )}
-                  </div>
+                      ) : undefined
+                    }
+                  />
                 </td>
               </tr>
             ) : null}

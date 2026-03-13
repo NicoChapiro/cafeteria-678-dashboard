@@ -1,5 +1,6 @@
 import { formatClp } from '@/src/view-models/productCostingDashboard';
 import type { ProductWithCosting } from '@/src/view-models/productCostingDashboard';
+import EmptyState from '@/src/components/feedback/EmptyState';
 
 export function DrawerBreakdown({ selected }: { selected: ProductWithCosting }) {
   const hasLines = selected.costing.breakdown.length > 0;
@@ -12,7 +13,7 @@ export function DrawerBreakdown({ selected }: { selected: ProductWithCosting }) 
       </div>
 
       {!hasLines ? (
-        <div className="alert" style={{ marginTop: 6 }}>No hay líneas de desglose para este producto en la fecha seleccionada.</div>
+        <EmptyState compact tone="warning" title="No hay líneas de desglose para este producto en la fecha seleccionada." />
       ) : (
         <div className="tableWrap">
           <table className="table">

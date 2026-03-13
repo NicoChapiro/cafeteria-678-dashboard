@@ -1,4 +1,5 @@
 import type { ProductWithCosting } from '@/src/view-models/productCostingDashboard';
+import EmptyState from '@/src/components/feedback/EmptyState';
 import { ProductCard } from './ProductCard';
 
 type KanbanTone = 'healthy' | 'warn' | 'critical';
@@ -19,9 +20,7 @@ export function KanbanColumn({ title, tone, items, selectedProductId, onOpen }: 
       </header>
 
       {items.length === 0 ? (
-        <div className="kanbanColumn__empty">
-          <p className="muted" style={{ margin: 0 }}>{getEmptyMessage(title)}</p>
-        </div>
+        <EmptyState compact title={getEmptyMessage(title)} />
       ) : (
         <div className="kanbanColumn__items">
           {items.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => onOpen(entry.product.id)} />)}
