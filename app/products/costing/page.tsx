@@ -331,11 +331,15 @@ export default function ProductCostingPage() {
 
   const issueSummary = `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.missingCostItems} faltan costos · ${issueStats.unsupportedRecipe} sub-recetas`;
   const isBaseState = branch === 'Santiago' && asOfDate === todayIso() && search.trim() === '' && sort === 'name' && !onlyIssues && issueType === 'any' && selectedProductId === null;
+  const showIssueEmptyState = onlyIssues && filteredSortedProducts.length === 0;
 
   return (
     <main className="container">
-      <h1>Dashboard de Costos de Productos</h1>
-      <p className="muted" style={{ marginBottom: 12 }}>Vista operacional para seguimiento de costos, márgenes e incidencias.</p>
+      <section className="card" style={{ marginBottom: 12 }}>
+        <p className="muted" style={{ margin: 0, fontSize: 12, letterSpacing: 0.4, textTransform: 'uppercase' }}>Resolución operativa</p>
+        <h1 style={{ marginTop: 6, marginBottom: 6 }}>Panel de incidencias de costos</h1>
+        <p className="muted" style={{ margin: 0 }}>Prioriza productos con brechas de precio o costo y abre su contexto para resolverlos rápido.</p>
+      </section>
 
       <DashboardToolbar
         branch={branch}
@@ -351,24 +355,67 @@ export default function ProductCostingPage() {
         resetDisabled={isBaseState}
       />
 
-      <section className="card" style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(false); setIssueType('any'); setSelectedProductId(null); }} aria-pressed={!onlyIssues}>Todos <span className="badge badge--info badgeSmall" style={{ marginLeft: 6 }}>{issueStats.total}</span></button>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('any'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'any'}>Problemas <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.issues}</span></button>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingPrice'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingPrice'}>Sin precio <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingPrice}</span></button>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingCosts'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingCosts'}>Sin costo <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingCosts}</span></button>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingCostItems'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingCostItems'}>Faltan costos <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingCostItems}</span></button>
-        <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('unsupportedRecipe'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}>Sub-recetas <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.unsupportedRecipe}</span></button>
-        <label style={{ marginLeft: 'auto' }}>Ordenar
+      <section className="card" style={{ marginBottom: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          <button
+            type="button"
+            className="btnSecondary"
+            onClick={() => {
+              setOnlyIssues(true);
+              setIssueType('any');
+              setSelectedProductId(null);
+            }}
+            aria-pressed={onlyIssues && issueType === 'any'}
+            style={{
+              borderColor: onlyIssues ? 'var(--warn)' : undefined,
+              boxShadow: onlyIssues ? '0 0 0 1px color-mix(in srgb, var(--warn) 40%, transparent)' : undefined,
+              fontWeight: 600,
+            }}
+          >
+            Problemas prioritarios <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.issues}</span>
+          </button>
+          <button
+            type="button"
+            className="btnSecondary btnSmall"
+            onClick={() => {
+              setOnlyIssues(false);
+              setIssueType('any');
+              setSelectedProductId(null);
+            }}
+            aria-pressed={!onlyIssues}
+          >
+            Ver todos <span className="badge badge--info badgeSmall" style={{ marginLeft: 6 }}>{issueStats.total}</span>
+          </button>
+          <label style={{ marginLeft: 'auto' }}>Ordenar
           <select className="select" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
             <option value="name">Nombre</option><option value="marginPctAsc">Margen % asc</option><option value="marginClpAsc">Margen CLP asc</option><option value="costClpDesc">Costo CLP desc</option>
           </select>
-        </label>
+          </label>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>Filtrar tipo de problema</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingPrice'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingPrice'}>Sin precio <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingPrice}</span></button>
+            <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingCosts'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingCosts'}>Sin costo <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingCosts}</span></button>
+            <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingCostItems'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingCostItems'}>Faltan costos <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingCostItems}</span></button>
+            <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('unsupportedRecipe'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'unsupportedRecipe'}>Sub-recetas <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.unsupportedRecipe}</span></button>
+          </div>
+        </div>
       </section>
 
       <KpiStrip total={issueStats.total} visible={filteredSortedProducts.length} issues={issueStats.issues} summary={issueSummary} />
 
       <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 360px' : '1fr', gap: 12 }}>
         <section>
+          {showIssueEmptyState ? (
+            <article className="card" style={{ textAlign: 'center', padding: '22px 16px', borderColor: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 9%, var(--panel))' }}>
+              <p style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}>Sin incidencias pendientes en este filtro</p>
+              <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>Buen trabajo: no hay productos con problemas para la sucursal y fecha seleccionadas.</p>
+              <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(false); setIssueType('any'); }}>
+                Ver todos los productos
+              </button>
+            </article>
+          ) : null}
           {viewMode === 'cards' ? (
             <div className="grid">{filteredSortedProducts.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => openDrawer(entry.product.id)} />)}</div>
           ) : null}
