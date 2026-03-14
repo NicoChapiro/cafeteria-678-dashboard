@@ -402,8 +402,8 @@ export default function ProductCostingPage() {
     <main className="container">
       <section className="card" style={{ marginBottom: 12 }}>
         <p className="muted" style={{ margin: 0, fontSize: 12, letterSpacing: 0.4, textTransform: 'uppercase' }}>Resolución operativa</p>
-        <h1 style={{ marginTop: 6, marginBottom: 6 }}>Panel de incidencias de costos</h1>
-        <p className="muted" style={{ margin: 0 }}>Prioriza productos con brechas de precio o costo y abre su contexto para resolverlos rápido.</p>
+        <h1 style={{ marginTop: 6, marginBottom: 6 }}>Panel de brechas de costos</h1>
+        <p className="muted" style={{ margin: 0 }}>Prioriza productos con brechas de precio o costo y entra a su contexto para resolverlos rápido.</p>
       </section>
 
       <DashboardToolbar
@@ -458,7 +458,7 @@ export default function ProductCostingPage() {
           </label>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>Filtrar tipo de problema</p>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>Filtrar por tipo de brecha</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingPrice'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingPrice'}>Sin precio <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingPrice}</span></button>
             <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(true); setIssueType('missingCosts'); setSelectedProductId(null); }} aria-pressed={onlyIssues && issueType === 'missingCosts'}>Sin costo <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.missingCosts}</span></button>
@@ -474,7 +474,7 @@ export default function ProductCostingPage() {
         <section>
           {showIssueEmptyState ? (
             <article className="card" style={{ textAlign: 'center', padding: '22px 16px', borderColor: 'var(--status-success)', background: 'color-mix(in srgb, var(--status-success) 9%, var(--card))' }}>
-              <p style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}>Sin incidencias pendientes en este filtro</p>
+              <p style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}>Sin brechas pendientes en este filtro</p>
               <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>Buen trabajo: no hay productos con problemas para la sucursal y fecha seleccionadas.</p>
               <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(false); setIssueType('any'); }}>
                 Ver todos los productos
