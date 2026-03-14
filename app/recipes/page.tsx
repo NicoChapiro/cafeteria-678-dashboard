@@ -14,6 +14,7 @@ function formatDate(value: Date): string {
 export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
     setRecipes(listRecipes());
@@ -22,12 +23,16 @@ export default function RecipesPage() {
   const filteredRecipes = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
 
-    if (!normalizedSearch) {
-      return recipes;
-    }
+    return recipes.filter((recipe) => {
+      const matchesSearch = !normalizedSearch || recipe.name.toLocaleLowerCase().includes(normalizedSearch);
+      const matchesStatus =
+        statusFilter === 'all' || (statusFilter === 'active' ? recipe.active : !recipe.active);
 
-    return recipes.filter((recipe) => recipe.name.toLocaleLowerCase().includes(normalizedSearch));
-  }, [recipes, search]);
+      return matchesSearch && matchesStatus;
+    });
+  }, [recipes, search, statusFilter]);
+
+  const activeRecipes = recipes.filter((recipe) => recipe.active).length;
 
   return (
     <main className="pageStack">
@@ -35,18 +40,21 @@ export default function RecipesPage() {
         className="listPageHeader"
       >
         <div>
-          <h1 style={{ marginBottom: 8 }}>Gestión de recetas</h1>
+          <h1 style={{ marginBottom: 8 }}>Recetas de producción</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Consulta el catálogo, revisa estado y entra al detalle de cada receta.
+            Filtra por nombre y estado para abrir cada receta sin fricción.
           </p>
-          <span className="badge badge--info">Total: {recipes.length}</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <span className="badge badge--info">Total: {recipes.length}</span>
+            <span className="badge badge--success">Activas: {activeRecipes}</span>
+          </div>
         </div>
         <Link href="/recipes/new" className="btn" style={{ alignSelf: 'center' }}>
           + Crear nueva receta
         </Link>
       </div>
 
-      <div className="card" style={{ marginBottom: 0, maxWidth: 760 }}>
+      <div className="card" style={{ marginBottom: 0, maxWidth: 860 }}>
         <label htmlFor="recipes-search" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>
           Buscar por nombre
         </label>
@@ -58,6 +66,29 @@ export default function RecipesPage() {
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Ej: Latte, Masa madre..."
         />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          <button
+            type="button"
+            className={statusFilter === 'all' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setStatusFilter('all')}
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            className={statusFilter === 'active' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setStatusFilter('active')}
+          >
+            Activas
+          </button>
+          <button
+            type="button"
+            className={statusFilter === 'inactive' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setStatusFilter('inactive')}
+          >
+            Inactivas
+          </button>
+        </div>
       </div>
 
       <div className="tableWrap listPageTable">
@@ -91,7 +122,7 @@ export default function RecipesPage() {
                 <td>{formatDate(recipe.updatedAt)}</td>
                 <td>
                   <Link href={`/recipes/${recipe.id}`} className="btnSecondary">
-                    Editar →
+                    Abrir receta
                   </Link>
                 </td>
               </tr>
