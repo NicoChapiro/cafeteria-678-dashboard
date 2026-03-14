@@ -132,10 +132,10 @@ export default function HomePage() {
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link className="btn" href="/sales/import">
-            Iniciar flujo operativo
+            Importar ventas
           </Link>
           <Link className="btnSecondary" href="/setup">
-            Revisar pendientes críticos
+            Resolver pendientes
           </Link>
         </div>
       </header>
@@ -160,19 +160,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-label="Herramientas avanzadas" className="sectionStack">
-        <h2 className="muted" style={{ margin: '0 0 8px 0', fontSize: 18, lineHeight: 1.2 }}>
-          Herramientas avanzadas
-        </h2>
-        <p className="muted" style={{ marginBottom: 8, maxWidth: 74 * 8, lineHeight: 1.35 }}>
-          Accesos legacy y utilidades de soporte. Úsalos sólo cuando el flujo principal no cubra el caso.
-        </p>
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, maxWidth: 1120, opacity: 0.95 }}
-        >
-          {renderSectionCards(advancedToolsSections)}
-        </div>
+      <section aria-label="Herramientas avanzadas" className="sectionStack" style={{ maxWidth: 1120 }}>
+        <details>
+          <summary className="muted" style={{ cursor: 'pointer', fontSize: 15, marginBottom: 6 }}>
+            Herramientas avanzadas (legacy y soporte)
+          </summary>
+          <p className="muted" style={{ marginBottom: 8, maxWidth: 74 * 8, lineHeight: 1.35, fontSize: 14 }}>
+            Accesos secundarios para casos puntuales cuando el flujo principal no cubra la operación.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {advancedToolsSections.map((section) => (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="btnSecondary"
+                style={{ padding: '6px 10px', fontSize: 13, lineHeight: 1.2 }}
+              >
+                {section.title}
+              </Link>
+            ))}
+          </div>
+        </details>
       </section>
     </main>
   );
