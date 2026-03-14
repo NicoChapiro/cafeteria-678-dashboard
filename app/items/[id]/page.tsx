@@ -34,6 +34,17 @@ const EMPTY_COST_FORM: CostFormState = {
   yieldRateOverride: '',
 };
 
+type ItemFocusTarget = 'base' | 'cost';
+
+const FOCUS_META: Record<ItemFocusTarget, { label: string; id: string }> = {
+  base: { label: 'Datos del ítem', id: 'section-item-base' },
+  cost: { label: 'Costos por sucursal', id: 'section-item-costs' },
+};
+
+function isItemFocusTarget(value: string | null): value is ItemFocusTarget {
+  return value === 'base' || value === 'cost';
+}
+
 function toUtcDay(dateValue: string): Date {
   return new Date(`${dateValue}T00:00:00.000Z`);
 }
@@ -99,8 +110,9 @@ export default function ItemDetailPage() {
   const branchParam = searchParams.get('branch');
   const returnTo = searchParams.get('returnTo');
 
+  const baseSectionRef = useRef<HTMLElement | null>(null);
   const costSectionRef = useRef<HTMLElement | null>(null);
-  const [isCostFocusActive, setIsCostFocusActive] = useState(false);
+  const [activeFocus, setActiveFocus] = useState<ItemFocusTarget | null>(null);
 
   const [item, setItem] = useState<Item | null>(null);
   const [pageState, setPageState] = useState<ItemPageState>('loading');
@@ -116,6 +128,11 @@ export default function ItemDetailPage() {
     Temuco: [],
   });
 
+  const focusedSectionLabel = useMemo(
+    () => (isItemFocusTarget(focus) ? FOCUS_META[focus].label : null),
+    [focus],
+  );
+
   useEffect(() => {
     setPageState('loading');
     const found = getItem(itemId);
@@ -129,14 +146,16 @@ export default function ItemDetailPage() {
 
 
   useEffect(() => {
-    if (focus !== 'cost') {
-      setIsCostFocusActive(false);
+    if (!isItemFocusTarget(focus)) {
+      setActiveFocus(null);
       return;
     }
 
-    setIsCostFocusActive(true);
-    const timer = window.setTimeout(() => setIsCostFocusActive(false), 2400);
-    costSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveFocus(focus);
+    const timer = window.setTimeout(() => setActiveFocus(null), 2400);
+
+    const targetRef = focus === 'base' ? baseSectionRef : costSectionRef;
+    targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     return () => window.clearTimeout(timer);
   }, [focus]);
@@ -153,12 +172,12 @@ export default function ItemDetailPage() {
   if (pageState === 'missing') {
     return (
       <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h1>No encontramos este ítem</h1>
-        <p>Puede que haya sido eliminado o que el enlace esté incompleto.</p>
-        <p>
-          <Link href="/items">Volver a ítems</Link>
-        </p>
-        <ReturnToLink returnTo={returnTo} />
+      <h1>No encontramos este ítem</h1>
+      <p>Puede que haya sido eliminado o que el enlace esté incompleto.</p>
+      {returnTo ? <ReturnToLink returnTo={returnTo} /> : null}
+      <p>
+        <Link href="/items">Volver a ítems</Link>
+      </p>
       </main>
     );
   }
@@ -259,13 +278,58 @@ export default function ItemDetailPage() {
   return (
     <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 900 }}>
       {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
-      <h1>Ítem: {item.name}</h1>
-      <p>
-        <Link href="/items">Volver a ítems</Link>
-      </p>
-      <ReturnToLink returnTo={returnTo} />
+      <header style={{ marginBottom: 20 }}>
+        {returnTo ? <ReturnToLink returnTo={returnTo} /> : null}
+        <h1 style={{ marginBottom: 6 }}>Ítem: {item.name}</h1>
+        <p style={{ marginTop: 0, color: '#4b5563' }}>
+          Edita datos base y costos por sucursal sin salir de la ficha.
+        </p>
+        <p style={{ marginTop: 0, marginBottom: 12 }}>
+          <Link href="/items">← Volver a ítems</Link>
+        </p>
+        {focusedSectionLabel ? (
+          <p
+            style={{
+              display: 'inline-flex',
+              padding: '6px 10px',
+              borderRadius: 999,
+              border: '1px solid rgba(72, 102, 48, 0.3)',
+              background: 'rgba(72, 102, 48, 0.12)',
+              fontWeight: 600,
+              marginTop: 0,
+            }}
+          >
+            Edición enfocada: {focusedSectionLabel}
+          </p>
+        ) : null}
+      </header>
 
-      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20 }}>
+      <nav
+        aria-label="Navegación interna de ficha de ítem"
+        style={{ border: '1px solid #ddd', padding: 12, marginBottom: 20, background: '#fafafa', borderRadius: 8 }}
+      >
+        <strong style={{ display: 'block', marginBottom: 8 }}>Ir a sección</strong>
+        <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
+          {(['base', 'cost'] as ItemFocusTarget[]).map((target) => (
+            <li key={target}>
+              <a href={`#${FOCUS_META[target].id}`}>{FOCUS_META[target].label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <section
+        id={FOCUS_META.base.id}
+        ref={baseSectionRef}
+        style={{
+          border: activeFocus === 'base' ? '2px solid #6d4c8f' : '1px solid #ddd',
+          borderLeft: activeFocus === 'base' ? '6px solid #6d4c8f' : '1px solid #ddd',
+          padding: 16,
+          marginBottom: 20,
+          borderRadius: 8,
+          background: activeFocus === 'base' ? 'rgba(214, 186, 232, 0.2)' : '#fff',
+        }}
+      >
         <h2>Datos del ítem</h2>
         <FieldHint>Actualiza la información base del ítem para mantener consistencia de costeo.</FieldHint>
         <form onSubmit={onItemSubmit} style={{ display: 'grid', gap: 12 }}>
@@ -310,7 +374,17 @@ export default function ItemDetailPage() {
         </form>
       </section>
 
-      <section ref={costSectionRef} style={{ background: isCostFocusActive ? 'rgba(214, 186, 232, 0.2)' : undefined, borderRadius: 8, padding: isCostFocusActive ? 12 : 0 }}>
+      <section
+        id={FOCUS_META.cost.id}
+        ref={costSectionRef}
+        style={{
+          border: activeFocus === 'cost' ? '2px solid #6d4c8f' : '1px solid #ddd',
+          borderLeft: activeFocus === 'cost' ? '6px solid #6d4c8f' : '1px solid #ddd',
+          borderRadius: 8,
+          padding: 16,
+          background: activeFocus === 'cost' ? 'rgba(214, 186, 232, 0.2)' : '#fff',
+        }}
+      >
         <h2>Costos por sucursal</h2>
         <FieldHint>Registra costos brutos por pack y su vigencia para cada sucursal.</FieldHint>
         {costError ? <InlineAlert tone="error">{costError}</InlineAlert> : null}
