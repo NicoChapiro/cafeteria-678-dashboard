@@ -396,11 +396,13 @@ export default function RecipeDetailPage() {
     <main className="pageStack" style={{ maxWidth: 1040 }}>
       {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
       <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 10 }}>
-        <div className="listPageHeader" style={{ marginBottom: 0 }}>
+        <ReturnToLink returnTo={returnTo} />
+        <div className="listPageHeader" style={{ marginBottom: 0, alignItems: 'start' }}>
           <div>
-            <h1 style={{ margin: 0 }}>Receta: {recipe.name}</h1>
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>Ficha de receta</p>
+            <h1 style={{ margin: '4px 0 0' }}>{recipe.name}</h1>
             <p className="muted" style={{ marginTop: 6 }}>
-              Actualiza metadatos, líneas y costeo en una sola vista.
+              Edita metadatos, calcula costos y administra líneas desde esta pantalla.
             </p>
           </div>
           <span className={`badge ${recipe.active ? 'badge--success' : 'badge--warn'}`}>
@@ -409,13 +411,18 @@ export default function RecipeDetailPage() {
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link href="/recipes" className="btnSecondary">Volver a recetas</Link>
-          <ReturnToLink returnTo={returnTo} />
         </div>
+        <nav aria-label="Navegación interna de receta" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: '1px solid #e5e7eb', paddingTop: 10 }}>
+          <a className="btnSecondary" href="#metadatos">Metadatos</a>
+          <a className="btnSecondary" href="#costeo">Costeo teórico</a>
+          <a className="btnSecondary" href="#lineas">Líneas de receta</a>
+          <a className="btnSecondary" href="#listado-lineas">Listado de líneas</a>
+        </nav>
       </section>
 
-      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
-        <h2 className="cardTitle">Metadatos</h2>
-        <FieldHint>Define los datos base de la receta antes de editar sus líneas y costos.</FieldHint>
+      <section id="metadatos" className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
+        <h2 className="cardTitle" style={{ marginBottom: 2 }}>Metadatos</h2>
+        <FieldHint>Paso 1: define los datos base de la receta antes de editar sus líneas y costos.</FieldHint>
         <form onSubmit={handleMetaSubmit} className="sectionStack" style={{ gap: 14 }}>
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
             <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
@@ -474,9 +481,9 @@ export default function RecipeDetailPage() {
         </form>
       </section>
 
-      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
-        <h2 className="cardTitle">Costeo teórico</h2>
-        <FieldHint>Calcula una vista rápida del costo total y por unidad de yield según sucursal y fecha.</FieldHint>
+      <section id="costeo" className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
+        <h2 className="cardTitle" style={{ marginBottom: 2 }}>Costeo teórico</h2>
+        <FieldHint>Paso 2: calcula una vista rápida del costo total y por unidad de yield según sucursal y fecha.</FieldHint>
 
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', alignItems: 'end' }}>
           <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
@@ -556,12 +563,17 @@ export default function RecipeDetailPage() {
         ) : null}
       </section>
 
-      <section className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
-        <h2 className="cardTitle">Líneas de receta</h2>
-        <FieldHint>Primero agrega ingredientes (items) y luego sub-recetas según corresponda.</FieldHint>
+      <section id="lineas" className="card" style={{ marginBottom: 0, display: 'grid', gap: 14 }}>
+        <h2 className="cardTitle" style={{ marginBottom: 2 }}>Líneas de receta</h2>
+        <FieldHint>Paso 3: agrega ingredientes (items) y sub-recetas, luego valida el resultado en el listado.</FieldHint>
         {lineError ? <InlineAlert tone="error">{lineError}</InlineAlert> : null}
 
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', marginTop: 12 }}>
+        <article style={{ borderTop: '1px solid #e5e7eb', paddingTop: 14, display: 'grid', gap: 10 }}>
+          <h3 style={{ margin: 0 }}>Alta de líneas</h3>
+          <FieldHint>Completa una línea de item o de sub-receta y luego revísala en el listado.</FieldHint>
+        </article>
+
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
           <article style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, background: '#fcfdfd', display: 'grid', gap: 10 }}>
             <h3 style={{ margin: 0 }}>Agregar línea de item</h3>
             <FieldHint>Usa una unidad compatible con el item; se convertirá automáticamente a unidad base.</FieldHint>
@@ -666,7 +678,7 @@ export default function RecipeDetailPage() {
           </article>
         </div>
 
-        <article style={{ borderTop: '1px solid #e5e7eb', paddingTop: 14, marginTop: 2, display: 'grid', gap: 10 }}>
+        <article id="listado-lineas" style={{ borderTop: '1px solid #e5e7eb', paddingTop: 14, marginTop: 2, display: 'grid', gap: 10 }}>
           <h3 style={{ margin: 0 }}>Listado de líneas</h3>
           <FieldHint>Revisa y elimina líneas según tipo. La eliminación impacta el próximo cálculo teórico.</FieldHint>
           <div className="tableWrap" style={{ borderRadius: 10 }}>
