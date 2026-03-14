@@ -30,20 +30,25 @@ export default function ProductsPage() {
   });
 
   const activeProducts = products.filter((product) => product.active).length;
+  const inactiveProducts = products.length - activeProducts;
+
+  const filterButtonStyle = (selected: boolean) =>
+    selected
+      ? { background: 'rgba(72, 102, 48, 0.14)', borderColor: 'rgba(72, 102, 48, 0.4)' }
+      : undefined;
 
   return (
     <main className="pageStack">
-      <div
-        className="listPageHeader"
-      >
+      <div className="listPageHeader">
         <div>
-          <h1 style={{ marginBottom: 8 }}>Productos del catálogo</h1>
+          <h1 style={{ marginBottom: 6 }}>Listado de productos</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Encuentra productos por nombre y estado para abrir su ficha más rápido.
+            Encontrá rápido cada producto por nombre o estado y abrí su ficha en un clic.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span className="badge badge--info">Total: {products.length}</span>
+            <span className="badge badge--neutral">Total: {products.length}</span>
             <span className="badge badge--success">Activos: {activeProducts}</span>
+            <span className="badge badge--warn">Inactivos: {inactiveProducts}</span>
           </div>
         </div>
         <Link href="/products/new" className="btn" style={{ alignSelf: 'center' }}>
@@ -52,9 +57,12 @@ export default function ProductsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 0, maxWidth: 860 }}>
-        <label htmlFor="product-search" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
-          Buscar producto
+        <label htmlFor="product-search" style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>
+          Buscar y filtrar productos
         </label>
+        <p className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
+          Usá filtros rápidos para reducir el listado antes de abrir la ficha.
+        </p>
         <input
           id="product-search"
           type="search"
@@ -67,6 +75,7 @@ export default function ProductsPage() {
           <button
             type="button"
             className={statusFilter === 'all' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(statusFilter === 'all')}
             onClick={() => setStatusFilter('all')}
           >
             Todos
@@ -74,6 +83,7 @@ export default function ProductsPage() {
           <button
             type="button"
             className={statusFilter === 'active' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(statusFilter === 'active')}
             onClick={() => setStatusFilter('active')}
           >
             Activos
@@ -81,10 +91,12 @@ export default function ProductsPage() {
           <button
             type="button"
             className={statusFilter === 'inactive' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(statusFilter === 'inactive')}
             onClick={() => setStatusFilter('inactive')}
           >
             Inactivos
           </button>
+          <span className="badge badge--info">Mostrando: {filteredProducts.length}</span>
         </div>
       </div>
 

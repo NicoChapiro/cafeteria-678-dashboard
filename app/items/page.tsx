@@ -34,19 +34,22 @@ export default function ItemsPage() {
 
   const unitItemCount = items.filter((item) => item.baseUnit === 'unit').length;
 
+  const filterButtonStyle = (selected: boolean) =>
+    selected
+      ? { background: 'rgba(72, 102, 48, 0.14)', borderColor: 'rgba(72, 102, 48, 0.4)' }
+      : undefined;
+
   return (
     <main className="pageStack">
-      <div
-        className="listPageHeader"
-      >
+      <div className="listPageHeader">
         <div>
-          <h1 style={{ marginBottom: 8 }}>Ítems de inventario</h1>
+          <h1 style={{ marginBottom: 6 }}>Listado de ítems</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Busca insumos por nombre y unidad para abrir el ítem correcto más rápido.
+            Encuentra insumos por nombre y unidad base para abrir el ítem correcto más rápido.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span className="badge badge--info">Total: {items.length}</span>
-            <span className="badge badge--neutral">Unidad: {unitItemCount}</span>
+            <span className="badge badge--neutral">Total: {items.length}</span>
+            <span className="badge badge--neutral">Ítems con unidad unit: {unitItemCount}</span>
           </div>
         </div>
         <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
@@ -55,9 +58,12 @@ export default function ItemsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 0, maxWidth: 860 }}>
-        <label htmlFor="items-search" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
-          Buscar por nombre
+        <label htmlFor="items-search" style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>
+          Buscar y filtrar ítems
         </label>
+        <p className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
+          Combiná búsqueda y unidad base para reducir el listado más rápido.
+        </p>
         <input
           id="items-search"
           name="items-search"
@@ -71,6 +77,7 @@ export default function ItemsPage() {
           <button
             type="button"
             className={unitFilter === 'all' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(unitFilter === 'all')}
             onClick={() => setUnitFilter('all')}
           >
             Todos
@@ -78,6 +85,7 @@ export default function ItemsPage() {
           <button
             type="button"
             className={unitFilter === 'g' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(unitFilter === 'g')}
             onClick={() => setUnitFilter('g')}
           >
             g
@@ -85,6 +93,7 @@ export default function ItemsPage() {
           <button
             type="button"
             className={unitFilter === 'ml' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(unitFilter === 'ml')}
             onClick={() => setUnitFilter('ml')}
           >
             ml
@@ -92,10 +101,12 @@ export default function ItemsPage() {
           <button
             type="button"
             className={unitFilter === 'unit' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(unitFilter === 'unit')}
             onClick={() => setUnitFilter('unit')}
           >
             unit
           </button>
+          <span className="badge badge--info">Mostrando: {filteredItems.length}</span>
         </div>
       </div>
 
@@ -105,7 +116,7 @@ export default function ItemsPage() {
             <tr>
               <th>Nombre</th>
               <th>Unidad base</th>
-              <th style={{ textAlign: 'right' }}>Rendimiento</th>
+              <th style={{ textAlign: 'right' }}>Rendimiento por defecto</th>
               <th>Actualizado</th>
               <th>Acción</th>
             </tr>
