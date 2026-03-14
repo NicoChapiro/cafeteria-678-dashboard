@@ -17,6 +17,7 @@ import type {
   Recipe,
 } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
+import { buildEditorHref } from '@/src/lib/navigation/buildReturnTo';
 import { getProductWasteRate } from '@/src/services/product-waste';
 import {
   addProductCostVersion,
@@ -161,6 +162,18 @@ export default function ProductDetailPage() {
     () => (isProductFocusTarget(focus) ? FOCUS_META[focus].label : null),
     [focus],
   );
+
+  const recipeHref = useMemo(() => {
+    if (!product?.recipeId) {
+      return null;
+    }
+
+    return buildEditorHref(`/recipes/${product.recipeId}`, {
+      branch: branchParam ?? undefined,
+      returnTo: `/products/${productId}`,
+    });
+  }, [branchParam, product?.recipeId, productId]);
+
 
   useEffect(() => {
     setPageState('loading');
@@ -534,6 +547,11 @@ export default function ProductDetailPage() {
         <p style={{ marginTop: 0, marginBottom: 12 }}>
           <Link href="/products">← Volver a productos</Link>
         </p>
+        {recipeHref ? (
+          <p style={{ marginTop: 0, marginBottom: 12 }}>
+            <Link href={recipeHref}>Ver receta asociada →</Link>
+          </p>
+        ) : null}
         {focusedSectionLabel ? (
           <p
             style={{
