@@ -14,6 +14,7 @@ function formatDate(value: Date): string {
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [search, setSearch] = useState('');
+  const [unitFilter, setUnitFilter] = useState<'all' | 'g' | 'ml' | 'unit'>('all');
 
   useEffect(() => {
     setItems(listItems());
@@ -21,9 +22,17 @@ export default function ItemsPage() {
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredItems = useMemo(
-    () => items.filter((item) => item.name.toLowerCase().includes(normalizedSearch)),
-    [items, normalizedSearch],
+    () =>
+      items.filter((item) => {
+        const matchesSearch = item.name.toLowerCase().includes(normalizedSearch);
+        const matchesUnit = unitFilter === 'all' || item.baseUnit === unitFilter;
+
+        return matchesSearch && matchesUnit;
+      }),
+    [items, normalizedSearch, unitFilter],
   );
+
+  const unitItemCount = items.filter((item) => item.baseUnit === 'unit').length;
 
   return (
     <main className="pageStack">
@@ -31,18 +40,21 @@ export default function ItemsPage() {
         className="listPageHeader"
       >
         <div>
-          <h1 style={{ marginBottom: 8 }}>Gestión de ítems</h1>
+          <h1 style={{ marginBottom: 8 }}>Ítems de inventario</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Revisa rápidamente tus insumos, su rendimiento y fecha de actualización.
+            Busca insumos por nombre y unidad para abrir el ítem correcto más rápido.
           </p>
-          <span className="badge badge--info">Total: {items.length}</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <span className="badge badge--info">Total: {items.length}</span>
+            <span className="badge badge--neutral">Unidad: {unitItemCount}</span>
+          </div>
         </div>
         <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
           + Crear nuevo ítem
         </Link>
       </div>
 
-      <div className="card" style={{ marginBottom: 0, maxWidth: 760 }}>
+      <div className="card" style={{ marginBottom: 0, maxWidth: 860 }}>
         <label htmlFor="items-search" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
           Buscar por nombre
         </label>
@@ -55,6 +67,36 @@ export default function ItemsPage() {
           placeholder="Ej: Harina, Leche, Azúcar..."
           className="input"
         />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          <button
+            type="button"
+            className={unitFilter === 'all' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setUnitFilter('all')}
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            className={unitFilter === 'g' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setUnitFilter('g')}
+          >
+            g
+          </button>
+          <button
+            type="button"
+            className={unitFilter === 'ml' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setUnitFilter('ml')}
+          >
+            ml
+          </button>
+          <button
+            type="button"
+            className={unitFilter === 'unit' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            onClick={() => setUnitFilter('unit')}
+          >
+            unit
+          </button>
+        </div>
       </div>
 
       <div className="tableWrap listPageTable">
@@ -77,7 +119,7 @@ export default function ItemsPage() {
                 <td>{formatDate(item.updatedAt)}</td>
                 <td>
                   <Link href={`/items/${item.id}`} className="btnSecondary">
-                    Editar →
+                    Abrir ítem
                   </Link>
                 </td>
               </tr>
