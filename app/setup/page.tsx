@@ -374,6 +374,12 @@ export default function SetupPendingPage() {
     };
   }, [refreshCount, selectedBranch, selectedMonth]);
 
+
+  const productsById = useMemo(
+    () => new Map(listProducts().map((entry) => [entry.id, entry])),
+    [],
+  );
+
   const contextParams = useMemo(
     () => ({
       branch: selectedBranch !== 'Consolidado' ? selectedBranch : undefined,
@@ -385,6 +391,24 @@ export default function SetupPendingPage() {
 
   const setupProductHref = (productId: string, focus: string) =>
     buildEditorHref(`/products/${productId}`, { ...contextParams, focus });
+
+  const setupRecipeHref = (recipeId: string) => buildEditorHref(`/recipes/${recipeId}`, contextParams);
+
+  const setupCostGapHref = (row: ProductStatus) => {
+    const product = productsById.get(row.productId);
+    if (row.costReason === 'Receta sin costo vigente' && product?.recipeId) {
+      return setupRecipeHref(product.recipeId);
+    }
+
+    return setupProductHref(
+      row.productId,
+      row.missingRecipe && !row.hasManualCost
+        ? 'manualCost'
+        : row.costReason === 'Receta sin costo vigente'
+          ? 'recipePreview'
+          : 'base',
+    );
+  };
 
   const setupItemHref = (itemId: string) => buildEditorHref(`/items/${itemId}`, { ...contextParams, focus: 'cost' });
 
@@ -490,17 +514,8 @@ export default function SetupPendingPage() {
                     <td>{row.qty.toLocaleString('es-CL')}</td>
                     <td>{row.costReason}</td>
                     <td>
-                      <Link
-                        href={setupProductHref(
-                          row.productId,
-                          row.missingRecipe && !row.hasManualCost
-                            ? 'manualCost'
-                            : row.costReason === 'Receta sin costo vigente'
-                              ? 'recipePreview'
-                              : 'base',
-                        )}
-                      >
-                        Editar producto →
+                      <Link href={setupCostGapHref(row)}>
+                        {row.costReason === 'Receta sin costo vigente' ? 'Revisar receta →' : 'Editar producto →'}
                       </Link>
                     </td>
                   </tr>

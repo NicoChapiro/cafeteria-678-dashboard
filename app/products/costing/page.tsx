@@ -58,6 +58,7 @@ const parseIsoToUtcDate = (value: string) => {
 
 function buildDrawerActions(
   productId: string,
+  recipeId: string | null | undefined,
   costing: ProductWithCosting['costing'],
   branch: Branch,
   asOfDate: string,
@@ -100,7 +101,9 @@ function buildDrawerActions(
   if (hasUnsupportedRecipe(costing)) {
     actions.push({
       label: 'Revisar receta',
-      href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'recipePreview' }),
+      href: recipeId
+        ? buildEditorHref(`/recipes/${recipeId}`, { ...baseParams })
+        : buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'recipePreview' }),
       tone: 'warn',
       ctaLabel: 'Revisar receta',
       description: 'La receta incluye sub-recetas.',
@@ -287,7 +290,16 @@ export default function ProductCostingPage() {
 
   const selected = selectedProductId === null ? null : filteredSortedProducts.find(({ product }) => product.id === selectedProductId) ?? productComputed.find(({ product }) => product.id === selectedProductId) ?? null;
   const returnTo = typeof window === 'undefined' ? '/products/costing' : `${window.location.pathname}${window.location.search}`;
-  const drawerActions = selected ? buildDrawerActions(selected.product.id, selected.costing, branch, asOfDate, returnTo) : [];
+  const drawerActions = selected
+    ? buildDrawerActions(
+      selected.product.id,
+      selected.product.recipeId,
+      selected.costing,
+      branch,
+      asOfDate,
+      returnTo,
+    )
+    : [];
 
   useEffect(() => {
     const drawerElement = drawerRef.current;
