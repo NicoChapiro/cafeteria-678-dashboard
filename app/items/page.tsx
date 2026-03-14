@@ -45,11 +45,11 @@ export default function ItemsPage() {
         <div>
           <h1 style={{ marginBottom: 6 }}>Listado de ítems</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Encontrá insumos por nombre y unidad base para abrir el ítem correcto sin fricción.
+            Encuentra insumos por nombre y unidad base para abrir el ítem correcto más rápido.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className="badge badge--neutral">Total: {items.length}</span>
-            <span className="badge badge--neutral">Unidad: {unitItemCount}</span>
+            <span className="badge badge--neutral">Ítems con unidad unit: {unitItemCount}</span>
           </div>
         </div>
         <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
@@ -116,7 +116,7 @@ export default function ItemsPage() {
             <tr>
               <th>Nombre</th>
               <th>Unidad base</th>
-              <th style={{ textAlign: 'right' }}>Rendimiento</th>
+              <th style={{ textAlign: 'right' }}>Rendimiento por defecto</th>
               <th>Actualizado</th>
               <th>Acción</th>
             </tr>
