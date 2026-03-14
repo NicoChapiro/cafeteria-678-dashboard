@@ -51,6 +51,8 @@ const ISSUE_TYPES: IssueType[] = ['any', 'missingPrice', 'missingCosts', 'missin
 const isSortKey = (value: string): value is SortKey => SORT_KEYS.includes(value as SortKey);
 const isIssueType = (value: string): value is IssueType => ISSUE_TYPES.includes(value as IssueType);
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const buildContextualReturnTo = () =>
+  typeof window === 'undefined' ? '/products/costing' : `${window.location.pathname}${window.location.search}`;
 const parseIsoToUtcDate = (value: string) => {
   const [year, month, day] = value.split('-').map((segment) => Number(segment));
   return new Date(Date.UTC(year, (month || 1) - 1, day || 1));
@@ -289,7 +291,7 @@ export default function ProductCostingPage() {
   }, [productComputed]);
 
   const selected = selectedProductId === null ? null : filteredSortedProducts.find(({ product }) => product.id === selectedProductId) ?? productComputed.find(({ product }) => product.id === selectedProductId) ?? null;
-  const returnTo = typeof window === 'undefined' ? '/products/costing' : `${window.location.pathname}${window.location.search}`;
+  const returnTo = buildContextualReturnTo();
   const drawerActions = selected
     ? buildDrawerActions(
       selected.product.id,
