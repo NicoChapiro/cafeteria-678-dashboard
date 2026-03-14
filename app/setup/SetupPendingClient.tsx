@@ -394,20 +394,20 @@ export default function SetupPendingPage() {
 
   const setupRecipeHref = (recipeId: string) => buildEditorHref(`/recipes/${recipeId}`, contextParams);
 
-  const setupCostGapHref = (row: ProductStatus) => {
+  const setupCostGapAction = (row: ProductStatus): { href: string; label: string } => {
     const product = productsById.get(row.productId);
-    if (row.costReason === 'Receta sin costo vigente' && product?.recipeId) {
-      return setupRecipeHref(product.recipeId);
+    if (row.costReason === 'Receta sin costo vigente') {
+      if (product?.recipeId) {
+        return { href: setupRecipeHref(product.recipeId), label: 'Revisar receta →' };
+      }
+
+      return { href: setupProductHref(row.productId, 'recipePreview'), label: 'Editar producto →' };
     }
 
-    return setupProductHref(
-      row.productId,
-      row.missingRecipe && !row.hasManualCost
-        ? 'manualCost'
-        : row.costReason === 'Receta sin costo vigente'
-          ? 'recipePreview'
-          : 'base',
-    );
+    return {
+      href: setupProductHref(row.productId, row.missingRecipe && !row.hasManualCost ? 'manualCost' : 'base'),
+      label: 'Editar producto →',
+    };
   };
 
   const setupItemHref = (itemId: string) => buildEditorHref(`/items/${itemId}`, { ...contextParams, focus: 'cost' });
@@ -507,19 +507,19 @@ export default function SetupPendingPage() {
                 </tr>
               </thead>
               <tbody>
-                {report.sinCosto.slice(0, 10).map((row) => (
-                  <tr key={row.productId}>
-                    <td>{row.productName}</td>
-                    <td>{row.ventas.toLocaleString('es-CL')}</td>
-                    <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td>{row.costReason}</td>
-                    <td>
-                      <Link href={setupCostGapHref(row)}>
-                        {row.costReason === 'Receta sin costo vigente' ? 'Revisar receta →' : 'Editar producto →'}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {report.sinCosto.slice(0, 10).map((row) => {
+                  const action = setupCostGapAction(row);
+
+                  return (
+                    <tr key={row.productId}>
+                      <td>{row.productName}</td>
+                      <td>{row.ventas.toLocaleString('es-CL')}</td>
+                      <td>{row.qty.toLocaleString('es-CL')}</td>
+                      <td>{row.costReason}</td>
+                      <td><Link href={action.href}>{action.label}</Link></td>
+                    </tr>
+                  );
+                })}
                 {report.sinCosto.length === 0 ? (
                   <tr><td colSpan={5}>✅ No hay productos vendidos con costo pendiente en este período.</td></tr>
                 ) : null}

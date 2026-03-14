@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ReturnToLink } from '@/src/components/navigation/ReturnToLink';
@@ -111,6 +111,7 @@ function selectEffectiveManualCost(
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const productId = useMemo(() => String(params.id), [params.id]);
+  const pathname = usePathname();
 
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
@@ -168,11 +169,14 @@ export default function ProductDetailPage() {
       return null;
     }
 
+    const serializedSearch = searchParams.toString();
+    const contextualReturnTo = serializedSearch ? `${pathname}?${serializedSearch}` : pathname;
+
     return buildEditorHref(`/recipes/${product.recipeId}`, {
       branch: branchParam ?? undefined,
-      returnTo: `/products/${productId}`,
+      returnTo: contextualReturnTo,
     });
-  }, [branchParam, product?.recipeId, productId]);
+  }, [branchParam, pathname, product?.recipeId, searchParams]);
 
 
   useEffect(() => {
