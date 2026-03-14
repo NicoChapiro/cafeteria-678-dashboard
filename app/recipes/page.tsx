@@ -33,20 +33,25 @@ export default function RecipesPage() {
   }, [recipes, search, statusFilter]);
 
   const activeRecipes = recipes.filter((recipe) => recipe.active).length;
+  const inactiveRecipes = recipes.length - activeRecipes;
+
+  const filterButtonStyle = (selected: boolean) =>
+    selected
+      ? { background: 'rgba(72, 102, 48, 0.14)', borderColor: 'rgba(72, 102, 48, 0.4)' }
+      : undefined;
 
   return (
     <main className="pageStack">
-      <div
-        className="listPageHeader"
-      >
+      <div className="listPageHeader">
         <div>
-          <h1 style={{ marginBottom: 8 }}>Recetas de producción</h1>
+          <h1 style={{ marginBottom: 6 }}>Listado de recetas</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Filtra por nombre y estado para abrir cada receta sin fricción.
+            Encontrá la receta correcta por nombre o estado y abrila al instante.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span className="badge badge--info">Total: {recipes.length}</span>
+            <span className="badge badge--neutral">Total: {recipes.length}</span>
             <span className="badge badge--success">Activas: {activeRecipes}</span>
+            <span className="badge badge--warn">Inactivas: {inactiveRecipes}</span>
           </div>
         </div>
         <Link href="/recipes/new" className="btn" style={{ alignSelf: 'center' }}>
@@ -55,9 +60,12 @@ export default function RecipesPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 0, maxWidth: 860 }}>
-        <label htmlFor="recipes-search" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>
-          Buscar por nombre
+        <label htmlFor="recipes-search" style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>
+          Buscar y filtrar recetas
         </label>
+        <p className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
+          Aplicá filtros rápidos para acotar resultados y abrir más rápido.
+        </p>
         <input
           id="recipes-search"
           type="search"
@@ -70,6 +78,7 @@ export default function RecipesPage() {
           <button
             type="button"
             className={statusFilter === 'all' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(statusFilter === 'all')}
             onClick={() => setStatusFilter('all')}
           >
             Todas
@@ -77,6 +86,7 @@ export default function RecipesPage() {
           <button
             type="button"
             className={statusFilter === 'active' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(statusFilter === 'active')}
             onClick={() => setStatusFilter('active')}
           >
             Activas
@@ -84,10 +94,12 @@ export default function RecipesPage() {
           <button
             type="button"
             className={statusFilter === 'inactive' ? 'btnSecondary' : 'btnSecondary btnSmall'}
+            style={filterButtonStyle(statusFilter === 'inactive')}
             onClick={() => setStatusFilter('inactive')}
           >
             Inactivas
           </button>
+          <span className="badge badge--info">Mostrando: {filteredRecipes.length}</span>
         </div>
       </div>
 
