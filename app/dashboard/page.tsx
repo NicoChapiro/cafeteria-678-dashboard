@@ -449,7 +449,7 @@ export default function DashboardPage() {
             <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinCosto.length.toLocaleString('es-CL')}</p>
             {dashboard.alerts.sinCosto.length > 0 ? (
               <div style={{ marginTop: 8 }}>
-                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: Resolver costo manual o completar costos de receta.</p>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: resolver costo manual o completar costos de receta.</p>
                 <div style={{ display: 'grid', gap: 6 }}>
                   {dashboard.alerts.sinCosto.slice(0, 4).map((row) => (
                     <div key={row.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
@@ -470,7 +470,7 @@ export default function DashboardPage() {
             <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinPrecio.length.toLocaleString('es-CL')}</p>
             {dashboard.alerts.sinPrecio.length > 0 ? (
               <div style={{ marginTop: 8 }}>
-                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: Revisar precio vigente por sucursal.</p>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: revisar precio vigente por sucursal.</p>
                 <div style={{ display: 'grid', gap: 6 }}>
                   {dashboard.alerts.sinPrecio.slice(0, 4).map((row) => (
                     <div key={row.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
