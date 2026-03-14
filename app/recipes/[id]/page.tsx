@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import FieldHint from '@/src/components/feedback/FieldHint';
@@ -27,6 +27,7 @@ import {
   upsertRecipe,
   upsertRecipeLine,
 } from '@/src/storage/local/store';
+import { buildEditorHref } from '@/src/lib/navigation/buildReturnTo';
 
 const RECIPE_TYPES: RecipeType[] = [
   'fria',
@@ -45,6 +46,7 @@ type CostBreakdownRow = {
   id: string;
   type: 'item' | 'sub';
   name: string;
+  targetId?: string;
   qty: number;
   unit: string;
   effectiveUnitCostClp: number;
@@ -107,7 +109,22 @@ export default function RecipeDetailPage() {
   const recipeId = useMemo(() => String(params.id), [params.id]);
 
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const returnTo = searchParams.get('returnTo');
+  const serializedSearch = searchParams.toString();
+  const contextualReturnTo = serializedSearch ? `${pathname}?${serializedSearch}` : pathname;
+
+  const buildContextualLineHref = (lineType: 'item' | 'sub', targetId?: string): string | null => {
+    if (!targetId) {
+      return null;
+    }
+
+    if (lineType === 'item') {
+      return buildEditorHref(`/items/${targetId}`, { returnTo: contextualReturnTo });
+    }
+
+    return buildEditorHref(`/recipes/${targetId}`, { returnTo: contextualReturnTo });
+  };
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [pageState, setPageState] = useState<RecipePageState>('loading');
@@ -348,6 +365,7 @@ export default function RecipeDetailPage() {
             id: line.id,
             type: 'item',
             name: item.name,
+            targetId: item.id,
             qty: line.qtyInBase,
             unit: item.baseUnit,
             effectiveUnitCostClp,
@@ -367,6 +385,7 @@ export default function RecipeDetailPage() {
           id: line.id,
           type: 'sub',
           name: subRecipe.name,
+          targetId: subRecipe.id,
           qty: line.qtyInSubYield,
           unit: subRecipe.yieldUnit,
           effectiveUnitCostClp: subCost.costPerYieldUnitClp,
@@ -541,16 +560,19 @@ export default function RecipeDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {costingResult.rows.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.type === 'item' ? 'Item' : 'Sub-receta'}</td>
-                      <td>{row.name}</td>
-                      <td style={{ textAlign: 'right' }}>{row.qty.toLocaleString('es-CL')}</td>
-                      <td>{row.unit}</td>
-                      <td style={{ textAlign: 'right' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
-                    </tr>
-                  ))}
+                  {costingResult.rows.map((row) => {
+                    const rowHref = buildContextualLineHref(row.type, row.targetId);
+                    return (
+                      <tr key={row.id}>
+                        <td>{row.type === 'item' ? 'Item' : 'Sub-receta'}</td>
+                        <td>{rowHref ? <Link href={rowHref}>{row.name}</Link> : row.name}</td>
+                        <td style={{ textAlign: 'right' }}>{row.qty.toLocaleString('es-CL')}</td>
+                        <td>{row.unit}</td>
+                        <td style={{ textAlign: 'right' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600 }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
+                      </tr>
+                    );
+                  })}
                   {costingResult.rows.length === 0 ? (
                     <tr>
                       <td colSpan={6}>Sin líneas para costear.</td>
@@ -696,10 +718,13 @@ export default function RecipeDetailPage() {
                 {lines.map((line) => {
                   if (line.lineType === 'item') {
                     const item = allItems.find((entry) => entry.id === line.itemId);
+                    const itemHref = item ? buildContextualLineHref('item', item.id) : null;
                     return (
                       <tr key={line.id}>
                         <td>Item</td>
-                        <td>{item?.name ?? line.itemId}</td>
+                        <td>
+                          {item && itemHref ? <Link href={itemHref}>{item.name}</Link> : (item?.name ?? line.itemId)}
+                        </td>
                         <td>{line.qtyInBase.toLocaleString('es-CL')}</td>
                         <td>qtyInBase</td>
                         <td>
@@ -716,10 +741,13 @@ export default function RecipeDetailPage() {
                   }
 
                   const sub = allRecipes.find((entry) => entry.id === line.subRecipeId);
+                  const subHref = sub ? buildContextualLineHref('sub', sub.id) : null;
                   return (
                     <tr key={line.id}>
                       <td>Sub-receta</td>
-                      <td>{sub?.name ?? line.subRecipeId}</td>
+                      <td>
+                        {sub && subHref ? <Link href={subHref}>{sub.name}</Link> : (sub?.name ?? line.subRecipeId)}
+                      </td>
                       <td>{line.qtyInSubYield.toLocaleString('es-CL')}</td>
                       <td>qtyInSubYield</td>
                       <td>
