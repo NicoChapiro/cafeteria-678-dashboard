@@ -367,8 +367,8 @@ export default function ProductCostingPage() {
             }}
             aria-pressed={onlyIssues && issueType === 'any'}
             style={{
-              borderColor: onlyIssues ? 'var(--warn)' : undefined,
-              boxShadow: onlyIssues ? '0 0 0 1px color-mix(in srgb, var(--warn) 40%, transparent)' : undefined,
+              borderColor: onlyIssues ? 'var(--status-warning)' : undefined,
+              boxShadow: onlyIssues ? '0 0 0 1px color-mix(in srgb, var(--status-warning) 40%, transparent)' : undefined,
               fontWeight: 600,
             }}
           >
@@ -408,7 +408,7 @@ export default function ProductCostingPage() {
       <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 360px' : '1fr', gap: 12 }}>
         <section>
           {showIssueEmptyState ? (
-            <article className="card" style={{ textAlign: 'center', padding: '22px 16px', borderColor: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 9%, var(--panel))' }}>
+            <article className="card" style={{ textAlign: 'center', padding: '22px 16px', borderColor: 'var(--status-success)', background: 'color-mix(in srgb, var(--status-success) 9%, var(--card))' }}>
               <p style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}>Sin incidencias pendientes en este filtro</p>
               <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>Buen trabajo: no hay productos con problemas para la sucursal y fecha seleccionadas.</p>
               <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(false); setIssueType('any'); }}>
