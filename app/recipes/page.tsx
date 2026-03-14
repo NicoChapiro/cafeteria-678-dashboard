@@ -46,7 +46,7 @@ export default function RecipesPage() {
         <div>
           <h1 style={{ marginBottom: 6 }}>Listado de recetas</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Encontrá la receta correcta por nombre o estado y abrila al instante.
+            Encuentra la receta correcta por nombre o estado y ábrela al instante.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className="badge badge--neutral">Total: {recipes.length}</span>
@@ -64,7 +64,7 @@ export default function RecipesPage() {
           Buscar y filtrar recetas
         </label>
         <p className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
-          Aplicá filtros rápidos para acotar resultados y abrir más rápido.
+          Aplica filtros rápidos para acotar resultados y abrir más rápido.
         </p>
         <input
           id="recipes-search"
@@ -110,7 +110,7 @@ export default function RecipesPage() {
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Rendimiento</th>
-              <th>Activa</th>
+              <th>Estado</th>
               <th>Actualizado</th>
               <th>Acción</th>
             </tr>

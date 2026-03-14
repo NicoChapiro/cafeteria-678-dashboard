@@ -49,7 +49,7 @@ export default function ItemsPage() {
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className="badge badge--neutral">Total: {items.length}</span>
-            <span className="badge badge--neutral">Ítems con unidad unit: {unitItemCount}</span>
+            <span className="badge badge--neutral">Unidad base «unit»: {unitItemCount}</span>
           </div>
         </div>
         <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
@@ -62,7 +62,7 @@ export default function ItemsPage() {
           Buscar y filtrar ítems
         </label>
         <p className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
-          Combiná búsqueda y unidad base para reducir el listado más rápido.
+          Combina búsqueda y unidad base para reducir el listado más rápido.
         </p>
         <input
           id="items-search"

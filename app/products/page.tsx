@@ -43,7 +43,7 @@ export default function ProductsPage() {
         <div>
           <h1 style={{ marginBottom: 6 }}>Listado de productos</h1>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Encontrá rápido cada producto por nombre o estado y abrí su ficha en un clic.
+            Encuentra rápido cada producto por nombre o estado y abre su ficha en un clic.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className="badge badge--neutral">Total: {products.length}</span>
@@ -61,7 +61,7 @@ export default function ProductsPage() {
           Buscar y filtrar productos
         </label>
         <p className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
-          Usá filtros rápidos para reducir el listado antes de abrir la ficha.
+          Usa filtros rápidos para reducir el listado antes de abrir la ficha.
         </p>
         <input
           id="product-search"
@@ -104,7 +104,7 @@ export default function ProductsPage() {
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Activo</th>
+            <th>Estado</th>
             <th>Actualizado</th>
             <th>Acción</th>
           </tr>
