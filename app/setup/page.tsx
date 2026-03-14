@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { Branch, ItemCostVersion, ProductCostVersion, ProductPriceVersion } from '@/src/domain/types';
+import { buildEditorHref } from '@/src/lib/navigation/buildReturnTo';
 import { costRecipe } from '@/src/services/costing';
 import {
   listItemCosts,
@@ -19,6 +21,8 @@ import {
 type SetupBranch = Branch | 'Consolidado';
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
+
+const isSetupBranch = (value: string): value is SetupBranch => value === 'Consolidado' || BRANCHES.includes(value as Branch);
 
 type ProductStatus = {
   productId: string;
@@ -98,6 +102,7 @@ function monthOptions(lastMonths = 12): Array<{ value: string; label: string }> 
 }
 
 export default function SetupPendingPage() {
+  const pathname = usePathname();
   const now = new Date();
   const currentMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
   const previousDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
@@ -108,6 +113,49 @@ export default function SetupPendingPage() {
   const [refreshCount, setRefreshCount] = useState(0);
 
   const options = useMemo(() => monthOptions(12), []);
+  const [isUrlStateReady, setIsUrlStateReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const branchParam = params.get('branch');
+    if (branchParam && isSetupBranch(branchParam)) {
+      setSelectedBranch(branchParam);
+    }
+
+    const monthParam = params.get('month');
+    if (monthParam && options.some((option) => option.value === monthParam)) {
+      setSelectedMonth(monthParam);
+    }
+
+    setIsUrlStateReady(true);
+  }, [options]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isUrlStateReady) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set('branch', selectedBranch);
+    params.set('month', selectedMonth);
+
+    const query = params.toString();
+    const nextUrl = query ? `${pathname}?${query}` : pathname;
+    window.history.replaceState(null, '', nextUrl);
+  }, [isUrlStateReady, pathname, selectedBranch, selectedMonth]);
+
+  const returnTo = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('branch', selectedBranch);
+    params.set('month', selectedMonth);
+
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, selectedBranch, selectedMonth]);
 
   const report = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -326,6 +374,20 @@ export default function SetupPendingPage() {
     };
   }, [refreshCount, selectedBranch, selectedMonth]);
 
+  const contextParams = useMemo(
+    () => ({
+      branch: selectedBranch !== 'Consolidado' ? selectedBranch : undefined,
+      asOf: report?.range.end ?? monthBounds(selectedMonth).end,
+      returnTo,
+    }),
+    [report?.range.end, returnTo, selectedBranch, selectedMonth],
+  );
+
+  const setupProductHref = (productId: string, focus: string) =>
+    buildEditorHref(`/products/${productId}`, { ...contextParams, focus });
+
+  const setupItemHref = (itemId: string) => buildEditorHref(`/items/${itemId}`, { ...contextParams, focus: 'cost' });
+
   return (
     <main className="pageStack" style={{ gap: 14 }}>
       <section className="card" style={{ display: 'grid', gap: 8, marginBottom: 0, maxWidth: 1120 }}>
@@ -427,7 +489,20 @@ export default function SetupPendingPage() {
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
                     <td>{row.costReason}</td>
-                    <td><Link href={`/products/${row.productId}`}>Editar producto →</Link></td>
+                    <td>
+                      <Link
+                        href={setupProductHref(
+                          row.productId,
+                          row.missingRecipe && !row.hasManualCost
+                            ? 'manualCost'
+                            : row.costReason === 'Receta sin costo vigente'
+                              ? 'recipePreview'
+                              : 'base',
+                        )}
+                      >
+                        Editar producto →
+                      </Link>
+                    </td>
                   </tr>
                 ))}
                 {report.sinCosto.length === 0 ? (
@@ -455,7 +530,7 @@ export default function SetupPendingPage() {
                     <td>{row.productName}</td>
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td><Link href={`/products/${row.productId}`}>Revisar precio →</Link></td>
+                    <td><Link href={setupProductHref(row.productId, 'price')}>Revisar precio →</Link></td>
                   </tr>
                 ))}
                 {report.sinPrecio.length === 0 ? (
@@ -483,7 +558,7 @@ export default function SetupPendingPage() {
                     <td>{row.productName}</td>
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td><Link href={`/products/${row.productId}`}>Crear receta/costo →</Link></td>
+                    <td><Link href={setupProductHref(row.productId, 'manualCost')}>Crear receta/costo →</Link></td>
                   </tr>
                 ))}
                 {report.sinRecetaSinManual.length === 0 ? (
@@ -511,7 +586,7 @@ export default function SetupPendingPage() {
                     <td>{row.itemName}</td>
                     <td>{row.recipeIds.size}</td>
                     <td>{row.productIds.size}</td>
-                    <td><Link href={`/items/${row.itemId}`}>Editar costo →</Link></td>
+                    <td><Link href={setupItemHref(row.itemId)}>Editar costo →</Link></td>
                   </tr>
                 ))}
                 {report.ingredientesSinCosto.length === 0 ? (
