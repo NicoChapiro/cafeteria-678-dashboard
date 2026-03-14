@@ -369,9 +369,18 @@ export default function DashboardPage() {
     <PageShell>
       <PageHeader
         title="Dashboard rentabilidad teórica"
-        description={selectedBranch === 'Consolidado' ? 'Consolidado = Santiago + Temuco (incluye ajustes)' : undefined}
+        description="Detecta brechas operativas primero, luego valida impacto en ventas/costo y finalmente baja al detalle por producto."
         backNav={<BackNav />}
       />
+
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240, background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)' }}>
+        <p className="muted" style={{ marginBottom: 6 }}>Contexto operativo</p>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
+          {selectedBranch === 'Consolidado'
+            ? 'Consolidado combina Santiago + Temuco (incluye ajustes). Usa este bloque para priorizar productos con brechas de configuración antes de profundizar en el detalle.'
+            : `Vista operativa de ${selectedBranch}. Prioriza cierres de brechas para mejorar la cobertura de costos y la lectura de margen.`}
+        </p>
+      </section>
 
       <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
         <h2 style={{ marginTop: 0 }}>Filtros</h2>
@@ -407,8 +416,66 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240, borderColor: 'rgba(244, 144, 34, 0.35)', boxShadow: '0 2px 10px rgba(244, 144, 34, 0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+          <h2 style={{ margin: 0 }}>Brechas prioritarias</h2>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+            Cobertura con costo vigente: {(dashboard.coverageWithCost * 100).toFixed(1)}%
+          </p>
+        </div>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10 }}>
+          <article className="card" style={{ marginBottom: 0, borderLeft: '4px solid rgba(176, 0, 32, 0.5)', background: 'rgba(176, 0, 32, 0.03)' }}>
+            <p className="muted" style={{ marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', fontSize: 12 }}>Bloqueante de costos</p>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Sin receta</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinReceta.length.toLocaleString('es-CL')}</p>
+            {dashboard.alerts.sinReceta.length > 0 ? (
+              <div style={{ marginTop: 8 }}>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: asignar/ajustar receta.</p>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {dashboard.alerts.sinReceta.slice(0, 10).map((row) => (
+                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'base')}>{row.productName}</Link></li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </article>
+
+          <article className="card" style={{ marginBottom: 0, borderLeft: '4px solid rgba(244, 144, 34, 0.7)', background: 'rgba(255, 205, 80, 0.12)' }}>
+            <p className="muted" style={{ marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', fontSize: 12 }}>Riesgo de margen</p>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Sin costo vigente</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinCosto.length.toLocaleString('es-CL')}</p>
+            {dashboard.alerts.sinCosto.length > 0 ? (
+              <div style={{ marginTop: 8 }}>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: actualizar costo manual o costos de insumos.</p>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {dashboard.alerts.sinCosto.slice(0, 10).map((row) => (
+                    <li key={row.productId}><Link href={buildProductHref(row.productId, row.recipeId ? 'recipePreview' : 'manualCost')}>{row.productName}</Link></li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </article>
+
+          <article className="card" style={{ marginBottom: 0, borderLeft: '4px solid rgba(72, 102, 48, 0.55)', background: 'rgba(72, 102, 48, 0.06)' }}>
+            <p className="muted" style={{ marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', fontSize: 12 }}>Riesgo comercial</p>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Sin precio vigente</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinPrecio.length.toLocaleString('es-CL')}</p>
+            {dashboard.alerts.sinPrecio.length > 0 ? (
+              <div style={{ marginTop: 8 }}>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: revisar vigencia de precio por sucursal.</p>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {dashboard.alerts.sinPrecio.slice(0, 10).map((row) => (
+                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'price')}>{row.productName}</Link></li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </article>
+        </div>
+      </section>
+
       <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
-        <h2 style={{ marginTop: 0 }}>Resumen</h2>
+        <h2 style={{ marginTop: 0 }}>Impacto en rentabilidad</h2>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
           <KpiCard label="Ventas reales (CLP)" value={dashboard.summary.ventasReales.toLocaleString('es-CL')} />
           <KpiCard label="Costo teórico (CLP)" value={dashboard.summary.costoTeorico.toLocaleString('es-CL')} />
@@ -419,58 +486,11 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
-        <h2 style={{ marginTop: 0 }}>Alertas</h2>
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10 }}>
-          <article className="card" style={{ marginBottom: 0 }}>
-            <p className="muted" style={{ marginBottom: 6 }}>Sin receta</p>
-            <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinReceta.length.toLocaleString('es-CL')}</p>
-            {dashboard.alerts.sinReceta.length > 0 ? (
-              <details style={{ marginTop: 8 }}>
-                <summary>Ver productos (máximo 10)</summary>
-                <ul style={{ marginBottom: 0 }}>
-                  {dashboard.alerts.sinReceta.slice(0, 10).map((row) => (
-                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'base')}>{row.productName}</Link></li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-          </article>
-
-          <article className="card" style={{ marginBottom: 0 }}>
-            <p className="muted" style={{ marginBottom: 6 }}>Sin costo vigente</p>
-            <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinCosto.length.toLocaleString('es-CL')}</p>
-            {dashboard.alerts.sinCosto.length > 0 ? (
-              <details style={{ marginTop: 8 }}>
-                <summary>Ver productos (máximo 10)</summary>
-                <ul style={{ marginBottom: 0 }}>
-                  {dashboard.alerts.sinCosto.slice(0, 10).map((row) => (
-                    <li key={row.productId}><Link href={buildProductHref(row.productId, row.recipeId ? 'recipePreview' : 'manualCost')}>{row.productName}</Link></li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-          </article>
-
-          <article className="card" style={{ marginBottom: 0 }}>
-            <p className="muted" style={{ marginBottom: 6 }}>Sin precio vigente</p>
-            <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{dashboard.alerts.sinPrecio.length.toLocaleString('es-CL')}</p>
-            {dashboard.alerts.sinPrecio.length > 0 ? (
-              <details style={{ marginTop: 8 }}>
-                <summary>Ver productos (máximo 10)</summary>
-                <ul style={{ marginBottom: 0 }}>
-                  {dashboard.alerts.sinPrecio.slice(0, 10).map((row) => (
-                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'price')}>{row.productName}</Link></li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-          </article>
-        </div>
-      </section>
-
-      <section className="card" style={{ marginBottom: 0, maxWidth: 1240 }}>
-        <h2 style={{ marginTop: 0 }}>Detalle</h2>
+      <section className="card" style={{ marginBottom: 0, maxWidth: 1240, background: '#fcfcfd', borderColor: '#e5e7eb' }}>
+        <h2 style={{ marginTop: 0 }}>Detalle por producto</h2>
+        <p className="muted" style={{ marginTop: -4, marginBottom: 10, fontSize: 13 }}>
+          Usa este detalle para profundizar después de revisar brechas y KPIs.
+        </p>
         <div className="tableWrap listPageTable"><table className="table">
           <thead>
             <tr>
