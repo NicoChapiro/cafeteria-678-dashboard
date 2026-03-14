@@ -47,6 +47,13 @@ const EMPTY_FORM: MoneyVersionForm = {
 type ProductFocusTarget = 'base' | 'price' | 'manualCost' | 'recipePreview';
 type ProductPageState = 'loading' | 'ready' | 'missing';
 
+const FOCUS_META: Record<ProductFocusTarget, { label: string; id: string }> = {
+  base: { label: 'Datos base', id: 'section-base' },
+  recipePreview: { label: 'Vista teórica', id: 'section-recipe-preview' },
+  price: { label: 'Precios', id: 'section-price' },
+  manualCost: { label: 'Costos manuales', id: 'section-manual-cost' },
+};
+
 function isProductFocusTarget(value: string | null): value is ProductFocusTarget {
   return value === 'base' || value === 'price' || value === 'manualCost' || value === 'recipePreview';
 }
@@ -149,6 +156,11 @@ export default function ProductDetailPage() {
 
   const [marginAsOfDate, setMarginAsOfDate] = useState<string>(todayInputValue());
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const focusedSectionLabel = useMemo(
+    () => (isProductFocusTarget(focus) ? FOCUS_META[focus].label : null),
+    [focus],
+  );
 
   useEffect(() => {
     setPageState('loading');
@@ -516,13 +528,51 @@ export default function ProductDetailPage() {
   return (
     <main>
       {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage(null)} /> : null}
-      <h1>Producto: {product.name}</h1>
-      <p>
-        <Link href="/products">Volver a productos</Link>
-      </p>
-      <ReturnToLink returnTo={returnTo} />
+      <header style={{ marginBottom: 20 }}>
+        {returnTo ? <ReturnToLink returnTo={returnTo} /> : null}
+        <h1 style={{ marginBottom: 8 }}>Producto: {product.name}</h1>
+        <p style={{ marginTop: 0, marginBottom: 12 }}>
+          <Link href="/products">← Volver a productos</Link>
+        </p>
+        {focusedSectionLabel ? (
+          <p
+            style={{
+              display: 'inline-flex',
+              padding: '6px 10px',
+              borderRadius: 999,
+              border: '1px solid rgba(72, 102, 48, 0.3)',
+              background: 'rgba(72, 102, 48, 0.12)',
+              fontWeight: 600,
+              marginTop: 0,
+            }}
+          >
+            Edición enfocada: {focusedSectionLabel}
+          </p>
+        ) : null}
+      </header>
 
-      <section ref={baseSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'base' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
+      <nav
+        aria-label="Navegación interna de ficha de producto"
+        style={{ border: '1px solid #ddd', padding: 12, marginBottom: 20, background: '#fafafa' }}
+      >
+        <strong style={{ display: 'block', marginBottom: 8 }}>Ir a sección</strong>
+        <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
+          {(
+            [
+              'base',
+              'recipePreview',
+              'price',
+              'manualCost',
+            ] as ProductFocusTarget[]
+          ).map((target) => (
+            <li key={target}>
+              <a href={`#${FOCUS_META[target].id}`}>{FOCUS_META[target].label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <section id={FOCUS_META.base.id} ref={baseSectionRef} style={{ border: activeFocus === 'base' ? '2px solid #6d4c8f' : '1px solid #ddd', borderLeft: activeFocus === 'base' ? '6px solid #6d4c8f' : '1px solid #ddd', padding: 16, marginBottom: 20, borderRadius: 8, background: activeFocus === 'base' ? 'rgba(214, 186, 232, 0.2)' : '#fff' }}>
         <h2>Datos base</h2>
         <form onSubmit={onProductSubmit} style={{ display: 'grid', gap: 12 }}>
           <label>
@@ -579,7 +629,7 @@ export default function ProductDetailPage() {
         </form>
       </section>
 
-      <section ref={recipePreviewSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'recipePreview' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
+      <section id={FOCUS_META.recipePreview.id} ref={recipePreviewSectionRef} style={{ border: activeFocus === 'recipePreview' ? '2px solid #6d4c8f' : '1px solid #ddd', borderLeft: activeFocus === 'recipePreview' ? '6px solid #6d4c8f' : '1px solid #ddd', padding: 16, marginBottom: 20, borderRadius: 8, background: activeFocus === 'recipePreview' ? 'rgba(214, 186, 232, 0.2)' : '#fff' }}>
         <h2>Vista teórica de margen</h2>
         <label>
           Fecha de análisis
@@ -612,7 +662,7 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      <section ref={priceSectionRef} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 20, background: activeFocus === 'price' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
+      <section id={FOCUS_META.price.id} ref={priceSectionRef} style={{ border: activeFocus === 'price' ? '2px solid #6d4c8f' : '1px solid #ddd', borderLeft: activeFocus === 'price' ? '6px solid #6d4c8f' : '1px solid #ddd', padding: 16, marginBottom: 20, borderRadius: 8, background: activeFocus === 'price' ? 'rgba(214, 186, 232, 0.2)' : '#fff' }}>
         <h2>Precios por sucursal</h2>
         <FieldHint>Registra el precio bruto vigente para cada sucursal.</FieldHint>
         {priceError ? <InlineAlert tone="error">{priceError}</InlineAlert> : null}
@@ -662,7 +712,7 @@ export default function ProductDetailPage() {
         ))}
       </section>
 
-      <section ref={manualCostSectionRef} style={{ border: '1px solid #ddd', padding: 16, background: activeFocus === 'manualCost' ? 'rgba(214, 186, 232, 0.2)' : undefined }}>
+      <section id={FOCUS_META.manualCost.id} ref={manualCostSectionRef} style={{ border: activeFocus === 'manualCost' ? '2px solid #6d4c8f' : '1px solid #ddd', borderLeft: activeFocus === 'manualCost' ? '6px solid #6d4c8f' : '1px solid #ddd', padding: 16, borderRadius: 8, background: activeFocus === 'manualCost' ? 'rgba(214, 186, 232, 0.2)' : '#fff' }}>
         <h2>Costos manuales por sucursal</h2>
         <FieldHint>Usa esta sección cuando el producto no tenga receta asociada.</FieldHint>
         {costError ? <InlineAlert tone="error">{costError}</InlineAlert> : null}
