@@ -23,7 +23,14 @@ function isItemActive(pathname: string, href: string): boolean {
   }
 
   if (href === '/products') {
-    return pathname === '/products' || pathname.startsWith('/products/') && !pathname.startsWith('/products/costing');
+    return (
+      pathname === '/products'
+      || (pathname.startsWith('/products/') && !pathname.startsWith('/products/costing'))
+      || pathname === '/recipes'
+      || pathname.startsWith('/recipes/')
+      || pathname === '/items'
+      || pathname.startsWith('/items/')
+    );
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
