@@ -142,9 +142,43 @@ function buildPrimaryQuickAction(
   asOfDate: string,
   returnTo: string,
 ): QuickAction {
-  const actions = buildDrawerActions(productId, recipeId, costing, branch, asOfDate, returnTo);
-  const primary = actions.find((action) => action.tone === 'warn') ?? actions[0];
-  return { label: primary?.ctaLabel ?? 'Editar producto', href: primary?.href ?? buildEditorHref(`/products/${productId}`, { branch, asOf: asOfDate, returnTo, focus: 'base' }) };
+  const baseParams = { branch, asOf: asOfDate, returnTo };
+
+  if (hasMissingPrice(costing)) {
+    return {
+      label: 'Revisar precio',
+      href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'price' }),
+    };
+  }
+
+  if (hasMissingCosts(costing) && costing.badges.includes('Sin receta')) {
+    return {
+      label: 'Editar costo manual',
+      href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'manualCost' }),
+    };
+  }
+
+  if (costing.missingItems.length > 0) {
+    const firstMissing = costing.missingItems[0];
+    return {
+      label: 'Editar costo faltante',
+      href: buildEditorHref(`/items/${firstMissing.id}`, { ...baseParams, focus: 'cost' }),
+    };
+  }
+
+  if (hasUnsupportedRecipe(costing)) {
+    return {
+      label: 'Revisar receta',
+      href: recipeId
+        ? buildEditorHref(`/recipes/${recipeId}`, baseParams)
+        : buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'recipePreview' }),
+    };
+  }
+
+  return {
+    label: 'Editar producto',
+    href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'base' }),
+  };
 }
 
 export default function ProductCostingPage() {
