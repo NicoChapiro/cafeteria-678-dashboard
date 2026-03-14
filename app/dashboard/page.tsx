@@ -430,12 +430,15 @@ export default function DashboardPage() {
             <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinReceta.length.toLocaleString('es-CL')}</p>
             {dashboard.alerts.sinReceta.length > 0 ? (
               <div style={{ marginTop: 8 }}>
-                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: asignar/ajustar receta.</p>
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {dashboard.alerts.sinReceta.slice(0, 10).map((row) => (
-                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'base')}>{row.productName}</Link></li>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: completar receta o validar configuración del producto.</p>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {dashboard.alerts.sinReceta.slice(0, 4).map((row) => (
+                    <div key={row.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 13 }}>{row.productName}</span>
+                      <Link className="btn btnSmall" href={buildProductHref(row.productId, 'base')}>Completar receta</Link>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ) : null}
           </article>
@@ -446,12 +449,17 @@ export default function DashboardPage() {
             <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinCosto.length.toLocaleString('es-CL')}</p>
             {dashboard.alerts.sinCosto.length > 0 ? (
               <div style={{ marginTop: 8 }}>
-                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: actualizar costo manual o costos de insumos.</p>
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {dashboard.alerts.sinCosto.slice(0, 10).map((row) => (
-                    <li key={row.productId}><Link href={buildProductHref(row.productId, row.recipeId ? 'recipePreview' : 'manualCost')}>{row.productName}</Link></li>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: resolver costo manual o completar costos de receta.</p>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {dashboard.alerts.sinCosto.slice(0, 4).map((row) => (
+                    <div key={row.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 13 }}>{row.productName}</span>
+                      <Link className="btn btnSmall" href={buildProductHref(row.productId, row.recipeId ? 'recipePreview' : 'manualCost')}>
+                        {row.recipeId ? 'Resolver costo' : 'Editar costo manual'}
+                      </Link>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ) : null}
           </article>
@@ -462,12 +470,15 @@ export default function DashboardPage() {
             <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinPrecio.length.toLocaleString('es-CL')}</p>
             {dashboard.alerts.sinPrecio.length > 0 ? (
               <div style={{ marginTop: 8 }}>
-                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: revisar vigencia de precio por sucursal.</p>
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {dashboard.alerts.sinPrecio.slice(0, 10).map((row) => (
-                    <li key={row.productId}><Link href={buildProductHref(row.productId, 'price')}>{row.productName}</Link></li>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: definir precio vigente por sucursal.</p>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {dashboard.alerts.sinPrecio.slice(0, 4).map((row) => (
+                    <div key={row.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 13 }}>{row.productName}</span>
+                      <Link className="btn btnSmall" href={buildProductHref(row.productId, 'price')}>Revisar precio</Link>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ) : null}
           </article>
