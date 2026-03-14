@@ -3,6 +3,7 @@ import EmptyState from '@/src/components/feedback/EmptyState';
 import { ProductCard } from './ProductCard';
 
 type KanbanTone = 'healthy' | 'warn' | 'critical';
+type KanbanQuickAction = { label: string; href: string };
 
 function getEmptyMessage(title: string): string {
   if (title === 'Saludable') return 'No hay productos saludables en este filtro.';
@@ -11,7 +12,7 @@ function getEmptyMessage(title: string): string {
   return 'No hay productos con sub-recetas pendientes de revisión.';
 }
 
-export function KanbanColumn({ title, tone, items, selectedProductId, onOpen }: { title: string; tone: KanbanTone; items: ProductWithCosting[]; selectedProductId: string | null; onOpen: (id: string) => void }) {
+export function KanbanColumn({ title, tone, items, selectedProductId, onOpen, getQuickAction }: { title: string; tone: KanbanTone; items: ProductWithCosting[]; selectedProductId: string | null; onOpen: (id: string) => void; getQuickAction: (entry: ProductWithCosting) => KanbanQuickAction }) {
   return (
     <section className={`card kanbanColumn kanbanColumn--${tone}`} style={{ marginBottom: 0 }}>
       <header className="kanbanColumn__header">
@@ -23,7 +24,7 @@ export function KanbanColumn({ title, tone, items, selectedProductId, onOpen }: 
         <EmptyState compact title={getEmptyMessage(title)} />
       ) : (
         <div className="kanbanColumn__items">
-          {items.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => onOpen(entry.product.id)} />)}
+          {items.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => onOpen(entry.product.id)} quickAction={getQuickAction(entry)} />)}
         </div>
       )}
     </section>

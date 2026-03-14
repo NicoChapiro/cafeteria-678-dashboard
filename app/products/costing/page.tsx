@@ -131,6 +131,22 @@ function buildDrawerActions(
   return actions;
 }
 
+
+type QuickAction = { label: string; href: string };
+
+function buildPrimaryQuickAction(
+  productId: string,
+  recipeId: string | null | undefined,
+  costing: ProductWithCosting['costing'],
+  branch: Branch,
+  asOfDate: string,
+  returnTo: string,
+): QuickAction {
+  const actions = buildDrawerActions(productId, recipeId, costing, branch, asOfDate, returnTo);
+  const primary = actions.find((action) => action.tone === 'warn') ?? actions[0];
+  return { label: primary?.ctaLabel ?? 'Editar producto', href: primary?.href ?? buildEditorHref(`/products/${productId}`, { branch, asOf: asOfDate, returnTo, focus: 'base' }) };
+}
+
 export default function ProductCostingPage() {
   const [branch, setBranch] = useState<Branch>('Santiago');
   const [asOfDate, setAsOfDate] = useState<string>(todayIso());
@@ -346,6 +362,7 @@ export default function ProductCostingPage() {
   const issueSummary = `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.missingCostItems} faltan costos · ${issueStats.unsupportedRecipe} sub-recetas`;
   const isBaseState = branch === 'Santiago' && asOfDate === todayIso() && search.trim() === '' && sort === 'name' && !onlyIssues && issueType === 'any' && selectedProductId === null;
   const showIssueEmptyState = onlyIssues && filteredSortedProducts.length === 0;
+  const getQuickAction = useCallback((entry: ProductWithCosting) => buildPrimaryQuickAction(entry.product.id, entry.product.recipeId, entry.costing, branch, asOfDate, returnTo), [asOfDate, branch, returnTo]);
 
   return (
     <main className="container">
@@ -431,10 +448,10 @@ export default function ProductCostingPage() {
             </article>
           ) : null}
           {viewMode === 'cards' ? (
-            <div className="grid">{filteredSortedProducts.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => openDrawer(entry.product.id)} />)}</div>
+            <div className="grid">{filteredSortedProducts.map((entry) => <ProductCard key={entry.product.id} entry={entry} selected={selectedProductId === entry.product.id} onOpen={() => openDrawer(entry.product.id)} quickAction={getQuickAction(entry)} />)}</div>
           ) : null}
-          {viewMode === 'kanban' ? <KanbanBoard products={filteredSortedProducts} selectedProductId={selectedProductId} onOpen={openDrawer} /> : null}
-          {viewMode === 'table' ? <ProductTable products={filteredSortedProducts} onOpen={openDrawer} /> : null}
+          {viewMode === 'kanban' ? <KanbanBoard products={filteredSortedProducts} selectedProductId={selectedProductId} onOpen={openDrawer} getQuickAction={getQuickAction} /> : null}
+          {viewMode === 'table' ? <ProductTable products={filteredSortedProducts} onOpen={openDrawer} getQuickAction={getQuickAction} /> : null}
         </section>
 
         <ProductDrawer

@@ -1,9 +1,13 @@
+import Link from 'next/link';
+
 import { getCardActionLabel, getProductCardHealth } from '@/src/view-models/productCostingDashboard';
 import type { ProductWithCosting } from '@/src/view-models/productCostingDashboard';
 import { ProductCardBadges } from './ProductCardBadges';
 import { ProductCardMeta } from './ProductCardMeta';
 
-export function ProductCard({ entry, selected, onOpen }: { entry: ProductWithCosting; selected: boolean; onOpen: () => void }) {
+type ProductCardQuickAction = { label: string; href: string };
+
+export function ProductCard({ entry, selected, onOpen, quickAction }: { entry: ProductWithCosting; selected: boolean; onOpen: () => void; quickAction: ProductCardQuickAction }) {
   const health = getProductCardHealth(entry.costing);
 
   return (
@@ -22,6 +26,16 @@ export function ProductCard({ entry, selected, onOpen }: { entry: ProductWithCos
       </div>
       <div style={{ marginTop: 8 }}><ProductCardBadges badges={entry.costing.badges} /></div>
       <div style={{ marginTop: 10 }}><ProductCardMeta entry={entry} /></div>
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <Link
+          href={quickAction.href}
+          className="btn btnSmall"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {quickAction.label}
+        </Link>
+        <span className="muted" style={{ fontSize: 12 }}>Más contexto en panel lateral</span>
+      </div>
     </button>
   );
 }
