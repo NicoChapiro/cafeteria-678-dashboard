@@ -10,18 +10,20 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', href: '/' },
-  { label: 'Ventas', href: '/sales' },
+  { label: 'Importar ventas', href: '/sales/import' },
+  { label: 'Pendientes', href: '/setup' },
+  { label: 'Costeo', href: '/products/costing' },
+  { label: 'Catálogo', href: '/products' },
   { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Productos', href: '/products' },
-  { label: 'Recetas', href: '/recipes' },
-  { label: 'Ítems', href: '/items' },
-  { label: 'Configuración', href: '/setup' },
-  { label: 'Auditoría', href: '/audit' },
 ];
 
 function isItemActive(pathname: string, href: string): boolean {
   if (href === '/') {
     return pathname === '/';
+  }
+
+  if (href === '/products') {
+    return pathname === '/products' || pathname.startsWith('/products/') && !pathname.startsWith('/products/costing');
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
