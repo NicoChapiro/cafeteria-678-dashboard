@@ -161,7 +161,7 @@ function buildPrimaryQuickAction(
   if (costing.missingItems.length > 0) {
     const firstMissing = costing.missingItems[0];
     return {
-      label: 'Revisar receta',
+      label: 'Editar costo faltante',
       href: buildEditorHref(`/items/${firstMissing.id}`, { ...baseParams, focus: 'cost' }),
     };
   }
