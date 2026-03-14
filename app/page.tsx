@@ -9,91 +9,94 @@ type Section = {
   cta: string;
 };
 
-const salesFlowSections: Section[] = [
+const primaryFlowSections: Section[] = [
   {
-    title: 'Registrar ventas',
-    description: 'Carga y revisa ventas por sucursal en el período operativo.',
-    href: '/sales',
-    cta: 'Ir a ventas',
+    title: '1) Importar ventas',
+    description: 'Carga ventas FU.DO para iniciar el ciclo operativo del período actual.',
+    href: '/sales/import',
+    cta: 'Importar ventas',
   },
   {
-    title: 'Importar ventas FU.DO',
-    description: 'Importación estándar para dejar el flujo diario al día.',
-    href: '/sales/import',
-    cta: 'Ir a importador FU.DO',
+    title: '2) Resolver pendientes críticos',
+    description: 'Corrige brechas de setup que afectan costo, precio y consistencia operacional.',
+    href: '/setup',
+    cta: 'Resolver pendientes',
+  },
+  {
+    title: '3) Costear productos',
+    description: 'Actualiza costos teóricos de productos para reflejar el estado real del negocio.',
+    href: '/products/costing',
+    cta: 'Ir a costeo',
+  },
+  {
+    title: '4) Ver rentabilidad',
+    description: 'Revisa resultados por período y sucursal para tomar decisiones con contexto.',
+    href: '/dashboard',
+    cta: 'Abrir dashboard',
   },
 ];
 
-const masterDataSections: Section[] = [
+const masterToolsSections: Section[] = [
   {
     title: 'Productos',
-    description: 'Gestiona el catálogo vendible y el estado activo/inactivo.',
+    description: 'Gestiona catálogo, estado activo e información base vendible.',
     href: '/products',
     cta: 'Ir a productos',
   },
   {
     title: 'Recetas',
-    description: 'Administra recetas productivas y sub-recetas con su costeo.',
+    description: 'Administra recetas productivas y sub-recetas para costeo.',
     href: '/recipes',
     cta: 'Ir a recetas',
   },
   {
     title: 'Ítems',
-    description: 'Mantén insumos, unidad de compra y rendimiento operacional.',
+    description: 'Mantén insumos, formatos de compra y rendimientos operacionales.',
     href: '/items',
     cta: 'Ir a ítems',
   },
+];
+
+const advancedToolsSections: Section[] = [
   {
-    title: 'Pendientes de setup',
-    description: 'Detecta brechas mensuales de costo, precio, receta e insumos.',
-    href: '/setup',
-    cta: 'Ir a setup',
+    title: 'Ventas (resumen manual)',
+    description: 'Acceso a carga y revisión manual de ventas.',
+    href: '/sales',
+    cta: 'Ir a ventas',
   },
   {
     title: 'Importar base',
     description: 'Carga consolidada XLSX para productos, ingredientes y recetas.',
     href: '/import/base',
-    cta: 'Ir a importar base',
-  },
-];
-
-const controlSections: Section[] = [
-  {
-    title: 'Dashboard de rentabilidad',
-    description: 'Analiza rentabilidad teórica con ventas reales por sucursal y período.',
-    href: '/dashboard',
-    cta: 'Ir a dashboard',
+    cta: 'Importar base',
   },
   {
     title: 'Auditoría',
-    description: 'Revisa audit log y utilidades de exportación/importación.',
+    description: 'Revisa eventos y utilidades de exportación/importación.',
     href: '/audit',
     cta: 'Ir a auditoría',
   },
-];
-
-const adminFallbackSections: Section[] = [
   {
-    title: 'Ventas Temuco (manual)',
-    description: 'Carga y edición manual de ventas por día/producto (fallback).',
+    title: 'Ventas Temuco (legacy)',
+    description: 'Vista legacy/manual para soporte operativo puntual.',
     href: '/sales/temuco',
-    cta: 'Ir a ventas Temuco',
+    cta: 'Abrir Temuco',
   },
   {
     title: 'Ventas Santiago (legacy)',
     description: 'Vista histórica de ventas importadas por día/producto.',
     href: '/sales/santiago',
-    cta: 'Ir a ventas Santiago',
+    cta: 'Abrir Santiago',
   },
   {
     title: 'Importar Santiago (legacy)',
-    description: 'Carga planilla XLSX y concilia ventas históricas.',
+    description: 'Carga planilla XLSX para conciliación histórica de Santiago.',
     href: '/sales/santiago/import',
     cta: 'Importar Santiago',
   },
   {
     title: 'Importar Temuco (legacy)',
-    description: 'Carga planilla XLSX y concilia ventas de Temuco.',
+    description: 'Carga planilla XLSX para conciliación histórica de Temuco.',
     href: '/sales/temuco/import',
     cta: 'Importar Temuco',
   },
@@ -120,59 +123,55 @@ export default function HomePage() {
     <main className="pageStack" style={{ gap: 16 }}>
       <header className="card" style={{ marginBottom: 0, padding: 16, maxWidth: 1120 }}>
         <span className="badge badge--info" style={{ marginBottom: 8 }}>
-          Inicio de operación
+          Centro operativo
         </span>
-        <h1 style={{ margin: '0 0 6px 0', fontSize: 26, lineHeight: 1.2 }}>Panel de operación Cafetería 678</h1>
-        <p className="muted" style={{ marginBottom: 10, maxWidth: 72 * 8, lineHeight: 1.35 }}>
-          Prioriza el costeo, revisa rentabilidad y continúa con el flujo de ventas del día.
+        <h1 style={{ margin: '0 0 6px 0', fontSize: 26, lineHeight: 1.2 }}>Flujo recomendado Cafetería 678</h1>
+        <p className="muted" style={{ marginBottom: 10, maxWidth: 74 * 8, lineHeight: 1.35 }}>
+          Sigue este orden para operar el sistema con foco: importar ventas, resolver pendientes críticos,
+          costear productos y cerrar con revisión de rentabilidad.
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Link className="btn" href="/products/costing">
-            Ir a costeo de productos
+          <Link className="btn" href="/sales/import">
+            Iniciar flujo operativo
           </Link>
-          <Link className="btnSecondary" href="/dashboard">
-            Ver dashboard de rentabilidad
+          <Link className="btnSecondary" href="/setup">
+            Revisar pendientes críticos
           </Link>
         </div>
       </header>
 
-      <section aria-label="Flujo de ventas" className="sectionStack">
-        <h2 style={{ margin: '0 0 8px 0', fontSize: 20, lineHeight: 1.2 }}>Flujo de ventas</h2>
+      <section aria-label="Flujo principal" className="sectionStack">
+        <h2 style={{ margin: '0 0 8px 0', fontSize: 20, lineHeight: 1.2 }}>Flujo principal</h2>
         <div
           className="grid"
           style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 10, maxWidth: 1120 }}
         >
-          {renderSectionCards(salesFlowSections)}
+          {renderSectionCards(primaryFlowSections)}
         </div>
       </section>
 
-      <section aria-label="Maestros y configuración" className="sectionStack">
-        <h2 style={{ margin: '0 0 8px 0', fontSize: 20, lineHeight: 1.2 }}>Maestros y configuración</h2>
+      <section aria-label="Herramientas maestras" className="sectionStack">
+        <h2 style={{ margin: '0 0 8px 0', fontSize: 20, lineHeight: 1.2 }}>Herramientas maestras</h2>
         <div
           className="grid"
           style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 10, maxWidth: 1120 }}
         >
-          {renderSectionCards(masterDataSections)}
+          {renderSectionCards(masterToolsSections)}
         </div>
       </section>
 
-      <section aria-label="Control y seguimiento" className="sectionStack">
-        <h2 style={{ margin: '0 0 8px 0', fontSize: 20, lineHeight: 1.2 }}>Control y seguimiento</h2>
+      <section aria-label="Herramientas avanzadas" className="sectionStack">
+        <h2 className="muted" style={{ margin: '0 0 8px 0', fontSize: 18, lineHeight: 1.2 }}>
+          Herramientas avanzadas
+        </h2>
+        <p className="muted" style={{ marginBottom: 8, maxWidth: 74 * 8, lineHeight: 1.35 }}>
+          Accesos legacy y utilidades de soporte. Úsalos sólo cuando el flujo principal no cubra el caso.
+        </p>
         <div
           className="grid"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 10, maxWidth: 1120 }}
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, maxWidth: 1120, opacity: 0.95 }}
         >
-          {renderSectionCards(controlSections)}
-        </div>
-      </section>
-
-      <section aria-label="Admin y fallback" className="sectionStack">
-        <h2 style={{ margin: '0 0 8px 0', fontSize: 20, lineHeight: 1.2 }}>Admin y fallback</h2>
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 10, maxWidth: 1120 }}
-        >
-          {renderSectionCards(adminFallbackSections)}
+          {renderSectionCards(advancedToolsSections)}
         </div>
       </section>
     </main>
