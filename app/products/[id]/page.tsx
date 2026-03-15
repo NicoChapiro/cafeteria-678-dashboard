@@ -11,10 +11,13 @@ import Toast from '@/src/components/feedback/Toast';
 import VersionTimelinePreview from '@/src/components/versioning/VersionTimelinePreview';
 import type {
   Branch,
+  Item,
+  ItemCostVersion,
   Product,
   ProductCostVersion,
   ProductPriceVersion,
   Recipe,
+  RecipeLine,
 } from '@/src/domain/types';
 import { costRecipe } from '@/src/services/costing';
 import { buildEditorHref } from '@/src/lib/navigation/buildReturnTo';
@@ -31,7 +34,7 @@ import {
   listRecipes,
   updateProductCostVersionValidFrom,
   upsertProduct,
-} from '@/src/storage/local/store';
+} from '@/src/services/catalog/clientCatalog';
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
 
@@ -127,6 +130,9 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [pageState, setPageState] = useState<ProductPageState>('loading');
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
+  const [cachedItems, setCachedItems] = useState<Item[]>([]);
+  const [cachedRecipeLines, setCachedRecipeLines] = useState<RecipeLine[]>([]);
+  const [cachedItemCosts, setCachedItemCosts] = useState<Record<Branch, ItemCostVersion[]>>({ Santiago: [], Temuco: [] });
 
   const [baseError, setBaseError] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
@@ -180,24 +186,34 @@ export default function ProductDetailPage() {
 
 
   useEffect(() => {
-    setPageState('loading');
-    const found = getProduct(productId);
-    setProduct(found ?? null);
-    setPageState(found ? 'ready' : 'missing');
-    setAllRecipes(listRecipes());
-    setPricesByBranch({
-      Santiago: listProductPrices(productId, 'Santiago'),
-      Temuco: listProductPrices(productId, 'Temuco'),
-    });
-    const initialCosts = {
-      Santiago: listProductCosts(productId, 'Santiago'),
-      Temuco: listProductCosts(productId, 'Temuco'),
-    };
-    setCostsByBranch(initialCosts);
-    setCostValidFromEdit({
-      Santiago: initialCosts.Santiago[0]?.validFrom.toISOString().slice(0, 10) ?? '',
-      Temuco: initialCosts.Temuco[0]?.validFrom.toISOString().slice(0, 10) ?? '',
-    });
+    void (async () => {
+      setPageState('loading');
+      const found = await getProduct(productId);
+      setProduct(found ?? null);
+      setPageState(found ? 'ready' : 'missing');
+      const recipes = await listRecipes();
+      setAllRecipes(recipes);
+      const items = await listItems();
+      setCachedItems(items);
+      setCachedRecipeLines((await Promise.all(recipes.map((entry) => listRecipeLines(entry.id)))).flat());
+      setCachedItemCosts({
+        Santiago: (await Promise.all(items.map((item) => listItemCosts(item.id, 'Santiago')))).flat(),
+        Temuco: (await Promise.all(items.map((item) => listItemCosts(item.id, 'Temuco')))).flat(),
+      });
+      setPricesByBranch({
+        Santiago: await listProductPrices(productId, 'Santiago'),
+        Temuco: await listProductPrices(productId, 'Temuco'),
+      });
+      const initialCosts = {
+        Santiago: await listProductCosts(productId, 'Santiago'),
+        Temuco: await listProductCosts(productId, 'Temuco'),
+      };
+      setCostsByBranch(initialCosts);
+      setCostValidFromEdit({
+        Santiago: initialCosts.Santiago[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+        Temuco: initialCosts.Temuco[0]?.validFrom.toISOString().slice(0, 10) ?? '',
+      });
+    })();
   }, [productId]);
 
 
@@ -240,8 +256,8 @@ export default function ProductDetailPage() {
       };
     }
 
-    const allItems = listItems();
-    const recipes = listRecipes();
+    const allItems = cachedItems;
+    const recipes = allRecipes;
 
     const result: Record<
       Branch,
@@ -274,11 +290,11 @@ export default function ProductDetailPage() {
           const context = {
             items: allItems,
             recipes,
-            recipeLines: recipes.flatMap((entry) => listRecipeLines(entry.id)),
-            itemCostVersions: allItems.flatMap((item) => listItemCosts(item.id, branch)),
+            recipeLines: cachedRecipeLines,
+            itemCostVersions: cachedItemCosts[branch],
           };
 
-          const lines = listRecipeLines(recipe.id);
+          const lines = cachedRecipeLines.filter((entry) => entry.recipeId === recipe.id);
           const recipeCost = costRecipe(recipe, lines, context, asOfDate, branch);
           cost = recipeCost.costPerYieldUnitClp;
         } else {
@@ -325,7 +341,7 @@ export default function ProductDetailPage() {
     });
 
     return result;
-  }, [costsByBranch, marginAsOfDate, pricesByBranch, product]);
+  }, [allRecipes, cachedItemCosts, cachedItems, cachedRecipeLines, costsByBranch, marginAsOfDate, pricesByBranch, product]);
 
   if (pageState === 'loading') {
     return (
@@ -353,7 +369,7 @@ export default function ProductDetailPage() {
     return null;
   }
 
-  function onProductSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onProductSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBaseError(null);
 
@@ -376,7 +392,7 @@ export default function ProductDetailPage() {
         throw new Error('merma debe estar entre 0 y 30');
       }
 
-      const updated = upsertProduct({
+      const updated = await upsertProduct({
         id: product.id,
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
@@ -446,7 +462,7 @@ export default function ProductDetailPage() {
     return null;
   }
 
-  function onAddPrice(branch: Branch) {
+  async function onAddPrice(branch: Branch) {
     setPriceError(null);
 
     try {
@@ -455,7 +471,7 @@ export default function ProductDetailPage() {
       }
 
       const parsed = parseMoneyVersion(priceForms[branch], 'precio');
-      const updated = addProductPriceVersion(product.id, branch, {
+      const updated = await addProductPriceVersion(product.id, branch, {
         validFrom: parsed.validFrom,
         priceGrossClp: parsed.amount,
       });
@@ -473,7 +489,7 @@ export default function ProductDetailPage() {
     }
   }
 
-  function onAddCost(branch: Branch) {
+  async function onAddCost(branch: Branch) {
     setCostError(null);
 
     try {
@@ -482,7 +498,7 @@ export default function ProductDetailPage() {
       }
 
       const parsed = parseMoneyVersion(costForms[branch], 'costo');
-      const updated = addProductCostVersion(product.id, branch, {
+      const updated = await addProductCostVersion(product.id, branch, {
         validFrom: parsed.validFrom,
         costGrossClp: parsed.amount,
       });
@@ -504,7 +520,7 @@ export default function ProductDetailPage() {
     }
   }
 
-  function onChangeFirstCostValidFrom(branch: Branch) {
+  async function onChangeFirstCostValidFrom(branch: Branch) {
     setCostError(null);
 
     try {
@@ -528,7 +544,7 @@ export default function ProductDetailPage() {
         throw new Error('La nueva fecha debe ser menor al siguiente validFrom');
       }
 
-      const updated = updateProductCostVersionValidFrom(firstVersion.id, validFrom);
+      const updated = await updateProductCostVersionValidFrom(firstVersion.id, validFrom);
       setCostsByBranch((prev) => ({ ...prev, [branch]: updated }));
       setCostValidFromEdit((prev) => ({
         ...prev,
@@ -713,7 +729,7 @@ export default function ProductDetailPage() {
               existingVersions={pricesByBranch[branch]}
               newValidFrom={priceForms[branch].validFrom}
               onValidFromChange={(value) => onPriceInput(branch, 'validFrom', value)}
-              onSave={() => onAddPrice(branch)}
+              onSave={() => void onAddPrice(branch)}
               disabledSaveReason={getDisabledPriceReason(branch)}
               saveLabel="Agregar precio"
             />
@@ -763,7 +779,7 @@ export default function ProductDetailPage() {
               existingVersions={costsByBranch[branch]}
               newValidFrom={costForms[branch].validFrom}
               onValidFromChange={(value) => onCostInput(branch, 'validFrom', value)}
-              onSave={() => onAddCost(branch)}
+              onSave={() => void onAddCost(branch)}
               disabledSaveReason={getDisabledManualCostReason(branch)}
               saveLabel="Agregar costo"
             />

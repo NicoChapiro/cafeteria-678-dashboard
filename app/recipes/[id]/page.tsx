@@ -26,7 +26,7 @@ import {
   listRecipes,
   upsertRecipe,
   upsertRecipeLine,
-} from '@/src/storage/local/store';
+} from '@/src/services/catalog/clientCatalog';
 import { buildEditorHref } from '@/src/lib/navigation/buildReturnTo';
 
 const RECIPE_TYPES: RecipeType[] = [
@@ -153,27 +153,29 @@ export default function RecipeDetailPage() {
   const [costingError, setCostingError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPageState('loading');
-    const found = getRecipe(recipeId);
-    setRecipe(found ?? null);
-    setPageState(found ? 'ready' : 'missing');
+    void (async () => {
+      setPageState('loading');
+      const found = await getRecipe(recipeId);
+      setRecipe(found ?? null);
+      setPageState(found ? 'ready' : 'missing');
 
-    const items = listItems();
-    const recipes = listRecipes();
+      const items = await listItems();
+      const recipes = await listRecipes();
 
-    setAllItems(items);
-    setAllRecipes(recipes);
-    setLines(listRecipeLines(recipeId));
+      setAllItems(items);
+      setAllRecipes(recipes);
+      setLines(await listRecipeLines(recipeId));
 
-    if (items[0]) {
-      setItemId(items[0].id);
-      setItemUnit(itemUnits(items[0].baseUnit)[0]);
-    }
+      if (items[0]) {
+        setItemId(items[0].id);
+        setItemUnit(itemUnits(items[0].baseUnit)[0]);
+      }
 
-    const activeSubs = recipes.filter((entry) => entry.active && entry.id !== recipeId);
-    if (activeSubs[0]) {
-      setSubRecipeId(activeSubs[0].id);
-    }
+      const activeSubs = recipes.filter((entry) => entry.active && entry.id !== recipeId);
+      if (activeSubs[0]) {
+        setSubRecipeId(activeSubs[0].id);
+      }
+    })();
   }, [recipeId]);
 
   const selectedItem = useMemo(
@@ -216,7 +218,7 @@ export default function RecipeDetailPage() {
     return null;
   }
 
-  function handleMetaSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleMetaSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMetaError(null);
 
@@ -238,7 +240,7 @@ export default function RecipeDetailPage() {
         throw new Error('receta no encontrada');
       }
 
-      const updated = upsertRecipe({
+      const updated = await upsertRecipe({
         id: recipe.id,
         name,
         type: String(formData.get('type') ?? recipe.type) as RecipeType,
@@ -248,14 +250,14 @@ export default function RecipeDetailPage() {
       });
 
       setRecipe(updated);
-      setAllRecipes(listRecipes());
+      setAllRecipes(await listRecipes());
       setSuccessMessage('Metadatos guardados correctamente.');
     } catch (error) {
       setMetaError(error instanceof Error ? error.message : 'Error al guardar metadatos');
     }
   }
 
-  function handleAddItemLine() {
+  async function handleAddItemLine() {
     setLineError(null);
 
     try {
@@ -274,7 +276,7 @@ export default function RecipeDetailPage() {
       }
 
       const qtyInBase = convertToBaseQty(selectedItem.baseUnit, itemUnit, qty);
-      upsertRecipeLine({
+      await upsertRecipeLine({
         id: crypto.randomUUID(),
         recipeId,
         lineType: 'item',
@@ -282,7 +284,7 @@ export default function RecipeDetailPage() {
         qtyInBase,
       });
 
-      setLines(listRecipeLines(recipeId));
+      setLines(await listRecipeLines(recipeId));
       setItemQty('');
       setSuccessMessage('Línea de item agregada correctamente.');
     } catch (error) {
@@ -290,7 +292,7 @@ export default function RecipeDetailPage() {
     }
   }
 
-  function handleAddSubRecipeLine() {
+  async function handleAddSubRecipeLine() {
     setLineError(null);
 
     try {
@@ -307,7 +309,7 @@ export default function RecipeDetailPage() {
         throw new Error('qtyInSubYield debe ser > 0');
       }
 
-      upsertRecipeLine({
+      await upsertRecipeLine({
         id: crypto.randomUUID(),
         recipeId,
         lineType: 'recipe',
@@ -315,7 +317,7 @@ export default function RecipeDetailPage() {
         qtyInSubYield: qty,
       });
 
-      setLines(listRecipeLines(recipeId));
+      setLines(await listRecipeLines(recipeId));
       setSubQty('');
       setSuccessMessage('Línea de sub-receta agregada correctamente.');
     } catch (error) {
@@ -323,13 +325,13 @@ export default function RecipeDetailPage() {
     }
   }
 
-  function handleDeleteLine(id: string) {
-    deleteRecipeLine(id);
-    setLines(listRecipeLines(recipeId));
+  async function handleDeleteLine(id: string) {
+    await deleteRecipeLine(id);
+    setLines(await listRecipeLines(recipeId));
     setSuccessMessage('Línea eliminada correctamente.');
   }
 
-  function handleCalculateCost() {
+  async function handleCalculateCost() {
     setCostingError(null);
 
     try {
@@ -342,10 +344,10 @@ export default function RecipeDetailPage() {
         throw new Error('Fecha inválida para costeo');
       }
 
-      const items = listItems();
-      const recipes = listRecipes();
-      const recipeLines = recipes.flatMap((entry) => listRecipeLines(entry.id));
-      const itemCostVersions = items.flatMap((item) => listItemCosts(item.id, costingBranch));
+      const items = await listItems();
+      const recipes = await listRecipes();
+      const recipeLines = (await Promise.all(recipes.map((entry) => listRecipeLines(entry.id)))).flat();
+      const itemCostVersions = (await Promise.all(items.map((item) => listItemCosts(item.id, costingBranch)))).flat();
 
       const context = {
         items,
@@ -354,7 +356,7 @@ export default function RecipeDetailPage() {
         itemCostVersions,
       };
 
-      const recipeLinesCurrent = listRecipeLines(recipe.id);
+      const recipeLinesCurrent = await listRecipeLines(recipe.id);
       const totals = costRecipe(recipe, recipeLinesCurrent, context, asOfDate, costingBranch);
 
       const rows: CostBreakdownRow[] = recipeLinesCurrent.map((line) => {
@@ -524,7 +526,7 @@ export default function RecipeDetailPage() {
           </label>
 
           <div style={{ display: 'flex', alignItems: 'end' }}>
-            <button className="btn" type="button" onClick={handleCalculateCost}>Calcular costo</button>
+            <button className="btn" type="button" onClick={() => void handleCalculateCost()}>Calcular costo</button>
           </div>
         </div>
 
@@ -656,7 +658,7 @@ export default function RecipeDetailPage() {
               </label>
             </div>
             <p style={{ margin: 0 }}>
-              <button className="btn" type="button" onClick={handleAddItemLine}>
+              <button className="btn" type="button" onClick={() => void handleAddItemLine()}>
                 Agregar línea item
               </button>
             </p>
@@ -697,7 +699,7 @@ export default function RecipeDetailPage() {
             </div>
 
             <p style={{ margin: 0 }}>
-              <button className="btn" type="button" onClick={handleAddSubRecipeLine}>
+              <button className="btn" type="button" onClick={() => void handleAddSubRecipeLine()}>
                 Agregar sub-receta
               </button>
             </p>
@@ -735,7 +737,7 @@ export default function RecipeDetailPage() {
                           <button
                             className="btnSecondary"
                             type="button"
-                            onClick={() => handleDeleteLine(line.id)}
+                            onClick={() => void handleDeleteLine(line.id)}
                           >
                             Eliminar
                           </button>
@@ -758,7 +760,7 @@ export default function RecipeDetailPage() {
                         <button
                           className="btnSecondary"
                           type="button"
-                          onClick={() => handleDeleteLine(line.id)}
+                          onClick={() => void handleDeleteLine(line.id)}
                         >
                           Eliminar
                         </button>

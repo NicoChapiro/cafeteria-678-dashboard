@@ -15,7 +15,7 @@ import {
   getItem,
   listItemCosts,
   upsertItem,
-} from '@/src/storage/local/store';
+} from '@/src/services/catalog/clientCatalog';
 
 const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
 type ItemPageState = 'loading' | 'ready' | 'missing';
@@ -134,14 +134,16 @@ export default function ItemDetailPage() {
   );
 
   useEffect(() => {
-    setPageState('loading');
-    const found = getItem(itemId);
-    setItem(found ?? null);
-    setPageState(found ? 'ready' : 'missing');
-    setCostsByBranch({
-      Santiago: listItemCosts(itemId, 'Santiago'),
-      Temuco: listItemCosts(itemId, 'Temuco'),
-    });
+    void (async () => {
+      setPageState('loading');
+      const found = await getItem(itemId);
+      setItem(found ?? null);
+      setPageState(found ? 'ready' : 'missing');
+      setCostsByBranch({
+        Santiago: await listItemCosts(itemId, 'Santiago'),
+        Temuco: await listItemCosts(itemId, 'Temuco'),
+      });
+    })();
   }, [itemId]);
 
 
@@ -186,7 +188,7 @@ export default function ItemDetailPage() {
     return null;
   }
 
-  function onItemSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onItemSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
@@ -202,7 +204,7 @@ export default function ItemDetailPage() {
         throw new Error('ítem no encontrado');
       }
 
-      const updated = upsertItem({
+      const updated = await upsertItem({
         id: item.id,
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
@@ -253,7 +255,7 @@ export default function ItemDetailPage() {
     return null;
   }
 
-  function onAddCost(branch: Branch) {
+  async function onAddCost(branch: Branch) {
     setCostError(null);
 
     try {
@@ -262,7 +264,7 @@ export default function ItemDetailPage() {
       }
 
       const parsed = parseCostForm(costForms[branch]);
-      const updated = addItemCostVersion(item.id, branch, parsed);
+      const updated = await addItemCostVersion(item.id, branch, parsed);
 
       setCostsByBranch((prev) => ({ ...prev, [branch]: updated }));
       setCostForms((prev) => ({
@@ -446,7 +448,7 @@ export default function ItemDetailPage() {
               existingVersions={costsByBranch[branch]}
               newValidFrom={costForms[branch].validFrom}
               onValidFromChange={(value) => onCostInputChange(branch, 'validFrom', value)}
-              onSave={() => onAddCost(branch)}
+              onSave={() => void onAddCost(branch)}
               disabledSaveReason={getDisabledSaveReason(branch)}
               saveLabel="Agregar costo"
             />

@@ -6,7 +6,7 @@ import { FormEvent, useState } from 'react';
 
 import InlineAlert from '@/src/components/feedback/InlineAlert';
 import type { BaseUnit } from '@/src/domain/types';
-import { upsertItem } from '@/src/storage/local/store';
+import { upsertItem } from '@/src/services/catalog/clientCatalog';
 
 function parseYield(value: string): number | undefined {
   if (!value) {
@@ -37,7 +37,7 @@ export default function NewItemPage() {
         throw new Error('name es obligatorio');
       }
 
-      const item = upsertItem({
+      const item = await upsertItem({
         id: crypto.randomUUID(),
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,

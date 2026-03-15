@@ -3,6 +3,7 @@ import { prismaBranchRepository } from './branchRepository';
 import { prismaItemRepository } from './itemRepository';
 import { prismaProductRepository } from './productRepository';
 import { prismaRecipeRepository } from './recipeRepository';
+import { prismaAliasRepository } from './aliasRepository';
 
 function notImplemented(name: string): never {
   throw new Error(`${name} is not implemented yet for DATA_BACKEND=db (Phase 1)`);
@@ -41,18 +42,5 @@ export const prismaRepositories: RepositoryBundle = {
       return notImplemented('audit.clear');
     },
   },
-  aliases: {
-    async list() {
-      return notImplemented('aliases.list');
-    },
-    async upsert() {
-      return notImplemented('aliases.upsert');
-    },
-    async delete() {
-      return notImplemented('aliases.delete');
-    },
-    async resolveProductId() {
-      return notImplemented('aliases.resolveProductId');
-    },
-  },
+  aliases: prismaAliasRepository,
 };

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import EmptyState from '@/src/components/feedback/EmptyState';
 import type { Recipe } from '@/src/domain/types';
-import { listRecipes } from '@/src/storage/local/store';
+import { listRecipes } from '@/src/services/catalog/clientCatalog';
 
 function formatDate(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -17,7 +17,9 @@ export default function RecipesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
-    setRecipes(listRecipes());
+    void (async () => {
+      setRecipes(await listRecipes());
+    })();
   }, []);
 
   const filteredRecipes = useMemo(() => {

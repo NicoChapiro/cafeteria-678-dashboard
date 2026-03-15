@@ -10,7 +10,7 @@ import {
   listProducts,
   type ProductAliasEntry,
   upsertProductAlias,
-} from '@/src/storage/local/store';
+} from '@/src/services/catalog/clientCatalog';
 
 export default function ProductAliasesPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,12 +21,14 @@ export default function ProductAliasesPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const allProducts = listProducts();
-    setProducts(allProducts);
-    setAliases(listProductAliases());
-    if (allProducts.length > 0) {
-      setProductId(allProducts[0].id);
-    }
+    void (async () => {
+      const allProducts = await listProducts();
+      setProducts(allProducts);
+      setAliases(await listProductAliases());
+      if (allProducts.length > 0) {
+        setProductId(allProducts[0].id);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function ProductAliasesPage() {
     return new Map(products.map((product) => [product.id, product.name]));
   }, [products]);
 
-  function handleSaveAlias(event: FormEvent<HTMLFormElement>): void {
+  async function handleSaveAlias(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
     const normalizedSource = source.trim();
@@ -59,26 +61,26 @@ export default function ProductAliasesPage() {
       return;
     }
 
-    upsertProductAlias({
+    await upsertProductAlias({
       source: normalizedSource,
       externalName: normalizedExternalName,
       productId,
     });
 
-    setAliases(listProductAliases());
+    setAliases(await listProductAliases());
     setMessage('Alias guardado.');
   }
 
 
 
-  function handleDeleteAlias(source: string, aliasExternalName: string): void {
-    const deleted = deleteProductAlias(source, aliasExternalName);
+  async function handleDeleteAlias(source: string, aliasExternalName: string): Promise<void> {
+    const deleted = await deleteProductAlias(source, aliasExternalName);
     if (!deleted) {
       setMessage('No se pudo eliminar el alias.');
       return;
     }
 
-    setAliases(listProductAliases());
+    setAliases(await listProductAliases());
     setMessage('Alias eliminado.');
   }
 
@@ -150,7 +152,7 @@ export default function ProductAliasesPage() {
                 <button
                   className="btnSecondary"
                   type="button"
-                  onClick={() => handleDeleteAlias(entry.source, entry.externalName)}
+                  onClick={() => void handleDeleteAlias(entry.source, entry.externalName)}
                   style={{ fontSize: 12, padding: '2px 8px' }}
                 >
                   Eliminar
