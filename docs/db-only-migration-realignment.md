@@ -10,13 +10,17 @@
 
 ### Qué sobra (bajo DB-only)
 - **Selector de backend dual por env** (`local|db`) como mecanismo principal: hoy sigue activo y mantiene dos caminos de runtime.
-- **Fallback local en cliente** (`clientCatalog.ts`): cada operación de catálogo tiene bifurcación `isDb ? api : localStore`, agregando complejidad que ya no aporta al objetivo.
 - **Documentación de migración fase 1 orientada a coexistencia larga**: sigue declarando estrategia dual como eje.
 
 ### Qué es deuda de transición
 - **Pantallas que aún consumen `src/storage/local/store.ts` en runtime**: ventas, ajustes, dashboard, setup, importadores y auditoría siguen en localStorage directo.
 - **Repositorios DB incompletos para operación**: `sales` y `audit` en adaptador Prisma están en `notImplemented`, por lo que no se puede cortar dualidad sin completar estas piezas mínimas.
 - **Store local con demasiado alcance**: hoy funciona como backend real, cuando debería quedar solo como utilidad temporal de import/export o seed QA.
+
+### Avance aplicado en catálogo (fase actual)
+- **`clientCatalog` queda DB-only**: todas las operaciones de catálogo (`items`, `products`, `recipes`, `recipe_lines`, `aliases`) llaman exclusivamente `/api/catalog`.
+- **Sin dependencia runtime a `store.ts` desde catálogo**: se removió el fallback local en el cliente de catálogo.
+- **Puente temporal acotado sigue fuera de catálogo**: ventas, auditoría, setup, dashboard e importadores mantienen su camino actual mientras se completa su migración.
 
 ---
 
@@ -122,18 +126,18 @@ Incluye:
 ## D. Recomendación inmediata
 
 ### Próxima fase exacta a ejecutar ahora
-**Ejecutar ahora: Fase 1 — Infraestructura estable (cierre DB-only + puente corto explícito).**
+**Ejecutar ahora: Fase 5 — Ventas / importadores.**
 
 ### Por qué esta es la mejor siguiente acción
-- El repo ya tiene Prisma + contratos + parte de repos DB, pero el runtime sigue dual.
-- Si se migra módulos funcionales sin cerrar primero la base, se multiplica deuda y ramas de comportamiento.
-- Cerrar primero la infraestructura permite que cada fase posterior sea lineal (sin `if local/db` por módulo).
+- Catálogo ya opera en DB-only a nivel cliente/API y permite enfocar el siguiente corte en operación comercial.
+- Ventas/importadores concentran la deuda funcional más alta antes de poder migrar setup/dashboard.
+- Completar `sales` en Prisma destraba luego auditoría y retiro total de `localStorage`.
 
 ### Alcance inmediato recomendado (incremental, sin romper UI)
-1. **Congelar backend principal en DB** a nivel server (`getRepositories`).
-2. **Crear puente temporal explícito por dominio pendiente** (solo para `sales` y `audit` al inicio) para evitar caída de pantallas mientras se completa Prisma.
-3. **Retirar fallback local de `clientCatalog.ts`** (catálogo ya tiene cobertura DB suficiente).
-4. **Mantener `store.ts` únicamente para QA/import utilitario**, no para flujo principal.
+1. **Implementar repositorio Prisma de ventas** (`salesDaily`, `salesAdjustments`) con paridad funcional.
+2. **Migrar importadores** para persistir ventas en DB sin cambiar UI.
+3. **Mantener puente temporal explícito de `store.ts` solo en dominios pendientes** (auditoría + pantallas aún no migradas).
+4. **Preservar catálogo en DB-only** sin reintroducir fallback local.
 
 ---
 
