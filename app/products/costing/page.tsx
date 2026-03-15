@@ -182,6 +182,28 @@ function buildPrimaryQuickAction(
 }
 
 export default function ProductCostingPage() {
+  const initialLocalData = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return {
+        products: [] as Product[],
+        recipesById: new Map<string, Recipe>(),
+        recipeLinesByRecipeId: new Map<string, RecipeLine[]>(),
+        itemsById: new Map<string, Item>(),
+      };
+    }
+
+    const loadedProducts = listProducts();
+    const loadedRecipes = listRecipes();
+    const loadedItems = listItems();
+
+    return {
+      products: loadedProducts,
+      recipesById: new Map(loadedRecipes.map((recipe) => [recipe.id, recipe])),
+      recipeLinesByRecipeId: new Map(loadedRecipes.map((recipe) => [recipe.id, listRecipeLines(recipe.id)])),
+      itemsById: new Map(loadedItems.map((item) => [item.id, item])),
+    };
+  }, []);
+
   const [branch, setBranch] = useState<Branch>('Santiago');
   const [asOfDate, setAsOfDate] = useState<string>(todayIso());
   const [search, setSearch] = useState('');
@@ -193,10 +215,10 @@ export default function ProductCostingPage() {
   const [originBranchParam, setOriginBranchParam] = useState<string | null>(null);
   const [originReturnTo, setOriginReturnTo] = useState('/products/costing');
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [recipesById, setRecipesById] = useState<Map<string, Recipe>>(new Map());
-  const [recipeLinesByRecipeId, setRecipeLinesByRecipeId] = useState<Map<string, RecipeLine[]>>(new Map());
-  const [itemsById, setItemsById] = useState<Map<string, Item>>(new Map());
+  const [products] = useState<Product[]>(initialLocalData.products);
+  const [recipesById] = useState<Map<string, Recipe>>(initialLocalData.recipesById);
+  const [recipeLinesByRecipeId] = useState<Map<string, RecipeLine[]>>(initialLocalData.recipeLinesByRecipeId);
+  const [itemsById] = useState<Map<string, Item>>(initialLocalData.itemsById);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const drawerRef = useRef<HTMLElement | null>(null);
@@ -288,16 +310,6 @@ export default function ProductCostingPage() {
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState(null, '', nextUrl);
   }, [asOfDate, branch, isUrlStateReady, issueType, onlyIssues, search, sort]);
-
-  useEffect(() => {
-    const loadedProducts = listProducts();
-    const loadedRecipes = listRecipes();
-    const loadedItems = listItems();
-    setProducts(loadedProducts);
-    setRecipesById(new Map(loadedRecipes.map((recipe) => [recipe.id, recipe])));
-    setItemsById(new Map(loadedItems.map((item) => [item.id, item])));
-    setRecipeLinesByRecipeId(new Map(loadedRecipes.map((recipe) => [recipe.id, listRecipeLines(recipe.id)])));
-  }, []);
 
   const asOf = useMemo(() => parseIsoToUtcDate(asOfDate), [asOfDate]);
   const productComputed = useMemo(() => {
