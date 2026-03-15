@@ -49,7 +49,7 @@ export default function ItemsPage() {
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className="badge badge--neutral">Total: {items.length}</span>
-            <span className="badge badge--neutral">Unidad base «unit»: {unitItemCount}</span>
+            <span className="badge badge--neutral">Unidad base «unidad»: {unitItemCount}</span>
           </div>
         </div>
         <Link href="/items/new" className="btn" style={{ alignSelf: 'center' }}>
@@ -104,7 +104,7 @@ export default function ItemsPage() {
             style={filterButtonStyle(unitFilter === 'unit')}
             onClick={() => setUnitFilter('unit')}
           >
-            unit
+            unidad
           </button>
           <span className="badge badge--info">Mostrando: {filteredItems.length}</span>
         </div>

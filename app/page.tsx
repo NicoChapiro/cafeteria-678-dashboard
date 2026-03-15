@@ -18,7 +18,7 @@ const primaryFlowSections: Section[] = [
   },
   {
     title: '2) Resolver pendientes críticos',
-    description: 'Corrige brechas de setup que afectan costo, precio y consistencia operacional.',
+    description: 'Corrige pendientes críticos que afectan costo, precio y consistencia operacional.',
     href: '/setup',
     cta: 'Resolver pendientes',
   },
@@ -99,6 +99,12 @@ const advancedToolsSections: Section[] = [
     description: 'Carga planilla XLSX para conciliación histórica de Temuco.',
     href: '/sales/temuco/import',
     cta: 'Importar Temuco',
+  },
+  {
+    title: 'Cargar dataset QA smoke',
+    description: 'Carga manual mínima para activar flujos críticos en pendientes, costeo y dashboard.',
+    href: '/qa/smoke-seed',
+    cta: 'Abrir seed QA',
   },
 ];
 

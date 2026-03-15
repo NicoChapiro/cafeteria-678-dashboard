@@ -10,7 +10,7 @@ const SetupPendingClient = dynamic(() => import('./SetupPendingClient'), {
         <p style={{ margin: 0, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', opacity: 0.75 }}>
           Control operativo
         </p>
-        <h1 style={{ margin: 0 }}>Panel de pendientes de setup</h1>
+        <h1 style={{ margin: 0 }}>Panel de pendientes</h1>
         <p style={{ margin: 0, opacity: 0.85 }}>Cargando panel…</p>
       </section>
     </main>

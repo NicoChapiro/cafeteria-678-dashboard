@@ -61,6 +61,10 @@ type RecipeCostResult = {
 
 type ItemInputUnit = 'g' | 'kg' | 'mg' | 'ml' | 'l' | 'unit';
 
+function unitLabel(unit: string): string {
+  return unit === 'unit' ? 'unidad' : unit;
+}
+
 function itemUnits(baseUnit: Item['baseUnit']): ItemInputUnit[] {
   if (baseUnit === 'g') {
     return ['g', 'kg', 'mg'];
@@ -89,7 +93,7 @@ function convertToBaseQty(baseUnit: Item['baseUnit'], inputUnit: ItemInputUnit, 
 
   if (baseUnit === 'unit') {
     if (inputUnit === 'unit') return qty;
-    throw new Error('Unidad incompatible con baseUnit unit');
+    throw new Error('Unidad incompatible con baseUnit unidad');
   }
 
   throw new Error('baseUnit inválida');
@@ -481,7 +485,7 @@ export default function RecipeDetailPage() {
               <select className="input" name="yieldUnit" defaultValue={recipe.yieldUnit} style={{ width: '100%' }}>
                 {YIELD_UNITS.map((unit) => (
                   <option key={unit} value={unit}>
-                    {unit}
+                    {unitLabel(unit)}
                   </option>
                 ))}
               </select>
@@ -567,7 +571,7 @@ export default function RecipeDetailPage() {
                         <td>{row.type === 'item' ? 'Item' : 'Sub-receta'}</td>
                         <td>{rowHref ? <Link href={rowHref}>{row.name}</Link> : row.name}</td>
                         <td style={{ textAlign: 'right' }}>{row.qty.toLocaleString('es-CL')}</td>
-                        <td>{row.unit}</td>
+                        <td>{unitLabel(row.unit)}</td>
                         <td style={{ textAlign: 'right' }}>{Math.round(row.effectiveUnitCostClp).toLocaleString('es-CL')}</td>
                         <td style={{ textAlign: 'right', fontWeight: 600 }}>{Math.round(row.lineCostClp).toLocaleString('es-CL')}</td>
                       </tr>
@@ -645,7 +649,7 @@ export default function RecipeDetailPage() {
                 >
                   {(selectedItem ? itemUnits(selectedItem.baseUnit) : ['g']).map((unit) => (
                     <option key={unit} value={unit}>
-                      {unit}
+                      {unitLabel(unit)}
                     </option>
                   ))}
                 </select>
