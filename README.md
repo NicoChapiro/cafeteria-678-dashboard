@@ -43,6 +43,18 @@ npm run db:seed
 
 
 
+
+## Backend migration (Fase 1)
+
+Revisa `docs/backend-migration-phase1.md` para:
+
+- setup de Prisma
+- migración inicial
+- seed de branches
+- alternar `DATA_BACKEND=local|db`
+
+> En esta fase la UI no se migra todavía y se mantiene el comportamiento visible actual.
+
 ## Dataset QA smoke (localStorage)
 
 Para habilitar pruebas funcionales reales en `/setup`, `/products/costing` y `/dashboard`:

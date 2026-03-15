@@ -1,33 +1,27 @@
-import { Client } from 'pg';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+const BRANCHES = [
+  { id: 'branch_santiago', name: 'Santiago' },
+  { id: 'branch_temuco', name: 'Temuco' },
+] as const;
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is required for seeding');
-  }
-
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-
-  try {
-    await client.query('BEGIN');
-    await client.query(
-      'INSERT INTO "Branch" ("id", "name", "createdAt", "updatedAt") VALUES ($1, $2, NOW(), NOW()) ON CONFLICT ("name") DO NOTHING',
-      ['branch_santiago', 'Santiago'],
-    );
-    await client.query(
-      'INSERT INTO "Branch" ("id", "name", "createdAt", "updatedAt") VALUES ($1, $2, NOW(), NOW()) ON CONFLICT ("name") DO NOTHING',
-      ['branch_temuco', 'Temuco'],
-    );
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    await client.end();
+  for (const branch of BRANCHES) {
+    await prisma.branch.upsert({
+      where: { id: branch.id },
+      update: { name: branch.name },
+      create: branch,
+    });
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

@@ -8,91 +8,202 @@ datasource db {
 }
 
 model Branch {
-  id        String   @id @default(cuid())
+  id        String   @id
   name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   itemCostVersions     ItemCostVersion[]
   productPriceVersions ProductPriceVersion[]
   productCostVersions  ProductCostVersion[]
-}
+  salesDaily           SalesDaily[]
+  salesAdjustments     SalesAdjustment[]
 
-model Product {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  priceVersions ProductPriceVersion[]
-  costVersions  ProductCostVersion[]
+  @@map("branches")
 }
 
 model Item {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id
+  name             String
+  category         String?
+  baseUnit         String   @map("base_unit")
+  yieldRateDefault Decimal? @db.Decimal(8, 4) @map("yield_rate_default")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   costVersions ItemCostVersion[]
+  recipeLines   RecipeLine[]
+
+  @@index([name])
+  @@map("items")
 }
 
 model ItemCostVersion {
-  id                String   @id @default(cuid())
-  itemId            String
-  branchId          String
-  packQtyInBase     Decimal  @db.Decimal(12, 3)
-  packCostGrossClp  Int
-  yieldRateOverride Decimal?
-  validFrom         DateTime
-  validTo           DateTime?
-  createdAt         DateTime @default(now())
+  id                String   @id
+  itemId            String   @map("item_id")
+  branchId          String   @map("branch_id")
+  packQtyInBase     Decimal  @db.Decimal(12, 3) @map("pack_qty_in_base")
+  packCostGrossClp  Int      @map("pack_cost_gross_clp")
+  yieldRateOverride Decimal? @db.Decimal(8, 4) @map("yield_rate_override")
+  validFrom         DateTime @db.Date @map("valid_from")
+  validTo           DateTime? @db.Date @map("valid_to")
+  createdAt         DateTime @default(now()) @map("created_at")
 
-  item   Item   @relation(fields: [itemId], references: [id])
-  branch Branch @relation(fields: [branchId], references: [id])
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   @@index([itemId, branchId, validFrom])
   @@unique([itemId, branchId, validFrom])
+  @@map("item_cost_versions")
+}
+
+model Product {
+  id          String   @id
+  name        String
+  category    String?
+  recipeId    String?  @map("recipe_id")
+  wasteRatePct Decimal? @db.Decimal(8, 4) @map("waste_rate_pct")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  recipe        Recipe?               @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  priceVersions ProductPriceVersion[]
+  costVersions  ProductCostVersion[]
+  salesDaily    SalesDaily[]
+  salesAdjustments SalesAdjustment[]
+  aliases       ProductAlias[]
+
+  @@index([name])
+  @@map("products")
 }
 
 model ProductPriceVersion {
-  id            String   @id @default(cuid())
-  productId     String
-  branchId      String
-  priceGrossClp Int
-  validFrom     DateTime
-  validTo       DateTime?
-  createdAt     DateTime @default(now())
+  id            String   @id
+  productId     String   @map("product_id")
+  branchId      String   @map("branch_id")
+  priceGrossClp Int      @map("price_gross_clp")
+  validFrom     DateTime @db.Date @map("valid_from")
+  validTo       DateTime? @db.Date @map("valid_to")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  product Product @relation(fields: [productId], references: [id])
-  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   @@index([productId, branchId, validFrom])
   @@unique([productId, branchId, validFrom])
+  @@map("product_price_versions")
 }
 
 model ProductCostVersion {
-  id           String   @id @default(cuid())
-  productId    String
-  branchId     String
-  costGrossClp Int
-  validFrom    DateTime
-  validTo      DateTime?
-  createdAt    DateTime @default(now())
+  id           String   @id
+  productId    String   @map("product_id")
+  branchId     String   @map("branch_id")
+  costGrossClp Int      @map("cost_gross_clp")
+  validFrom    DateTime @db.Date @map("valid_from")
+  validTo      DateTime? @db.Date @map("valid_to")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  product Product @relation(fields: [productId], references: [id])
-  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   @@index([productId, branchId, validFrom])
   @@unique([productId, branchId, validFrom])
+  @@map("product_cost_versions")
+}
+
+model Recipe {
+  id        String   @id
+  name      String
+  type      String
+  yieldQty  Decimal  @db.Decimal(12, 3) @map("yield_qty")
+  yieldUnit String   @map("yield_unit")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lines    RecipeLine[]
+  products Product[]
+
+  @@index([name])
+  @@map("recipes")
+}
+
+model RecipeLine {
+  id            String   @id
+  recipeId      String   @map("recipe_id")
+  lineType      String   @map("line_type")
+  itemId        String?  @map("item_id")
+  subRecipeId   String?  @map("sub_recipe_id")
+  qtyInBase     Decimal? @db.Decimal(12, 3) @map("qty_in_base")
+  qtyInSubYield Decimal? @db.Decimal(12, 3) @map("qty_in_sub_yield")
+
+  recipe    Recipe  @relation("recipe_lines_recipe", fields: [recipeId], references: [id], onDelete: Cascade)
+  item      Item?   @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  subRecipe Recipe? @relation("recipe_lines_sub_recipe", fields: [subRecipeId], references: [id], onDelete: Restrict)
+
+  @@index([recipeId])
+  @@index([itemId])
+  @@index([subRecipeId])
+  @@map("recipe_lines")
+}
+
+model SalesDaily {
+  id            String   @id
+  date          DateTime @db.Date
+  branchId      String   @map("branch_id")
+  productId     String   @map("product_id")
+  qty           Decimal  @db.Decimal(12, 3)
+  grossSalesClp Int      @map("gross_sales_clp")
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([date, branchId])
+  @@unique([date, branchId, productId])
+  @@map("sales_daily")
+}
+
+model SalesAdjustment {
+  id            String   @id
+  date          DateTime @db.Date
+  branchId      String   @map("branch_id")
+  productId     String   @map("product_id")
+  qty           Decimal  @db.Decimal(12, 3)
+  grossSalesClp Int      @map("gross_sales_clp")
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([date, branchId])
+  @@map("sales_adjustments")
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  entityType String
-  entityId   String
+  id         String   @id
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
   action     String
-  diffJson   Json
-  userId     String?
-  createdAt  DateTime @default(now())
+  diffJson   Json     @map("diff_json")
+  actor      String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, createdAt])
+  @@map("audit_logs")
+}
+
+model ProductAlias {
+  id           String   @id
+  source       String
+  externalName String   @map("external_name")
+  productId    String   @map("product_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([source, externalName])
+  @@index([productId])
+  @@map("product_aliases")
 }
