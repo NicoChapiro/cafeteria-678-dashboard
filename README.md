@@ -42,6 +42,22 @@ npm run db:seed
 ```
 
 
+
+## Dataset QA smoke (localStorage)
+
+Para habilitar pruebas funcionales reales en `/setup`, `/products/costing` y `/dashboard`:
+
+1. Levanta la app:
+
+```bash
+npm run dev
+```
+
+2. Abre `http://localhost:3000/qa/smoke-seed`.
+3. Haz clic en **Cargar dataset QA smoke**.
+
+Esto reemplaza el dataset local actual del navegador con un set mínimo y reproducible para smoke testing operativo.
+
 ## Rutas principales
 
 - `/`: panel raíz con navegación a módulos del MVP.
