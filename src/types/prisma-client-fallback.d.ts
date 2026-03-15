@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '@prisma/client' {
   export class PrismaClient {
-    [key: string]: unknown;
-    constructor(options?: Record<string, unknown>);
+    [key: string]: any;
+    constructor(options?: Record<string, any>);
     $disconnect(): Promise<void>;
   }
 }
