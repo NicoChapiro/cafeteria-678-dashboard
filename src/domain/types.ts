@@ -114,6 +114,12 @@ export type SubRecipeLine = {
 
 export type RecipeLine = ItemRecipeLine | SubRecipeLine;
 
+export type ProductAliasEntry = {
+  source: string;
+  externalName: string;
+  productId: string;
+};
+
 
 
 export type SalesDaily = {
