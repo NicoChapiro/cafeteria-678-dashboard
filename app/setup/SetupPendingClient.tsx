@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -516,7 +515,7 @@ export default function SetupPendingPage() {
                       <td>{row.ventas.toLocaleString('es-CL')}</td>
                       <td>{row.qty.toLocaleString('es-CL')}</td>
                       <td>{row.costReason}</td>
-                      <td><Link href={action.href}>{action.label}</Link></td>
+                      <td><a href={action.href} data-testid="setup-cost-gap-action">{action.label}</a></td>
                     </tr>
                   );
                 })}
@@ -545,7 +544,7 @@ export default function SetupPendingPage() {
                     <td>{row.productName}</td>
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td><Link href={setupProductHref(row.productId, 'price')}>Revisar precio →</Link></td>
+                    <td><a href={setupProductHref(row.productId, 'price')} data-testid="setup-review-price">Revisar precio →</a></td>
                   </tr>
                 ))}
                 {report.sinPrecio.length === 0 ? (
@@ -573,7 +572,7 @@ export default function SetupPendingPage() {
                     <td>{row.productName}</td>
                     <td>{row.ventas.toLocaleString('es-CL')}</td>
                     <td>{row.qty.toLocaleString('es-CL')}</td>
-                    <td><Link href={setupProductHref(row.productId, 'manualCost')}>Crear receta/costo →</Link></td>
+                    <td><a href={setupProductHref(row.productId, 'manualCost')} data-testid="setup-create-recipe-or-cost">Crear receta/costo →</a></td>
                   </tr>
                 ))}
                 {report.sinRecetaSinManual.length === 0 ? (
@@ -601,7 +600,7 @@ export default function SetupPendingPage() {
                     <td>{row.itemName}</td>
                     <td>{row.recipeIds.size}</td>
                     <td>{row.productIds.size}</td>
-                    <td><Link href={setupItemHref(row.itemId)}>Editar costo →</Link></td>
+                    <td><a href={setupItemHref(row.itemId)} data-testid="setup-edit-item-cost">Editar costo →</a></td>
                   </tr>
                 ))}
                 {report.ingredientesSinCosto.length === 0 ? (

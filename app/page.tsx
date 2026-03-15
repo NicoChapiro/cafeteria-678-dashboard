@@ -117,9 +117,9 @@ function renderSectionCards(items: Section[]) {
       <p className="muted" style={{ marginBottom: 8, maxWidth: 52 * 8, lineHeight: 1.35 }}>
         {section.description}
       </p>
-      <Link className="btnSecondary" href={section.href}>
+      <a className="btnSecondary" href={section.href} data-testid={`home-cta-${section.href.replaceAll('/', '-').replaceAll('?', '-')}`}>
         {section.cta}
-      </Link>
+      </a>
     </article>
   ));
 }
@@ -137,12 +137,12 @@ export default function HomePage() {
           costear productos y cerrar con revisión de rentabilidad.
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Link className="btn" href="/sales/import">
+          <a className="btn" href="/sales/import" data-testid="home-main-import-sales">
             Importar ventas
-          </Link>
-          <Link className="btnSecondary" href="/setup">
+          </a>
+          <a className="btnSecondary" href="/setup" data-testid="home-main-setup">
             Resolver pendientes
-          </Link>
+          </a>
         </div>
       </header>
 
