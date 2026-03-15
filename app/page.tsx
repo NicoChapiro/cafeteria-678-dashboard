@@ -100,6 +100,12 @@ const advancedToolsSections: Section[] = [
     href: '/sales/temuco/import',
     cta: 'Importar Temuco',
   },
+  {
+    title: 'Cargar dataset QA smoke',
+    description: 'Carga manual mínima para activar flujos críticos en setup, costeo y dashboard.',
+    href: '/qa/smoke-seed',
+    cta: 'Abrir seed QA',
+  },
 ];
 
 function renderSectionCards(items: Section[]) {
