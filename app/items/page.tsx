@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import EmptyState from '@/src/components/feedback/EmptyState';
 import type { Item } from '@/src/domain/types';
-import { listItems } from '@/src/storage/local/store';
+import { listItems } from '@/src/services/catalog/clientCatalog';
 
 function formatDate(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -17,7 +17,9 @@ export default function ItemsPage() {
   const [unitFilter, setUnitFilter] = useState<'all' | 'g' | 'ml' | 'unit'>('all');
 
   useEffect(() => {
-    setItems(listItems());
+    void (async () => {
+      setItems(await listItems());
+    })();
   }, []);
 
   const normalizedSearch = search.trim().toLowerCase();

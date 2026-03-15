@@ -6,7 +6,7 @@ import { FormEvent, useState } from 'react';
 
 import InlineAlert from '@/src/components/feedback/InlineAlert';
 import type { RecipeType, YieldUnit } from '@/src/domain/types';
-import { upsertRecipe } from '@/src/storage/local/store';
+import { upsertRecipe } from '@/src/services/catalog/clientCatalog';
 
 const RECIPE_TYPES: RecipeType[] = [
   'fria',
@@ -27,7 +27,7 @@ export default function NewRecipePage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
@@ -45,7 +45,7 @@ export default function NewRecipePage() {
         throw new Error('yieldQty debe ser > 0');
       }
 
-      const recipe = upsertRecipe({
+      const recipe = await upsertRecipe({
         id: crypto.randomUUID(),
         name,
         type: String(formData.get('type') ?? 'fria') as RecipeType,

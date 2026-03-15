@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 import EmptyState from '@/src/components/feedback/EmptyState';
 import type { Product } from '@/src/domain/types';
-import { listProducts } from '@/src/storage/local/store';
+import { listProducts } from '@/src/services/catalog/clientCatalog';
 
 function formatDate(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -17,7 +17,9 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
-    setProducts(listProducts());
+    void (async () => {
+      setProducts(await listProducts());
+    })();
   }, []);
 
   const normalizedSearch = search.trim().toLowerCase();

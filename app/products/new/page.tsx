@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
 import InlineAlert from '@/src/components/feedback/InlineAlert';
-import { upsertProduct } from '@/src/storage/local/store';
+import { upsertProduct } from '@/src/services/catalog/clientCatalog';
 
 export default function NewProductPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
@@ -28,7 +28,7 @@ export default function NewProductPage() {
         throw new Error('merma debe estar entre 0 y 30');
       }
 
-      const product = upsertProduct({
+      const product = await upsertProduct({
         id: crypto.randomUUID(),
         name,
         category: String(formData.get('category') ?? '').trim() || undefined,
