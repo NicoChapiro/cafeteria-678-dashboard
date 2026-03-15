@@ -297,7 +297,8 @@ export default function ProductCostingPage() {
   useEffect(() => {
     if (typeof window === 'undefined' || !isUrlStateReady) return;
     const params = new URLSearchParams();
-    params.set('branch', branch);
+    const branchForUrl = originBranchParam && !isValidBranch(originBranchParam) ? originBranchParam : branch;
+    params.set('branch', branchForUrl);
     params.set('asOf', asOfDate);
     const trimmed = search.trim();
     if (trimmed) params.set('q', trimmed);
@@ -309,7 +310,7 @@ export default function ProductCostingPage() {
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState(null, '', nextUrl);
-  }, [asOfDate, branch, isUrlStateReady, issueType, onlyIssues, search, sort]);
+  }, [asOfDate, branch, isUrlStateReady, issueType, onlyIssues, originBranchParam, search, sort]);
 
   const asOf = useMemo(() => parseIsoToUtcDate(asOfDate), [asOfDate]);
   const productComputed = useMemo(() => {
