@@ -368,17 +368,17 @@ export default function DashboardPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Dashboard rentabilidad teórica"
-        description="Detecta brechas operativas primero, luego valida impacto en ventas/costo y finalmente baja al detalle por producto."
+        title="Dashboard de rentabilidad"
+        description="Detecta brechas operativas, valida su impacto en ventas y costos, y luego baja al detalle por producto."
         backNav={<BackNav />}
       />
 
       <section className="card" style={{ marginBottom: 0, maxWidth: 1240, background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)' }}>
-        <p className="muted" style={{ marginBottom: 6 }}>Contexto operativo</p>
+        <p className="muted" style={{ marginBottom: 6 }}>Resumen operativo</p>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
           {selectedBranch === 'Consolidado'
-            ? 'Consolidado combina Santiago + Temuco (incluye ajustes). Usa este bloque para priorizar productos con brechas de configuración antes de profundizar en el detalle.'
-            : `Vista operativa de ${selectedBranch}. Prioriza cierres de brechas para mejorar la cobertura de costos y la lectura de margen.`}
+            ? 'Consolidado combina Santiago + Temuco (incluye ajustes). Usa este bloque para priorizar productos con brechas antes de profundizar en el detalle.'
+            : `Vista operativa de ${selectedBranch}. Prioriza el cierre de brechas para mejorar la cobertura de costos y la lectura del margen.`}
         </p>
       </section>
 
@@ -470,7 +470,7 @@ export default function DashboardPage() {
             <p style={{ margin: '4px 0 0 0', fontSize: 26, fontWeight: 700 }}>{dashboard.alerts.sinPrecio.length.toLocaleString('es-CL')}</p>
             {dashboard.alerts.sinPrecio.length > 0 ? (
               <div style={{ marginTop: 8 }}>
-                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: definir precio vigente por sucursal.</p>
+                <p className="muted" style={{ marginBottom: 6, fontSize: 12 }}>Acción sugerida: revisar precio vigente por sucursal.</p>
                 <div style={{ display: 'grid', gap: 6 }}>
                   {dashboard.alerts.sinPrecio.slice(0, 4).map((row) => (
                     <div key={row.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
@@ -493,29 +493,29 @@ export default function DashboardPage() {
           <KpiCard label="Margen teórico (CLP)" value={dashboard.summary.margenTeorico.toLocaleString('es-CL')} />
           <KpiCard label="Margen %" value={`${dashboard.summary.margenPct.toFixed(2)}%`} />
           <KpiCard label="Ventas a precio lista (CLP)" value={dashboard.summary.ventasLista.toLocaleString('es-CL')} />
-          <KpiCard label="Diferencia vs real (CLP)" value={dashboard.summary.deltaLista.toLocaleString('es-CL')} />
+          <KpiCard label="Diferencia vs lista (CLP)" value={dashboard.summary.deltaLista.toLocaleString('es-CL')} />
         </div>
       </section>
 
       <section className="card" style={{ marginBottom: 0, maxWidth: 1240, background: '#fcfcfd', borderColor: '#e5e7eb' }}>
         <h2 style={{ marginTop: 0 }}>Detalle por producto</h2>
         <p className="muted" style={{ marginTop: -4, marginBottom: 10, fontSize: 13 }}>
-          Usa este detalle para profundizar después de revisar brechas y KPIs.
+          Usa este detalle para profundizar luego de revisar brechas e indicadores clave.
         </p>
         <div className="tableWrap listPageTable"><table className="table">
           <thead>
             <tr>
-              <th>product</th>
-              <th>qty</th>
-              <th>ventasReales</th>
-              <th>ventasLista</th>
-              <th>deltaLista</th>
-              <th>costoTeorico</th>
-              <th>costoUnitario</th>
-              <th>margenTeorico</th>
-              <th>margenUnitario</th>
-              <th>margen%</th>
-              <th>alertas</th>
+              <th>Producto</th>
+              <th>Cantidad vendida</th>
+              <th>Ventas reales</th>
+              <th>Ventas a precio lista</th>
+              <th>Diferencia vs lista</th>
+              <th>Costo teórico</th>
+              <th>Costo unitario</th>
+              <th>Margen teórico</th>
+              <th>Margen unitario</th>
+              <th>Margen %</th>
+              <th>Brechas</th>
             </tr>
           </thead>
           <tbody>
