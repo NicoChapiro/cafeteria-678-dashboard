@@ -44,16 +44,12 @@ npm run db:seed
 
 
 
-## Backend migration (Fase 1)
+## Backend migration
 
-Revisa `docs/backend-migration-phase1.md` para:
+- Estado de infraestructura existente: `docs/backend-migration-phase1.md`.
+- Reenfoque vigente DB-only (plan corregido): `docs/db-only-migration-realignment.md`.
 
-- setup de Prisma
-- migración inicial
-- seed de branches
-- alternar `DATA_BACKEND=local|db`
-
-> En esta fase la UI no se migra todavía y se mantiene el comportamiento visible actual.
+> Estrategia actual: PostgreSQL + Prisma como backend principal, con localStorage solo como puente utilitario temporal (no backend runtime objetivo).
 
 ## Dataset QA smoke (localStorage)
 
