@@ -48,11 +48,10 @@ const BRANCHES: Branch[] = ['Santiago', 'Temuco'];
 const SORT_KEYS: SortKey[] = ['name', 'marginPctAsc', 'marginClpAsc', 'costClpDesc'];
 const ISSUE_TYPES: IssueType[] = ['any', 'missingPrice', 'missingCosts', 'missingCostItems', 'unsupportedRecipe'];
 
+const isValidBranch = (value: string): value is Branch => BRANCHES.includes(value as Branch);
 const isSortKey = (value: string): value is SortKey => SORT_KEYS.includes(value as SortKey);
 const isIssueType = (value: string): value is IssueType => ISSUE_TYPES.includes(value as IssueType);
 const todayIso = () => new Date().toISOString().slice(0, 10);
-const buildContextualReturnTo = () =>
-  typeof window === 'undefined' ? '/products/costing' : `${window.location.pathname}${window.location.search}`;
 const parseIsoToUtcDate = (value: string) => {
   const [year, month, day] = value.split('-').map((segment) => Number(segment));
   return new Date(Date.UTC(year, (month || 1) - 1, day || 1));
@@ -62,12 +61,13 @@ function buildDrawerActions(
   productId: string,
   recipeId: string | null | undefined,
   costing: ProductWithCosting['costing'],
-  branch: Branch,
+  destinationBranch: Branch | undefined,
+  sourceBranchLabel: string,
   asOfDate: string,
   returnTo: string,
 ): DrawerAction[] {
   const actions: DrawerAction[] = [];
-  const baseParams = { branch, asOf: asOfDate, returnTo };
+  const baseParams = { asOf: asOfDate, returnTo, ...(destinationBranch ? { branch: destinationBranch } : {}) };
 
   if (hasMissingPrice(costing)) {
     actions.push({
@@ -75,7 +75,7 @@ function buildDrawerActions(
       href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'price' }),
       tone: 'warn',
       ctaLabel: 'Editar precio',
-      description: `Falta precio vigente para ${branch} al ${asOfDate}.`,
+      description: `Falta precio vigente para ${sourceBranchLabel} al ${asOfDate}.`,
     });
   }
 
@@ -85,7 +85,7 @@ function buildDrawerActions(
       href: buildEditorHref(`/products/${productId}`, { ...baseParams, focus: 'manualCost' }),
       tone: 'warn',
       ctaLabel: 'Editar costo manual',
-      description: `Producto sin receta: falta un costo manual vigente para ${branch} al ${asOfDate}.`,
+      description: `Producto sin receta: falta un costo manual vigente para ${sourceBranchLabel} al ${asOfDate}.`,
     });
   }
 
@@ -138,11 +138,11 @@ function buildPrimaryQuickAction(
   productId: string,
   recipeId: string | null | undefined,
   costing: ProductWithCosting['costing'],
-  branch: Branch,
+  destinationBranch: Branch | undefined,
   asOfDate: string,
   returnTo: string,
 ): QuickAction {
-  const baseParams = { branch, asOf: asOfDate, returnTo };
+  const baseParams = { asOf: asOfDate, returnTo, ...(destinationBranch ? { branch: destinationBranch } : {}) };
 
   if (hasMissingPrice(costing)) {
     return {
@@ -190,6 +190,8 @@ export default function ProductCostingPage() {
   const [issueType, setIssueType] = useState<IssueType>('any');
   const [isUrlStateReady, setIsUrlStateReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [originBranchParam, setOriginBranchParam] = useState<string | null>(null);
+  const [originReturnTo, setOriginReturnTo] = useState('/products/costing');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recipesById, setRecipesById] = useState<Map<string, Recipe>>(new Map());
@@ -252,9 +254,11 @@ export default function ProductCostingPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setOriginReturnTo(`${window.location.pathname}${window.location.search}`);
     const params = new URLSearchParams(window.location.search);
     const branchParam = params.get('branch');
-    if (branchParam && BRANCHES.includes(branchParam as Branch)) setBranch(branchParam as Branch);
+    setOriginBranchParam(branchParam);
+    if (branchParam && isValidBranch(branchParam)) setBranch(branchParam);
     const asOfParam = params.get('asOf');
     if (asOfParam && /^\d{4}-\d{2}-\d{2}$/.test(asOfParam)) setAsOfDate(asOfParam);
     const qParam = params.get('q');
@@ -341,13 +345,16 @@ export default function ProductCostingPage() {
   }, [productComputed]);
 
   const selected = selectedProductId === null ? null : filteredSortedProducts.find(({ product }) => product.id === selectedProductId) ?? productComputed.find(({ product }) => product.id === selectedProductId) ?? null;
-  const returnTo = buildContextualReturnTo();
+  const sourceBranchLabel = originBranchParam ?? branch;
+  const destinationBranch = originBranchParam && isValidBranch(originBranchParam) ? originBranchParam : undefined;
+  const returnTo = originReturnTo;
   const drawerActions = selected
     ? buildDrawerActions(
       selected.product.id,
       selected.product.recipeId,
       selected.costing,
-      branch,
+      destinationBranch,
+      sourceBranchLabel,
       asOfDate,
       returnTo,
     )
@@ -396,7 +403,7 @@ export default function ProductCostingPage() {
   const issueSummary = `${issueStats.missingPrice} sin precio · ${issueStats.missingCosts} sin costo · ${issueStats.missingCostItems} faltan costos · ${issueStats.unsupportedRecipe} sub-recetas`;
   const isBaseState = branch === 'Santiago' && asOfDate === todayIso() && search.trim() === '' && sort === 'name' && !onlyIssues && issueType === 'any' && selectedProductId === null;
   const showIssueEmptyState = onlyIssues && filteredSortedProducts.length === 0;
-  const getQuickAction = useCallback((entry: ProductWithCosting) => buildPrimaryQuickAction(entry.product.id, entry.product.recipeId, entry.costing, branch, asOfDate, returnTo), [asOfDate, branch, returnTo]);
+  const getQuickAction = useCallback((entry: ProductWithCosting) => buildPrimaryQuickAction(entry.product.id, entry.product.recipeId, entry.costing, destinationBranch, asOfDate, returnTo), [asOfDate, destinationBranch, returnTo]);
 
   return (
     <main className="container">
