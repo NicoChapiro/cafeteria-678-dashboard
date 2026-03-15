@@ -15,10 +15,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@prisma/client": "^7.4.1",
+    "@prisma/client": "^6.16.2",
     "next": "15.5.7",
     "pg": "^8.18.0",
-    "prisma": "^7.4.1",
+    "prisma": "^6.16.2",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "xlsx": "^0.18.5"
@@ -35,8 +35,5 @@
     "tsx": "^4.20.5",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }
