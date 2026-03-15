@@ -81,7 +81,7 @@ export default function NewItemPage() {
             <select className="input" name="baseUnit" defaultValue="g" style={{ width: '100%' }}>
               <option value="g">g</option>
               <option value="ml">ml</option>
-              <option value="unit">unit</option>
+              <option value="unit">unidad</option>
             </select>
           </label>
 

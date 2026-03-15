@@ -19,6 +19,10 @@ const RECIPE_TYPES: RecipeType[] = [
 
 const YIELD_UNITS: YieldUnit[] = ['portion', 'g', 'ml', 'unit'];
 
+function unitLabel(unit: string): string {
+  return unit === 'unit' ? 'unidad' : unit;
+}
+
 export default function NewRecipePage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +109,7 @@ export default function NewRecipePage() {
             <select className="input" name="yieldUnit" defaultValue="portion" style={{ width: '100%' }}>
               {YIELD_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
-                  {unit}
+                  {unitLabel(unit)}
                 </option>
               ))}
             </select>

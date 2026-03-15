@@ -493,7 +493,7 @@ export const QA_SMOKE_CASES: readonly string[] = [
   'Producto con receta que depende de ítem sin costo vigente (mocha).',
   'Producto sin precio vigente en una sucursal (americano en Temuco).',
   'Producto sin receta pero con costo manual vigente (té).',
-  'Ventas en Santiago y Temuco para activar setup, costing y dashboard.',
+  'Ventas en Santiago y Temuco para activar pendientes, costeo y dashboard.',
 ];
 
 export function loadQaSmokeDataset(): SmokeSeedSummary {
