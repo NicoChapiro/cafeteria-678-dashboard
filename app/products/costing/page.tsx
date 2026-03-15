@@ -437,7 +437,7 @@ export default function ProductCostingPage() {
               fontWeight: 600,
             }}
           >
-            Problemas prioritarios <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.issues}</span>
+            Brechas prioritarias <span className="badge badge--warn badgeSmall" style={{ marginLeft: 6 }}>{issueStats.issues}</span>
           </button>
           <button
             type="button"
@@ -475,7 +475,7 @@ export default function ProductCostingPage() {
           {showIssueEmptyState ? (
             <article className="card" style={{ textAlign: 'center', padding: '22px 16px', borderColor: 'var(--status-success)', background: 'color-mix(in srgb, var(--status-success) 9%, var(--card))' }}>
               <p style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}>Sin brechas pendientes en este filtro</p>
-              <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>Buen trabajo: no hay productos con problemas para la sucursal y fecha seleccionadas.</p>
+              <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>Buen trabajo: no hay productos con brechas para la sucursal y fecha seleccionadas.</p>
               <button type="button" className="btnSecondary btnSmall" onClick={() => { setOnlyIssues(false); setIssueType('any'); }}>
                 Ver todos los productos
               </button>
